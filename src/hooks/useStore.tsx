@@ -14,6 +14,8 @@ export function useStore() {
       return;
     }
 
+    setLoading(true);
+
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
