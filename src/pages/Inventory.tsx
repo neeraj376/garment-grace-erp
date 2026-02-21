@@ -44,7 +44,7 @@ export default function Inventory() {
     if (!storeId) return;
     const { data } = await supabase
       .from("products")
-      .select("*, inventory_batches(quantity)")
+      .select("*, inventory_batches(quantity, buying_price)")
       .eq("store_id", storeId)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
