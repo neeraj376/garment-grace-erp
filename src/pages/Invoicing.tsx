@@ -132,12 +132,32 @@ export default function Invoicing() {
 
       await supabase.from("invoice_items").insert(items);
 
-      // Update customer total spent
+      // Update customer total spent and visit count
       if (customerId) {
-        await supabase.rpc("increment_customer_stats" as any, {
-          cust_id: customerId,
-          amount: total,
-        }).catch(() => {});
+        await supabase
+          .from("customers")
+          .update({
+            total_spent: undefined, // will be handled below
+            visit_count: undefined,
+          })
+          .eq("id", customerId);
+        
+        // Increment using raw update
+        const { data: cust } = await supabase
+          .from("customers")
+          .select("total_spent, visit_count")
+          .eq("id", customerId)
+          .single();
+        
+        if (cust) {
+          await supabase
+            .from("customers")
+            .update({
+              total_spent: Number(cust.total_spent) + total,
+              visit_count: cust.visit_count + 1,
+            })
+            .eq("id", customerId);
+        }
       }
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
