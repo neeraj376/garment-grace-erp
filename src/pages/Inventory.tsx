@@ -147,6 +147,22 @@ export default function Inventory() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleDownloadCSV = () => {
+    const headers = ["SKU", "Name", "Category", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Stock"];
+    const rows = products.map(p => [
+      p.sku, p.name, p.category || "", p.brand || "", p.size || "", p.color || "",
+      p.selling_price, p.mrp ?? "", p.tax_rate, p.total_stock ?? 0,
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `inventory-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.sku.toLowerCase().includes(search.toLowerCase())
