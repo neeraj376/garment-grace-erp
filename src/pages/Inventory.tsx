@@ -108,7 +108,7 @@ export default function Inventory() {
 
     let count = 0;
     for (let i = 1; i < lines.length; i++) {
-      const vals = lines[i].split(",").map(v => v.trim());
+      const vals = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ''));
       const row: any = {};
       headers.forEach((h, idx) => { row[h] = vals[idx]; });
 
@@ -120,6 +120,7 @@ export default function Inventory() {
             sku: row.sku || `SKU-${Date.now()}-${i}`,
             name: row.name || row.product_name || "Unnamed",
             category: row.category || null,
+            subcategory: row.subcategory || row.sub_category || null,
             brand: row.brand || null,
             size: row.size || null,
             color: row.color || null,
@@ -130,11 +131,11 @@ export default function Inventory() {
           .select()
           .single();
 
-        if (product && (row.buying_price || row.quantity)) {
+        if (product && (row.buying_price || row.purchase_price || row.quantity)) {
           await supabase.from("inventory_batches").insert({
             product_id: product.id,
             store_id: storeId,
-            buying_price: parseFloat(row.buying_price || "0"),
+            buying_price: parseFloat(row.buying_price || row.purchase_price || "0"),
             quantity: parseInt(row.quantity || "0"),
           });
         }
