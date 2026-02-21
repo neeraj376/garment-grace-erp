@@ -15,6 +15,7 @@ interface Product {
   sku: string;
   name: string;
   category: string | null;
+  subcategory: string | null;
   brand: string | null;
   size: string | null;
   color: string | null;
@@ -24,6 +25,7 @@ interface Product {
   photo_url: string | null;
   is_active: boolean;
   total_stock?: number;
+  inventory_batches?: { quantity: number; buying_price: number }[];
 }
 
 export default function Inventory() {
