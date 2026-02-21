@@ -24,23 +24,22 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      const { data: store, error: storeError } = await supabase
+      const storeId = crypto.randomUUID();
+      const { error: storeError } = await supabase
         .from("stores")
-        .insert({ name: storeName, location, gst_number: gstNumber, phone })
-        .select()
-        .single();
+        .insert({ id: storeId, name: storeName, location, gst_number: gstNumber, phone });
 
       if (storeError) throw storeError;
 
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ store_id: store.id, role: "owner" })
+        .update({ store_id: storeId, role: "owner" })
         .eq("user_id", user.id);
 
       if (profileError) throw profileError;
 
       // Create default settings
-      await supabase.from("store_settings").insert({ store_id: store.id });
+      await supabase.from("store_settings").insert({ store_id: storeId });
 
       toast({ title: "Store created!", description: "Your store is ready to go." });
       navigate("/");
