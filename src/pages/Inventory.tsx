@@ -149,11 +149,16 @@ export default function Inventory() {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["SKU", "Name", "Category", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Stock"];
-    const rows = products.map(p => [
-      p.sku, p.name, p.category || "", p.brand || "", p.size || "", p.color || "",
-      p.selling_price, p.mrp ?? "", p.tax_rate, p.total_stock ?? 0,
-    ]);
+    const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Purchase Price", "Stock"];
+    const rows = products.map(p => {
+      const avgBuyingPrice = (p as any).inventory_batches?.length
+        ? (p as any).inventory_batches.reduce((s: number, b: any) => s + Number(b.buying_price), 0) / (p as any).inventory_batches.length
+        : "";
+      return [
+        p.sku, p.name, p.category || "", (p as any).subcategory || "", p.brand || "", p.size || "", p.color || "",
+        p.selling_price, p.mrp ?? "", p.tax_rate, avgBuyingPrice, p.total_stock ?? 0,
+      ];
+    });
     const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
