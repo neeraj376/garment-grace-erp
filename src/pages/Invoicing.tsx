@@ -62,9 +62,17 @@ export default function Invoicing() {
     setSearchProduct("");
   };
 
-  const subtotal = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
-  const taxAmount = cart.reduce((s, i) => s + (i.unit_price * i.quantity * i.tax_rate) / 100, 0);
-  const total = subtotal + taxAmount - discount;
+  // Tax-inclusive: selling_price already includes tax
+  const subtotal = cart.reduce((s, i) => {
+    const priceExclTax = (i.unit_price * i.quantity) / (1 + i.tax_rate / 100);
+    return s + priceExclTax;
+  }, 0);
+  const taxAmount = cart.reduce((s, i) => {
+    const lineTotal = i.unit_price * i.quantity;
+    const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
+    return s + (lineTotal - priceExclTax);
+  }, 0);
+  const total = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0) - discount;
 
   const handleCreateInvoice = async () => {
     if (!storeId || !user || cart.length === 0) return;
