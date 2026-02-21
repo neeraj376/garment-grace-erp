@@ -106,7 +106,7 @@ export default function Inventory() {
 
     const text = await file.text();
     const lines = text.split("\n").filter(l => l.trim());
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
 
     let count = 0;
     for (let i = 1; i < lines.length; i++) {
