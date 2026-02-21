@@ -51,8 +51,21 @@ export default function Onboarding() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleLogout}
+        className="absolute top-4 right-4 text-muted-foreground"
+      >
+        <LogOut className="h-4 w-4 mr-2" />
+        Log out
+      </Button>
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
