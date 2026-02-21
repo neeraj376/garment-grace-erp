@@ -153,11 +153,12 @@ export default function Inventory() {
   const handleDownloadCSV = () => {
     const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Purchase Price", "Stock"];
     const rows = products.map(p => {
-      const avgBuyingPrice = (p as any).inventory_batches?.length
-        ? (p as any).inventory_batches.reduce((s: number, b: any) => s + Number(b.buying_price), 0) / (p as any).inventory_batches.length
+      const batches = p.inventory_batches || [];
+      const avgBuyingPrice = batches.length
+        ? (batches.reduce((s, b) => s + Number(b.buying_price), 0) / batches.length).toFixed(2)
         : "";
       return [
-        p.sku, p.name, p.category || "", (p as any).subcategory || "", p.brand || "", p.size || "", p.color || "",
+        p.sku, p.name, p.category || "", p.subcategory || "", p.brand || "", p.size || "", p.color || "",
         p.selling_price, p.mrp ?? "", p.tax_rate, avgBuyingPrice, p.total_stock ?? 0,
       ];
     });
