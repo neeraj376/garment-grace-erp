@@ -62,9 +62,17 @@ export default function Invoicing() {
     setSearchProduct("");
   };
 
-  const subtotal = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
-  const taxAmount = cart.reduce((s, i) => s + (i.unit_price * i.quantity * i.tax_rate) / 100, 0);
-  const total = subtotal + taxAmount - discount;
+  // Tax-inclusive: selling_price already includes tax
+  const subtotal = cart.reduce((s, i) => {
+    const priceExclTax = (i.unit_price * i.quantity) / (1 + i.tax_rate / 100);
+    return s + priceExclTax;
+  }, 0);
+  const taxAmount = cart.reduce((s, i) => {
+    const lineTotal = i.unit_price * i.quantity;
+    const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
+    return s + (lineTotal - priceExclTax);
+  }, 0);
+  const total = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0) - discount;
 
   const handleCreateInvoice = async () => {
     if (!storeId || !user || cart.length === 0) return;
@@ -121,14 +129,19 @@ export default function Invoicing() {
       if (error) throw error;
 
       // Insert items
-      const items = cart.map(i => ({
-        invoice_id: invoice.id,
-        product_id: i.product_id,
-        quantity: i.quantity,
-        unit_price: i.unit_price,
-        tax_amount: (i.unit_price * i.quantity * i.tax_rate) / 100,
-        total: i.unit_price * i.quantity + (i.unit_price * i.quantity * i.tax_rate) / 100,
-      }));
+      const items = cart.map(i => {
+        const lineTotal = i.unit_price * i.quantity;
+        const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
+        const lineTax = lineTotal - priceExclTax;
+        return {
+          invoice_id: invoice.id,
+          product_id: i.product_id,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          tax_amount: parseFloat(lineTax.toFixed(2)),
+          total: lineTotal,
+        };
+      });
 
       await supabase.from("invoice_items").insert(items);
 
@@ -290,8 +303,8 @@ export default function Invoicing() {
           <Card>
             <CardHeader><CardTitle className="section-title">Summary</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>₹{taxAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Base Price</span><span>₹{subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tax (incl.)</span><span>₹{taxAmount.toFixed(2)}</span></div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Discount</span>
                 <Input type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} className="w-24 text-right" />
