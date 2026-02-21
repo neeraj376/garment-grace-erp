@@ -49,7 +49,7 @@ export default function Reports() {
 
     const { data: invData } = await supabase
       .from("invoices")
-      .select("*, invoice_items(quantity, unit_price, tax_amount, total, inventory_batches:batch_id(buying_price))")
+      .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id)")
       .eq("store_id", storeId!)
       .gte("created_at", start)
       .lte("created_at", end)
@@ -57,13 +57,42 @@ export default function Reports() {
 
     setInvoices(invData ?? []);
 
+    // Collect all product IDs from invoice items
+    const productIds = new Set<string>();
+    (invData ?? []).forEach(inv => {
+      (inv.invoice_items as any[])?.forEach(item => {
+        if (item.product_id) productIds.add(item.product_id);
+      });
+    });
+
+    // Fetch average buying price per product from inventory_batches
+    const buyingPriceMap: Record<string, number> = {};
+    if (productIds.size > 0) {
+      const { data: batches } = await supabase
+        .from("inventory_batches")
+        .select("product_id, buying_price, quantity")
+        .eq("store_id", storeId!)
+        .in("product_id", Array.from(productIds));
+
+      // Weighted average buying price per product
+      const productTotals: Record<string, { totalCost: number; totalQty: number }> = {};
+      (batches ?? []).forEach(b => {
+        if (!productTotals[b.product_id]) productTotals[b.product_id] = { totalCost: 0, totalQty: 0 };
+        productTotals[b.product_id].totalCost += Number(b.buying_price) * b.quantity;
+        productTotals[b.product_id].totalQty += b.quantity;
+      });
+      Object.entries(productTotals).forEach(([pid, { totalCost, totalQty }]) => {
+        buyingPriceMap[pid] = totalQty > 0 ? totalCost / totalQty : 0;
+      });
+    }
+
     let revenue = 0, cost = 0, tax = 0;
     (invData ?? []).forEach(inv => {
       revenue += Number(inv.total_amount);
       tax += Number(inv.tax_amount);
       (inv.invoice_items as any[])?.forEach(item => {
-        const bp = (item.inventory_batches as any)?.buying_price ?? 0;
-        cost += bp * item.quantity;
+        const avgBuyingPrice = buyingPriceMap[item.product_id] ?? 0;
+        cost += avgBuyingPrice * item.quantity;
       });
     });
 
