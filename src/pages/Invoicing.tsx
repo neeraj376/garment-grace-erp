@@ -134,15 +134,6 @@ export default function Invoicing() {
 
       // Update customer total spent and visit count
       if (customerId) {
-        await supabase
-          .from("customers")
-          .update({
-            total_spent: undefined, // will be handled below
-            visit_count: undefined,
-          })
-          .eq("id", customerId);
-        
-        // Increment using raw update
         const { data: cust } = await supabase
           .from("customers")
           .select("total_spent, visit_count")
