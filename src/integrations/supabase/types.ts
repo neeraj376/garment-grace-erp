@@ -14,7 +14,543 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          gender: string | null
+          id: string
+          location: string | null
+          loyalty_points: number
+          mobile: string
+          name: string | null
+          store_id: string
+          total_spent: number
+          updated_at: string
+          visit_count: number
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          gender?: string | null
+          id?: string
+          location?: string | null
+          loyalty_points?: number
+          mobile: string
+          name?: string | null
+          store_id: string
+          total_spent?: number
+          updated_at?: string
+          visit_count?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          gender?: string | null
+          id?: string
+          location?: string | null
+          loyalty_points?: number
+          mobile?: string
+          name?: string | null
+          store_id?: string
+          total_spent?: number
+          updated_at?: string
+          visit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          joining_date: string | null
+          name: string
+          phone: string | null
+          role: string
+          salary: number | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string | null
+          name: string
+          phone?: string | null
+          role?: string
+          salary?: number | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string | null
+          name?: string
+          phone?: string | null
+          role?: string
+          salary?: number | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_batches: {
+        Row: {
+          batch_number: string | null
+          buying_price: number
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          received_at: string
+          store_id: string
+          supplier: string | null
+        }
+        Insert: {
+          batch_number?: string | null
+          buying_price?: number
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          received_at?: string
+          store_id: string
+          supplier?: string | null
+        }
+        Update: {
+          batch_number?: string | null
+          buying_price?: number
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          received_at?: string
+          store_id?: string
+          supplier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_batches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_batches_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          batch_id: string | null
+          discount: number
+          id: string
+          invoice_id: string
+          product_id: string
+          quantity: number
+          tax_amount: number
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          batch_id?: string | null
+          discount?: number
+          id?: string
+          invoice_id: string
+          product_id: string
+          quantity?: number
+          tax_amount?: number
+          total: number
+          unit_price: number
+        }
+        Update: {
+          batch_id?: string | null
+          discount?: number
+          id?: string
+          invoice_id?: string
+          product_id?: string
+          quantity?: number
+          tax_amount?: number
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          discount_amount: number
+          id: string
+          invoice_number: string
+          loyalty_points_earned: number
+          notes: string | null
+          payment_method: string
+          source: string
+          store_id: string
+          subtotal: number
+          tax_amount: number
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          discount_amount?: number
+          id?: string
+          invoice_number: string
+          loyalty_points_earned?: number
+          notes?: string | null
+          payment_method?: string
+          source?: string
+          store_id: string
+          subtotal?: number
+          tax_amount?: number
+          total_amount?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          discount_amount?: number
+          id?: string
+          invoice_number?: string
+          loyalty_points_earned?: number
+          notes?: string | null
+          payment_method?: string
+          source?: string
+          store_id?: string
+          subtotal?: number
+          tax_amount?: number
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string
+          customer_id: string
+          description: string | null
+          id: string
+          invoice_id: string | null
+          points: number
+          store_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          points: number
+          store_id: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          points?: number
+          store_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          brand: string | null
+          category: string | null
+          color: string | null
+          created_at: string
+          hsn_code: string | null
+          id: string
+          is_active: boolean
+          material: string | null
+          mrp: number | null
+          name: string
+          photo_url: string | null
+          selling_price: number
+          size: string | null
+          sku: string
+          store_id: string
+          subcategory: string | null
+          tax_rate: number
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          hsn_code?: string | null
+          id?: string
+          is_active?: boolean
+          material?: string | null
+          mrp?: number | null
+          name: string
+          photo_url?: string | null
+          selling_price?: number
+          size?: string | null
+          sku: string
+          store_id: string
+          subcategory?: string | null
+          tax_rate?: number
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          hsn_code?: string | null
+          id?: string
+          is_active?: boolean
+          material?: string | null
+          mrp?: number | null
+          name?: string
+          photo_url?: string | null
+          selling_price?: number
+          size?: string | null
+          sku?: string
+          store_id?: string
+          subcategory?: string | null
+          tax_rate?: number
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_settings: {
+        Row: {
+          created_at: string
+          default_discount_percent: number
+          id: string
+          invoice_prefix: string
+          loyalty_amount_unit: number
+          loyalty_points_per_amount: number
+          sms_enabled: boolean
+          store_id: string
+          updated_at: string
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          default_discount_percent?: number
+          id?: string
+          invoice_prefix?: string
+          loyalty_amount_unit?: number
+          loyalty_points_per_amount?: number
+          sms_enabled?: boolean
+          store_id: string
+          updated_at?: string
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          default_discount_percent?: number
+          id?: string
+          invoice_prefix?: string
+          loyalty_amount_unit?: number
+          loyalty_points_per_amount?: number
+          sms_enabled?: boolean
+          store_id?: string
+          updated_at?: string
+          whatsapp_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          gst_number: string | null
+          gst_state_code: string | null
+          id: string
+          location: string | null
+          logo_url: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          gst_number?: string | null
+          gst_state_code?: string | null
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          gst_number?: string | null
+          gst_state_code?: string | null
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
