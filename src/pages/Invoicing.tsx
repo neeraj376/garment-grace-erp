@@ -1,0 +1,301 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useStore } from "@/hooks/useStore";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Trash2, FileText } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface CartItem {
+  product_id: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+}
+
+export default function Invoicing() {
+  const { storeId } = useStore();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [products, setProducts] = useState<any[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [customerMobile, setCustomerMobile] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerGender, setCustomerGender] = useState("");
+  const [customerLocation, setCustomerLocation] = useState("");
+  const [source, setSource] = useState("offline");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [discount, setDiscount] = useState(0);
+  const [searchProduct, setSearchProduct] = useState("");
+
+  useEffect(() => {
+    if (!storeId) return;
+    supabase
+      .from("products")
+      .select("id, sku, name, selling_price, tax_rate")
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .then(({ data }) => setProducts(data ?? []));
+  }, [storeId]);
+
+  const addToCart = (product: any) => {
+    const existing = cart.find(i => i.product_id === product.id);
+    if (existing) {
+      setCart(cart.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
+    } else {
+      setCart([...cart, {
+        product_id: product.id,
+        name: product.name,
+        sku: product.sku,
+        quantity: 1,
+        unit_price: Number(product.selling_price),
+        tax_rate: Number(product.tax_rate),
+      }]);
+    }
+    setSearchProduct("");
+  };
+
+  const subtotal = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+  const taxAmount = cart.reduce((s, i) => s + (i.unit_price * i.quantity * i.tax_rate) / 100, 0);
+  const total = subtotal + taxAmount - discount;
+
+  const handleCreateInvoice = async () => {
+    if (!storeId || !user || cart.length === 0) return;
+
+    try {
+      // Find or create customer
+      let customerId: string | null = null;
+      if (customerMobile) {
+        const { data: existing } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("store_id", storeId)
+          .eq("mobile", customerMobile)
+          .single();
+
+        if (existing) {
+          customerId = existing.id;
+        } else {
+          const { data: newCust } = await supabase
+            .from("customers")
+            .insert({
+              store_id: storeId,
+              mobile: customerMobile,
+              name: customerName || null,
+              gender: customerGender || null,
+              location: customerLocation || null,
+            })
+            .select()
+            .single();
+          customerId = newCust?.id ?? null;
+        }
+      }
+
+      // Generate invoice number
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+
+      const { data: invoice, error } = await supabase
+        .from("invoices")
+        .insert({
+          store_id: storeId,
+          invoice_number: invoiceNumber,
+          customer_id: customerId,
+          source,
+          payment_method: paymentMethod,
+          subtotal,
+          tax_amount: taxAmount,
+          discount_amount: discount,
+          total_amount: total,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Insert items
+      const items = cart.map(i => ({
+        invoice_id: invoice.id,
+        product_id: i.product_id,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        tax_amount: (i.unit_price * i.quantity * i.tax_rate) / 100,
+        total: i.unit_price * i.quantity + (i.unit_price * i.quantity * i.tax_rate) / 100,
+      }));
+
+      await supabase.from("invoice_items").insert(items);
+
+      // Update customer total spent
+      if (customerId) {
+        await supabase.rpc("increment_customer_stats" as any, {
+          cust_id: customerId,
+          amount: total,
+        }).catch(() => {});
+      }
+
+      toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
+      setCart([]);
+      setCustomerMobile("");
+      setCustomerName("");
+      setDiscount(0);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
+    p.sku.toLowerCase().includes(searchProduct.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <h1 className="page-header">New Invoice</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="section-title">Products</CardTitle></CardHeader>
+            <CardContent>
+              <Input
+                placeholder="Search products to add..."
+                value={searchProduct}
+                onChange={e => setSearchProduct(e.target.value)}
+                className="mb-3"
+              />
+              {searchProduct && (
+                <div className="border rounded-lg max-h-40 overflow-y-auto mb-3">
+                  {filteredProducts.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => addToCart(p)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between"
+                    >
+                      <span>{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
+                      <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead className="text-center">Qty</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cart.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-6 w-6 mx-auto mb-2" />
+                        Search and add products
+                      </TableCell>
+                    </TableRow>
+                  ) : cart.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-xs text-muted-foreground">{item.sku}</div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={item.quantity}
+                          onChange={e => setCart(cart.map((c, i) => i === idx ? { ...c, quantity: parseInt(e.target.value) || 1 } : c))}
+                          className="w-16 mx-auto text-center"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">₹{item.unit_price.toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="text-right font-medium">₹{(item.unit_price * item.quantity).toLocaleString("en-IN")}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => setCart(cart.filter((_, i) => i !== idx))}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="section-title">Customer</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div><Label>Mobile Number</Label><Input value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} placeholder="+91..." /></div>
+              <div><Label>Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} /></div>
+              <div>
+                <Label>Gender</Label>
+                <Select value={customerGender} onValueChange={setCustomerGender}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Location</Label><Input value={customerLocation} onChange={e => setCustomerLocation(e.target.value)} /></div>
+              <div>
+                <Label>Source</Label>
+                <Select value={source} onValueChange={setSource}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="offline">Offline (Walk-in)</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="wallet">Wallet</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="section-title">Summary</CardTitle></CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>₹{taxAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Discount</span>
+                <Input type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} className="w-24 text-right" />
+              </div>
+              <div className="border-t pt-2 flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span>₹{total.toLocaleString("en-IN")}</span>
+              </div>
+              <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0}>
+                Create Invoice
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
