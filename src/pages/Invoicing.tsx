@@ -129,14 +129,19 @@ export default function Invoicing() {
       if (error) throw error;
 
       // Insert items
-      const items = cart.map(i => ({
-        invoice_id: invoice.id,
-        product_id: i.product_id,
-        quantity: i.quantity,
-        unit_price: i.unit_price,
-        tax_amount: (i.unit_price * i.quantity * i.tax_rate) / 100,
-        total: i.unit_price * i.quantity + (i.unit_price * i.quantity * i.tax_rate) / 100,
-      }));
+      const items = cart.map(i => {
+        const lineTotal = i.unit_price * i.quantity;
+        const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
+        const lineTax = lineTotal - priceExclTax;
+        return {
+          invoice_id: invoice.id,
+          product_id: i.product_id,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          tax_amount: parseFloat(lineTax.toFixed(2)),
+          total: lineTotal,
+        };
+      });
 
       await supabase.from("invoice_items").insert(items);
 
