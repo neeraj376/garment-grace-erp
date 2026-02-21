@@ -39,7 +39,7 @@ export default function Onboarding() {
       if (profileError) throw profileError;
 
       // Create default settings
-      await supabase.from("store_settings").insert({ store_id: store.id });
+      await supabase.from("store_settings").insert({ store_id: storeId });
 
       toast({ title: "Store created!", description: "Your store is ready to go." });
       navigate("/");
