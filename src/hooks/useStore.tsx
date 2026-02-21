@@ -19,7 +19,7 @@ export function useStore() {
         .from("profiles")
         .select("store_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       setStoreId(data?.store_id ?? null);
       setLoading(false);
