@@ -24,11 +24,10 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      const { data: store, error: storeError } = await supabase
+      const storeId = crypto.randomUUID();
+      const { error: storeError } = await supabase
         .from("stores")
-        .insert({ name: storeName, location, gst_number: gstNumber, phone })
-        .select()
-        .single();
+        .insert({ id: storeId, name: storeName, location, gst_number: gstNumber, phone });
 
       if (storeError) throw storeError;
 
