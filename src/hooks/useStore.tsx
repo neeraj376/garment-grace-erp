@@ -14,12 +14,14 @@ export function useStore() {
       return;
     }
 
+    setLoading(true);
+
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
         .select("store_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       setStoreId(data?.store_id ?? null);
       setLoading(false);
