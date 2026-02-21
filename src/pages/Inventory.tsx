@@ -176,6 +176,21 @@ export default function Inventory() {
     URL.revokeObjectURL(url);
   };
 
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: false })
+        .eq("id", productId);
+      if (error) throw error;
+      toast({ title: "Product deleted" });
+      fetchProducts();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.sku.toLowerCase().includes(search.toLowerCase())
