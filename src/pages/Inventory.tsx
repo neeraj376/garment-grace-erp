@@ -160,6 +160,9 @@ export default function Inventory() {
           <p className="text-sm text-muted-foreground mt-1">{products.length} products</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDownloadCSV}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
           <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import CSV
