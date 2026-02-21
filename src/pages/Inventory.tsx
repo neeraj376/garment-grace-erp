@@ -15,6 +15,7 @@ interface Product {
   sku: string;
   name: string;
   category: string | null;
+  subcategory: string | null;
   brand: string | null;
   size: string | null;
   color: string | null;
@@ -24,6 +25,7 @@ interface Product {
   photo_url: string | null;
   is_active: boolean;
   total_stock?: number;
+  inventory_batches?: { quantity: number; buying_price: number }[];
 }
 
 export default function Inventory() {
@@ -42,7 +44,7 @@ export default function Inventory() {
     if (!storeId) return;
     const { data } = await supabase
       .from("products")
-      .select("*, inventory_batches(quantity)")
+      .select("*, inventory_batches(quantity, buying_price)")
       .eq("store_id", storeId)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -108,7 +110,7 @@ export default function Inventory() {
 
     let count = 0;
     for (let i = 1; i < lines.length; i++) {
-      const vals = lines[i].split(",").map(v => v.trim());
+      const vals = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ''));
       const row: any = {};
       headers.forEach((h, idx) => { row[h] = vals[idx]; });
 
@@ -120,6 +122,7 @@ export default function Inventory() {
             sku: row.sku || `SKU-${Date.now()}-${i}`,
             name: row.name || row.product_name || "Unnamed",
             category: row.category || null,
+            subcategory: row.subcategory || row.sub_category || null,
             brand: row.brand || null,
             size: row.size || null,
             color: row.color || null,
@@ -130,11 +133,11 @@ export default function Inventory() {
           .select()
           .single();
 
-        if (product && (row.buying_price || row.quantity)) {
+        if (product && (row.buying_price || row.purchase_price || row.quantity)) {
           await supabase.from("inventory_batches").insert({
             product_id: product.id,
             store_id: storeId,
-            buying_price: parseFloat(row.buying_price || "0"),
+            buying_price: parseFloat(row.buying_price || row.purchase_price || "0"),
             quantity: parseInt(row.quantity || "0"),
           });
         }
@@ -148,11 +151,17 @@ export default function Inventory() {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["SKU", "Name", "Category", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Stock"];
-    const rows = products.map(p => [
-      p.sku, p.name, p.category || "", p.brand || "", p.size || "", p.color || "",
-      p.selling_price, p.mrp ?? "", p.tax_rate, p.total_stock ?? 0,
-    ]);
+    const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Purchase Price", "Stock"];
+    const rows = products.map(p => {
+      const batches = p.inventory_batches || [];
+      const avgBuyingPrice = batches.length
+        ? (batches.reduce((s, b) => s + Number(b.buying_price), 0) / batches.length).toFixed(2)
+        : "";
+      return [
+        p.sku, p.name, p.category || "", p.subcategory || "", p.brand || "", p.size || "", p.color || "",
+        p.selling_price, p.mrp ?? "", p.tax_rate, avgBuyingPrice, p.total_stock ?? 0,
+      ];
+    });
     const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
