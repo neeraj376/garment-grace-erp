@@ -42,7 +42,7 @@ export default function Onboarding() {
       await supabase.from("store_settings").insert({ store_id: storeId });
 
       toast({ title: "Store created!", description: "Your store is ready to go." });
-      navigate("/");
+      window.location.href = "/";
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
