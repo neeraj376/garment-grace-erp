@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Upload, Search, Package, Download } from "lucide-react";
+import { Plus, Upload, Search, Package, Download, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import EditProductDialog from "@/components/inventory/EditProductDialog";
 
 interface Product {
   id: string;
@@ -23,6 +24,7 @@ interface Product {
   mrp: number | null;
   tax_rate: number;
   photo_url: string | null;
+  video_url: string | null;
   is_active: boolean;
   total_stock?: number;
   inventory_batches?: { quantity: number; buying_price: number }[];
@@ -34,6 +36,8 @@ export default function Inventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", brand: "", size: "", color: "",
@@ -235,18 +239,20 @@ export default function Inventory() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12"></TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Product</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Size / Color</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
+                <TableCell colSpan={8} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
@@ -254,6 +260,15 @@ export default function Inventory() {
             ) : (
               filtered.map((p) => (
                 <TableRow key={p.id}>
+                  <TableCell className="p-1">
+                    {p.photo_url ? (
+                      <img src={p.photo_url} alt={p.name} className="h-10 w-10 rounded object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell className="text-muted-foreground">{p.category || "—"}</TableCell>
@@ -267,12 +282,32 @@ export default function Inventory() {
                       {p.total_stock}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => { setEditProduct(p); setEditOpen(true); }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </Card>
+
+      {storeId && (
+        <EditProductDialog
+          product={editProduct}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          storeId={storeId}
+          onSaved={fetchProducts}
+        />
+      )}
     </div>
   );
 }
