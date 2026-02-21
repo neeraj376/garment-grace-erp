@@ -33,7 +33,7 @@ export default function Onboarding() {
 
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ store_id: store.id, role: "owner" })
+        .update({ store_id: storeId, role: "owner" })
         .eq("user_id", user.id);
 
       if (profileError) throw profileError;
