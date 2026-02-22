@@ -123,6 +123,33 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
 
       if (error) throw error;
 
+      // Handle stock adjustment
+      if (stockAdjustment && parseInt(stockAdjustment) !== 0) {
+        const adj = parseInt(stockAdjustment);
+        if (stockMode === "set") {
+          // Set stock: calculate difference from current and create a batch adjustment
+          const diff = adj - currentStock;
+          if (diff !== 0) {
+            await supabase.from("inventory_batches").insert({
+              product_id: product.id,
+              store_id: storeId,
+              buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+              quantity: diff,
+              batch_number: `ADJ-${Date.now()}`,
+            });
+          }
+        } else {
+          // Add stock
+          await supabase.from("inventory_batches").insert({
+            product_id: product.id,
+            store_id: storeId,
+            buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+            quantity: adj,
+            batch_number: `ADJ-${Date.now()}`,
+          });
+        }
+      }
+
       toast({ title: "Product updated" });
       onOpenChange(false);
       onSaved();
