@@ -67,20 +67,21 @@ export default function Inventory() {
     if (!storeId) return;
 
     try {
-      const { data: product, error } = await supabase
-        .from("products")
-        .insert({
-          store_id: storeId,
-          sku: form.sku,
-          name: form.name,
-          category: form.category || null,
-          brand: form.brand || null,
-          size: form.size || null,
-          color: form.color || null,
-          selling_price: parseFloat(form.selling_price),
-          mrp: form.mrp ? parseFloat(form.mrp) : null,
-          tax_rate: parseFloat(form.tax_rate),
-        })
+        const { data: product, error } = await supabase
+          .from("products")
+          .insert({
+            store_id: storeId,
+            sku: form.sku,
+            name: form.name,
+            category: form.category || null,
+            brand: form.brand || null,
+            size: form.size || null,
+            color: form.color || null,
+            selling_price: parseFloat(form.selling_price),
+            mrp: form.mrp ? parseFloat(form.mrp) : null,
+            tax_rate: parseFloat(form.tax_rate),
+            buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+          })
         .select()
         .single();
 
