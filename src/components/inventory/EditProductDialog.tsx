@@ -264,6 +264,43 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
             </div>
           </div>
 
+          {/* Stock Section */}
+          <div className="border-t pt-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Stock Management</p>
+              <span className="text-sm text-muted-foreground">Current: <span className="font-semibold text-foreground">{currentStock}</span></span>
+            </div>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Label className="text-xs text-muted-foreground">
+                  {stockMode === "add" ? "Add/Remove Quantity" : "Set Stock To"}
+                </Label>
+                <Input
+                  type="number"
+                  value={stockAdjustment}
+                  onChange={e => setStockAdjustment(e.target.value)}
+                  placeholder={stockMode === "add" ? "e.g. 10 or -5" : "e.g. 50"}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="whitespace-nowrap"
+                onClick={() => setStockMode(m => m === "add" ? "set" : "add")}
+              >
+                {stockMode === "add" ? "Switch to Set" : "Switch to Add"}
+              </Button>
+            </div>
+            {stockAdjustment && parseInt(stockAdjustment) !== 0 && (
+              <p className="text-xs text-muted-foreground">
+                New stock will be: <span className="font-semibold text-foreground">
+                  {stockMode === "set" ? parseInt(stockAdjustment) : currentStock + parseInt(stockAdjustment)}
+                </span>
+              </p>
+            )}
+          </div>
+
           <Button type="submit" className="w-full">Save Changes</Button>
         </form>
       </DialogContent>
