@@ -107,6 +107,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
           selling_price: parseFloat(form.selling_price),
           mrp: form.mrp ? parseFloat(form.mrp) : null,
           tax_rate: parseFloat(form.tax_rate),
+          buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
           photo_url: form.photo_url || null,
           video_url: form.video_url || null,
         })
