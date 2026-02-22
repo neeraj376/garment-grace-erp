@@ -39,7 +39,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
-    selling_price: "", mrp: "", tax_rate: "18",
+    selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
     photo_url: "" as string | null,
     video_url: "" as string | null,
   });
