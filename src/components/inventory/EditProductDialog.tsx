@@ -22,6 +22,8 @@ interface Product {
   photo_url: string | null;
   video_url: string | null;
   is_active: boolean;
+  total_stock?: number;
+  buying_price?: number | null;
 }
 
 interface EditProductDialogProps {
