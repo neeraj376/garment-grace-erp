@@ -59,6 +59,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       selling_price: String(product.selling_price),
       mrp: product.mrp ? String(product.mrp) : "",
       tax_rate: String(product.tax_rate),
+      buying_price: (product as any).buying_price ? String((product as any).buying_price) : "",
       photo_url: product.photo_url,
       video_url: product.video_url,
     });
