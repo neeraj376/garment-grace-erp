@@ -39,7 +39,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
-    selling_price: "", mrp: "", tax_rate: "18",
+    selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
     photo_url: "" as string | null,
     video_url: "" as string | null,
   });
@@ -59,6 +59,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       selling_price: String(product.selling_price),
       mrp: product.mrp ? String(product.mrp) : "",
       tax_rate: String(product.tax_rate),
+      buying_price: (product as any).buying_price ? String((product as any).buying_price) : "",
       photo_url: product.photo_url,
       video_url: product.video_url,
     });
@@ -106,6 +107,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
           selling_price: parseFloat(form.selling_price),
           mrp: form.mrp ? parseFloat(form.mrp) : null,
           tax_rate: parseFloat(form.tax_rate),
+          buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
           photo_url: form.photo_url || null,
           video_url: form.video_url || null,
         })
@@ -139,6 +141,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
             <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({ ...form, selling_price: e.target.value })} required /></div>
             <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({ ...form, mrp: e.target.value })} /></div>
             <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({ ...form, tax_rate: e.target.value })} /></div>
+            <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({ ...form, buying_price: e.target.value })} /></div>
           </div>
 
           {/* Media Section */}
