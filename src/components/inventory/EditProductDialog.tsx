@@ -39,6 +39,9 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [currentStock, setCurrentStock] = useState(0);
+  const [stockAdjustment, setStockAdjustment] = useState("");
+  const [stockMode, setStockMode] = useState<"add" | "set">("add");
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
