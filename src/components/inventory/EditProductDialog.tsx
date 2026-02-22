@@ -141,6 +141,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
             <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({ ...form, selling_price: e.target.value })} required /></div>
             <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({ ...form, mrp: e.target.value })} /></div>
             <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({ ...form, tax_rate: e.target.value })} /></div>
+            <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({ ...form, buying_price: e.target.value })} /></div>
           </div>
 
           {/* Media Section */}
