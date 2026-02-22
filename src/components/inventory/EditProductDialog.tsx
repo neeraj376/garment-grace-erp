@@ -1,11 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ImagePlus, Video, X, Loader2 } from "lucide-react";
+import { ImagePlus, Video, X, Loader2, Plus, Minus } from "lucide-react";
 
 interface Product {
   id: string;
@@ -22,6 +22,8 @@ interface Product {
   photo_url: string | null;
   video_url: string | null;
   is_active: boolean;
+  total_stock?: number;
+  buying_price?: number | null;
 }
 
 interface EditProductDialogProps {
@@ -37,6 +39,9 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [currentStock, setCurrentStock] = useState(0);
+  const [stockAdjustment, setStockAdjustment] = useState("");
+  const [stockMode, setStockMode] = useState<"add" | "set">("add");
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
@@ -48,6 +53,9 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const [lastProductId, setLastProductId] = useState<string | null>(null);
   if (product && product.id !== lastProductId) {
     setLastProductId(product.id);
+    setCurrentStock(product.total_stock ?? 0);
+    setStockAdjustment("");
+    setStockMode("add");
     setForm({
       sku: product.sku,
       name: product.name,
@@ -59,7 +67,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       selling_price: String(product.selling_price),
       mrp: product.mrp ? String(product.mrp) : "",
       tax_rate: String(product.tax_rate),
-      buying_price: (product as any).buying_price ? String((product as any).buying_price) : "",
+      buying_price: product.buying_price ? String(product.buying_price) : "",
       photo_url: product.photo_url,
       video_url: product.video_url,
     });
@@ -114,6 +122,33 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
         .eq("id", product.id);
 
       if (error) throw error;
+
+      // Handle stock adjustment
+      if (stockAdjustment && parseInt(stockAdjustment) !== 0) {
+        const adj = parseInt(stockAdjustment);
+        if (stockMode === "set") {
+          // Set stock: calculate difference from current and create a batch adjustment
+          const diff = adj - currentStock;
+          if (diff !== 0) {
+            await supabase.from("inventory_batches").insert({
+              product_id: product.id,
+              store_id: storeId,
+              buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+              quantity: diff,
+              batch_number: `ADJ-${Date.now()}`,
+            });
+          }
+        } else {
+          // Add stock
+          await supabase.from("inventory_batches").insert({
+            product_id: product.id,
+            store_id: storeId,
+            buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+            quantity: adj,
+            batch_number: `ADJ-${Date.now()}`,
+          });
+        }
+      }
 
       toast({ title: "Product updated" });
       onOpenChange(false);
@@ -227,6 +262,43 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                 }}
               />
             </div>
+          </div>
+
+          {/* Stock Section */}
+          <div className="border-t pt-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Stock Management</p>
+              <span className="text-sm text-muted-foreground">Current: <span className="font-semibold text-foreground">{currentStock}</span></span>
+            </div>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Label className="text-xs text-muted-foreground">
+                  {stockMode === "add" ? "Add/Remove Quantity" : "Set Stock To"}
+                </Label>
+                <Input
+                  type="number"
+                  value={stockAdjustment}
+                  onChange={e => setStockAdjustment(e.target.value)}
+                  placeholder={stockMode === "add" ? "e.g. 10 or -5" : "e.g. 50"}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="whitespace-nowrap"
+                onClick={() => setStockMode(m => m === "add" ? "set" : "add")}
+              >
+                {stockMode === "add" ? "Switch to Set" : "Switch to Add"}
+              </Button>
+            </div>
+            {stockAdjustment && parseInt(stockAdjustment) !== 0 && (
+              <p className="text-xs text-muted-foreground">
+                New stock will be: <span className="font-semibold text-foreground">
+                  {stockMode === "set" ? parseInt(stockAdjustment) : currentStock + parseInt(stockAdjustment)}
+                </span>
+              </p>
+            )}
           </div>
 
           <Button type="submit" className="w-full">Save Changes</Button>
