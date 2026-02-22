@@ -65,24 +65,16 @@ export default function Reports() {
       });
     });
 
-    // Fetch average buying price per product from inventory_batches
+    // Fetch buying_price directly from products table
     const buyingPriceMap: Record<string, number> = {};
     if (productIds.size > 0) {
-      const { data: batches } = await supabase
-        .from("inventory_batches")
-        .select("product_id, buying_price, quantity")
-        .eq("store_id", storeId!)
-        .in("product_id", Array.from(productIds));
+      const { data: productData } = await supabase
+        .from("products")
+        .select("id, buying_price")
+        .in("id", Array.from(productIds));
 
-      // Weighted average buying price per product
-      const productTotals: Record<string, { totalCost: number; totalQty: number }> = {};
-      (batches ?? []).forEach(b => {
-        if (!productTotals[b.product_id]) productTotals[b.product_id] = { totalCost: 0, totalQty: 0 };
-        productTotals[b.product_id].totalCost += Number(b.buying_price) * b.quantity;
-        productTotals[b.product_id].totalQty += b.quantity;
-      });
-      Object.entries(productTotals).forEach(([pid, { totalCost, totalQty }]) => {
-        buyingPriceMap[pid] = totalQty > 0 ? totalCost / totalQty : 0;
+      (productData ?? []).forEach((p: any) => {
+        buyingPriceMap[p.id] = Number(p.buying_price) || 0;
       });
     }
 

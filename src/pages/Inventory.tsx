@@ -134,6 +134,7 @@ export default function Inventory() {
             selling_price: parseFloat(row.selling_price || row.price || "0"),
             mrp: row.mrp ? parseFloat(row.mrp) : null,
             tax_rate: parseFloat(row.tax_rate || "18"),
+            buying_price: parseFloat(row.buying_price || row.purchase_price || "0"),
           })
           .select()
           .single();
