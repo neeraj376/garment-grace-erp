@@ -53,6 +53,9 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const [lastProductId, setLastProductId] = useState<string | null>(null);
   if (product && product.id !== lastProductId) {
     setLastProductId(product.id);
+    setCurrentStock(product.total_stock ?? 0);
+    setStockAdjustment("");
+    setStockMode("add");
     setForm({
       sku: product.sku,
       name: product.name,
@@ -64,7 +67,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       selling_price: String(product.selling_price),
       mrp: product.mrp ? String(product.mrp) : "",
       tax_rate: String(product.tax_rate),
-      buying_price: (product as any).buying_price ? String((product as any).buying_price) : "",
+      buying_price: product.buying_price ? String(product.buying_price) : "",
       photo_url: product.photo_url,
       video_url: product.video_url,
     });
