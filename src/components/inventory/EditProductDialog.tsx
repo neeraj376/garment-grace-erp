@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ImagePlus, Video, X, Loader2 } from "lucide-react";
+import { ImagePlus, Video, X, Loader2, Plus, Minus } from "lucide-react";
 
 interface Product {
   id: string;
