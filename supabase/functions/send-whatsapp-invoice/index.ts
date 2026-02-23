@@ -56,7 +56,6 @@ serve(async (req) => {
           customerName || "Customer",
           invoiceNumber || "N/A",
           `₹${totalAmount || "0"}`,
-          invoiceUrl,
         ],
         buttonValues: {
           "0": [invoiceUrl],
