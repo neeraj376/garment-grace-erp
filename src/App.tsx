@@ -38,6 +38,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/auth" element={<Auth />} />
+        <Route path="/invoice/:id" element={<InvoicePublic />} />
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>
     );
