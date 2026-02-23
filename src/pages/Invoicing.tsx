@@ -353,6 +353,40 @@ export default function Invoicing() {
               <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0}>
                 Create Invoice
               </Button>
+
+              {lastInvoice && (
+                <div className="mt-3 p-3 rounded-lg border border-green-200 bg-green-50 space-y-2">
+                  <p className="text-xs font-medium text-green-800">
+                    ✅ Invoice {lastInvoice.invoice_number} created
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => window.open(getInvoiceUrl(lastInvoice.id), "_blank")}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" /> View
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={handleSendWhatsApp}
+                      disabled={sendingWhatsApp || !customerMobile}
+                    >
+                      {sendingWhatsApp ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                      )}
+                      Send WhatsApp
+                    </Button>
+                  </div>
+                  {!customerMobile && (
+                    <p className="text-xs text-amber-600">Enter customer mobile to send via WhatsApp</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
