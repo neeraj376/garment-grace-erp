@@ -51,7 +51,7 @@ serve(async (req) => {
       template: {
         name: WHATSAPP_TEMPLATE_NAME,
         languageCode: "en",
-        headerValues: [],
+        headerValues: [invoiceUrl],
         bodyValues: [
           customerName || "Customer",
           invoiceNumber || "N/A",
