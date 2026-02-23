@@ -176,6 +176,7 @@ export type Database = {
           invoice_id: string
           product_id: string
           quantity: number
+          returned_quantity: number
           tax_amount: number
           total: number
           unit_price: number
@@ -187,6 +188,7 @@ export type Database = {
           invoice_id: string
           product_id: string
           quantity?: number
+          returned_quantity?: number
           tax_amount?: number
           total: number
           unit_price: number
@@ -198,6 +200,7 @@ export type Database = {
           invoice_id?: string
           product_id?: string
           quantity?: number
+          returned_quantity?: number
           tax_amount?: number
           total?: number
           unit_price?: number
@@ -226,6 +229,74 @@ export type Database = {
           },
         ]
       }
+      invoice_returns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string
+          invoice_item_id: string
+          product_id: string
+          quantity_returned: number
+          reason: string | null
+          refund_amount: number
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          invoice_item_id: string
+          product_id: string
+          quantity_returned?: number
+          reason?: string | null
+          refund_amount?: number
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          invoice_item_id?: string
+          product_id?: string
+          quantity_returned?: number
+          reason?: string | null
+          refund_amount?: number
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_returns_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_returns_invoice_item_id_fkey"
+            columns: ["invoice_item_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_returns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_returns_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           created_at: string
@@ -238,6 +309,7 @@ export type Database = {
           notes: string | null
           payment_method: string
           source: string
+          status: string
           store_id: string
           subtotal: number
           tax_amount: number
@@ -254,6 +326,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           source?: string
+          status?: string
           store_id: string
           subtotal?: number
           tax_amount?: number
@@ -270,6 +343,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           source?: string
+          status?: string
           store_id?: string
           subtotal?: number
           tax_amount?: number
