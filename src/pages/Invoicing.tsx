@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, FileText } from "lucide-react";
+import { Plus, Trash2, FileText, MessageCircle, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CartItem {
@@ -34,6 +34,8 @@ export default function Invoicing() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [discount, setDiscount] = useState(0);
   const [searchProduct, setSearchProduct] = useState("");
+  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number } | null>(null);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
 
   useEffect(() => {
     if (!storeId) return;
@@ -165,12 +167,47 @@ export default function Invoicing() {
       }
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
+      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total });
       setCart([]);
-      setCustomerMobile("");
-      setCustomerName("");
       setDiscount(0);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const getInvoiceUrl = (invoiceId: string) => {
+    return `${window.location.origin}/invoice/${invoiceId}`;
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!lastInvoice || !customerMobile) {
+      toast({ title: "Error", description: "Customer mobile number is required to send WhatsApp", variant: "destructive" });
+      return;
+    }
+
+    setSendingWhatsApp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          phone: customerMobile,
+          invoiceUrl: getInvoiceUrl(lastInvoice.id),
+          customerName: customerName || "Customer",
+          invoiceNumber: lastInvoice.invoice_number,
+          totalAmount: lastInvoice.total.toLocaleString("en-IN"),
+        },
+      });
+
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || "Failed to send");
+
+      toast({ title: "WhatsApp sent!", description: `Invoice link sent to ${customerMobile}` });
+      setLastInvoice(null);
+      setCustomerMobile("");
+      setCustomerName("");
+    } catch (err: any) {
+      toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingWhatsApp(false);
     }
   };
 
@@ -316,6 +353,40 @@ export default function Invoicing() {
               <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0}>
                 Create Invoice
               </Button>
+
+              {lastInvoice && (
+                <div className="mt-3 p-3 rounded-lg border border-green-200 bg-green-50 space-y-2">
+                  <p className="text-xs font-medium text-green-800">
+                    ✅ Invoice {lastInvoice.invoice_number} created
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => window.open(getInvoiceUrl(lastInvoice.id), "_blank")}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" /> View
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={handleSendWhatsApp}
+                      disabled={sendingWhatsApp || !customerMobile}
+                    >
+                      {sendingWhatsApp ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                      )}
+                      Send WhatsApp
+                    </Button>
+                  </div>
+                  {!customerMobile && (
+                    <p className="text-xs text-amber-600">Enter customer mobile to send via WhatsApp</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
