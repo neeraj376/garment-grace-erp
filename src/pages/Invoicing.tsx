@@ -34,6 +34,8 @@ export default function Invoicing() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [discount, setDiscount] = useState(0);
   const [searchProduct, setSearchProduct] = useState("");
+  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number } | null>(null);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
 
   useEffect(() => {
     if (!storeId) return;
