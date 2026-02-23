@@ -18,6 +18,7 @@ import Reports from "@/pages/Reports";
 import Employees from "@/pages/Employees";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
+import InvoicePublic from "@/pages/InvoicePublic";
 
 const queryClient = new QueryClient();
 
