@@ -167,12 +167,47 @@ export default function Invoicing() {
       }
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
+      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total });
       setCart([]);
-      setCustomerMobile("");
-      setCustomerName("");
       setDiscount(0);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const getInvoiceUrl = (invoiceId: string) => {
+    return `${window.location.origin}/invoice/${invoiceId}`;
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!lastInvoice || !customerMobile) {
+      toast({ title: "Error", description: "Customer mobile number is required to send WhatsApp", variant: "destructive" });
+      return;
+    }
+
+    setSendingWhatsApp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          phone: customerMobile,
+          invoiceUrl: getInvoiceUrl(lastInvoice.id),
+          customerName: customerName || "Customer",
+          invoiceNumber: lastInvoice.invoice_number,
+          totalAmount: lastInvoice.total.toLocaleString("en-IN"),
+        },
+      });
+
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || "Failed to send");
+
+      toast({ title: "WhatsApp sent!", description: `Invoice link sent to ${customerMobile}` });
+      setLastInvoice(null);
+      setCustomerMobile("");
+      setCustomerName("");
+    } catch (err: any) {
+      toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingWhatsApp(false);
     }
   };
 
