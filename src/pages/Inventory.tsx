@@ -286,13 +286,16 @@ export default function Inventory() {
               filtered.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="p-1">
-                    {p.photo_url ? (
-                      <img src={p.photo_url} alt={p.name} className="h-10 w-10 rounded object-cover" />
-                    ) : (
-                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
+                    {(() => {
+                      const photos = parsePhotoUrls(p.photo_url);
+                      return photos.length > 0 ? (
+                        <img src={photos[0]} alt={p.name} className="h-10 w-10 rounded object-cover" />
+                      ) : (
+                        <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
