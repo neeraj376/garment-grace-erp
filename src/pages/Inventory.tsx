@@ -45,6 +45,7 @@ export default function Inventory() {
     sku: "", name: "", category: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "",
   });
+  const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
 
   const fetchProducts = async () => {
     if (!storeId) return;
