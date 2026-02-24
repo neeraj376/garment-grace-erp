@@ -39,6 +39,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerLocation, setCustomerLocation] = useState("");
   const [source, setSource] = useState("offline");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(0);
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number } | null>(null);
