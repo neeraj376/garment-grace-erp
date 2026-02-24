@@ -54,6 +54,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       .eq("store_id", storeId)
       .eq("is_active", true)
       .then(({ data }) => setProducts(data ?? []));
+    supabase
+      .from("employees")
+      .select("id, name, role")
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .then(({ data }) => setEmployees((data as Employee[]) ?? []));
   }, [storeId]);
 
   const addToCart = (product: any) => {
