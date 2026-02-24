@@ -103,6 +103,7 @@ export default function Inventory() {
       toast({ title: "Product added" });
       setDialogOpen(false);
       setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "" });
+      setNewProductPhotos([]);
       fetchProducts();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
