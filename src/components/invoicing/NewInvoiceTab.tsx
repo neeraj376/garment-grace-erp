@@ -342,6 +342,17 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Sales Employee</Label>
+              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                <SelectContent>
+                  {employees.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.role})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
 
