@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Upload, Search, Package, Download, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EditProductDialog from "@/components/inventory/EditProductDialog";
+import PhotoUploader from "@/components/inventory/PhotoUploader";
+import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 
 interface Product {
   id: string;
