@@ -18,6 +18,12 @@ interface CartItem {
   tax_rate: number;
 }
 
+interface Employee {
+  id: string;
+  name: string;
+  role: string;
+}
+
 interface Props {
   storeId: string | null;
   userId: string | undefined;
@@ -33,6 +39,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerLocation, setCustomerLocation] = useState("");
   const [source, setSource] = useState("offline");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(0);
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number } | null>(null);
@@ -46,6 +54,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       .eq("store_id", storeId)
       .eq("is_active", true)
       .then(({ data }) => setProducts(data ?? []));
+    supabase
+      .from("employees")
+      .select("id, name, role")
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .then(({ data }) => setEmployees((data as Employee[]) ?? []));
   }, [storeId]);
 
   const addToCart = (product: any) => {
@@ -115,6 +129,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           store_id: storeId,
           invoice_number: invoiceNumber,
           customer_id: customerId,
+          employee_id: selectedEmployee || null,
           source,
           payment_method: paymentMethod,
           subtotal,
@@ -324,6 +339,17 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   <SelectItem value="card">Card</SelectItem>
                   <SelectItem value="upi">UPI</SelectItem>
                   <SelectItem value="wallet">Wallet</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Sales Employee</Label>
+              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                <SelectContent>
+                  {employees.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.role})</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

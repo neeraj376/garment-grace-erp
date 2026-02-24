@@ -303,6 +303,7 @@ export type Database = {
           created_by: string | null
           customer_id: string | null
           discount_amount: number
+          employee_id: string | null
           id: string
           invoice_number: string
           loyalty_points_earned: number
@@ -320,6 +321,7 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           discount_amount?: number
+          employee_id?: string | null
           id?: string
           invoice_number: string
           loyalty_points_earned?: number
@@ -337,6 +339,7 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           discount_amount?: number
+          employee_id?: string | null
           id?: string
           invoice_number?: string
           loyalty_points_earned?: number
@@ -355,6 +358,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
