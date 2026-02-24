@@ -4,12 +4,19 @@ import { useStore } from "@/hooks/useStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Users } from "lucide-react";
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
+
+interface EmployeeSales {
+  id: string;
+  name: string;
+  role: string;
+  invoiceCount: number;
+  totalSales: number;
+}
 
 export default function Reports() {
   const { storeId } = useStore();
@@ -17,8 +24,8 @@ export default function Reports() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [salesData, setSalesData] = useState<any[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
   const [summary, setSummary] = useState({ revenue: 0, cost: 0, tax: 0, profit: 0 });
+  const [employeeSales, setEmployeeSales] = useState<EmployeeSales[]>([]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -55,9 +62,6 @@ export default function Reports() {
       .lte("created_at", end)
       .order("created_at", { ascending: true });
 
-    setInvoices(invData ?? []);
-
-    // Collect all product IDs from invoice items
     const productIds = new Set<string>();
     (invData ?? []).forEach(inv => {
       (inv.invoice_items as any[])?.forEach(item => {
@@ -65,14 +69,12 @@ export default function Reports() {
       });
     });
 
-    // Fetch buying_price directly from products table
     const buyingPriceMap: Record<string, number> = {};
     if (productIds.size > 0) {
       const { data: productData } = await supabase
         .from("products")
         .select("id, buying_price")
         .in("id", Array.from(productIds));
-
       (productData ?? []).forEach((p: any) => {
         buyingPriceMap[p.id] = Number(p.buying_price) || 0;
       });
@@ -83,20 +85,42 @@ export default function Reports() {
       revenue += Number(inv.total_amount);
       tax += Number(inv.tax_amount);
       (inv.invoice_items as any[])?.forEach(item => {
-        const avgBuyingPrice = buyingPriceMap[item.product_id] ?? 0;
-        cost += avgBuyingPrice * item.quantity;
+        cost += (buyingPriceMap[item.product_id] ?? 0) * item.quantity;
       });
     });
 
     setSummary({ revenue, cost, tax, profit: revenue - cost - tax });
 
-    // Group by date for chart
     const grouped: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
       grouped[day] = (grouped[day] || 0) + Number(inv.total_amount);
     });
     setSalesData(Object.entries(grouped).map(([date, amount]) => ({ date, amount })));
+
+    // Employee sales breakdown
+    const { data: employees } = await supabase
+      .from("employees")
+      .select("id, name, role")
+      .eq("store_id", storeId!);
+
+    const empMap: Record<string, EmployeeSales> = {};
+    (employees ?? []).forEach((e: any) => {
+      empMap[e.id] = { id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0 };
+    });
+
+    (invData ?? []).forEach((inv: any) => {
+      if (inv.employee_id && empMap[inv.employee_id]) {
+        empMap[inv.employee_id].invoiceCount += 1;
+        empMap[inv.employee_id].totalSales += Number(inv.total_amount);
+      }
+    });
+
+    setEmployeeSales(
+      Object.values(empMap)
+        .filter(e => e.invoiceCount > 0)
+        .sort((a, b) => b.totalSales - a.totalSales)
+    );
   };
 
   const formatCurrency = (v: number) => `₹${v.toLocaleString("en-IN")}`;
@@ -176,6 +200,53 @@ export default function Reports() {
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="section-title">Employee Sales Performance</CardTitle></CardHeader>
+        <CardContent>
+          {employeeSales.length > 0 ? (
+            <>
+              <div className="h-64 mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={employeeSales}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                    <XAxis dataKey="name" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
+                    <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
+                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                    <Bar dataKey="totalSales" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} name="Total Sales" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-center">Invoices</TableHead>
+                    <TableHead className="text-right">Total Sales</TableHead>
+                    <TableHead className="text-right">Avg per Invoice</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employeeSales.map(emp => (
+                    <TableRow key={emp.id}>
+                      <TableCell className="font-medium">{emp.name}</TableCell>
+                      <TableCell className="text-muted-foreground capitalize">{emp.role}</TableCell>
+                      <TableCell className="text-center">{emp.invoiceCount}</TableCell>
+                      <TableCell className="text-right font-medium">{formatCurrency(emp.totalSales)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(Math.round(emp.totalSales / emp.invoiceCount))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-muted-foreground">
+              <Users className="h-6 w-6 mr-2" /> No employee sales data for this period
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
