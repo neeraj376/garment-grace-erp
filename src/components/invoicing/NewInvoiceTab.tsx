@@ -129,6 +129,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           store_id: storeId,
           invoice_number: invoiceNumber,
           customer_id: customerId,
+          employee_id: selectedEmployee || null,
           source,
           payment_method: paymentMethod,
           subtotal,
