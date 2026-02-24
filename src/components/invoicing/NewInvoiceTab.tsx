@@ -18,6 +18,12 @@ interface CartItem {
   tax_rate: number;
 }
 
+interface Employee {
+  id: string;
+  name: string;
+  role: string;
+}
+
 interface Props {
   storeId: string | null;
   userId: string | undefined;
