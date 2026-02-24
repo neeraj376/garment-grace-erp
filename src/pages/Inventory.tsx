@@ -238,6 +238,9 @@ export default function Inventory() {
                   <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
                   <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>
                 </div>
+                <div className="border-t pt-3 space-y-3">
+                  <PhotoUploader photos={newProductPhotos} onChange={setNewProductPhotos} storeId={storeId!} />
+                </div>
                 <div className="border-t pt-3">
                   <p className="text-sm font-medium mb-2">Initial Stock (optional)</p>
                   <div className="grid grid-cols-2 gap-3">
