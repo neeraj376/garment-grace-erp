@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Upload, Search, Package, Download, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EditProductDialog from "@/components/inventory/EditProductDialog";
+import PhotoUploader from "@/components/inventory/PhotoUploader";
+import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 
 interface Product {
   id: string;
@@ -43,6 +45,7 @@ export default function Inventory() {
     sku: "", name: "", category: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "",
   });
+  const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
 
   const fetchProducts = async () => {
     if (!storeId) return;
@@ -81,6 +84,7 @@ export default function Inventory() {
             mrp: form.mrp ? parseFloat(form.mrp) : null,
             tax_rate: parseFloat(form.tax_rate),
             buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+            photo_url: serializePhotoUrls(newProductPhotos),
           })
         .select()
         .single();
@@ -99,6 +103,7 @@ export default function Inventory() {
       toast({ title: "Product added" });
       setDialogOpen(false);
       setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "" });
+      setNewProductPhotos([]);
       fetchProducts();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -233,6 +238,9 @@ export default function Inventory() {
                   <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
                   <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>
                 </div>
+                <div className="border-t pt-3 space-y-3">
+                  <PhotoUploader photos={newProductPhotos} onChange={setNewProductPhotos} storeId={storeId!} />
+                </div>
                 <div className="border-t pt-3">
                   <p className="text-sm font-medium mb-2">Initial Stock (optional)</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -278,13 +286,16 @@ export default function Inventory() {
               filtered.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="p-1">
-                    {p.photo_url ? (
-                      <img src={p.photo_url} alt={p.name} className="h-10 w-10 rounded object-cover" />
-                    ) : (
-                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
+                    {(() => {
+                      const photos = parsePhotoUrls(p.photo_url);
+                      return photos.length > 0 ? (
+                        <img src={photos[0]} alt={p.name} className="h-10 w-10 rounded object-cover" />
+                      ) : (
+                        <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>

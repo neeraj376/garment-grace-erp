@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ImagePlus, Video, X, Loader2, Plus, Minus } from "lucide-react";
+import { Video, X, Loader2 } from "lucide-react";
+import PhotoUploader from "@/components/inventory/PhotoUploader";
+import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 
 interface Product {
   id: string;
@@ -36,26 +38,25 @@ interface EditProductDialogProps {
 
 export default function EditProductDialog({ product, open, onOpenChange, storeId, onSaved }: EditProductDialogProps) {
   const { toast } = useToast();
-  const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [currentStock, setCurrentStock] = useState(0);
   const [stockAdjustment, setStockAdjustment] = useState("");
   const [stockMode, setStockMode] = useState<"add" | "set">("add");
+  const [photos, setPhotos] = useState<string[]>([]);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
-    photo_url: "" as string | null,
     video_url: "" as string | null,
   });
 
-  // Sync form when product changes
   const [lastProductId, setLastProductId] = useState<string | null>(null);
   if (product && product.id !== lastProductId) {
     setLastProductId(product.id);
     setCurrentStock(product.total_stock ?? 0);
     setStockAdjustment("");
     setStockMode("add");
+    setPhotos(parsePhotoUrls(product.photo_url));
     setForm({
       sku: product.sku,
       name: product.name,
@@ -68,28 +69,20 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       mrp: product.mrp ? String(product.mrp) : "",
       tax_rate: String(product.tax_rate),
       buying_price: product.buying_price ? String(product.buying_price) : "",
-      photo_url: product.photo_url,
       video_url: product.video_url,
     });
   }
 
-  const uploadFile = async (file: File, type: "photo" | "video") => {
+  const uploadVideo = async (file: File) => {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${storeId}/${product?.id || "new"}-${type}-${Date.now()}.${ext}`;
+      const path = `${storeId}/${product?.id || "new"}-video-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("product-media").upload(path, file, { upsert: true });
       if (error) throw error;
-
       const { data: urlData } = supabase.storage.from("product-media").getPublicUrl(path);
-      const publicUrl = urlData.publicUrl;
-
-      if (type === "photo") {
-        setForm(f => ({ ...f, photo_url: publicUrl }));
-      } else {
-        setForm(f => ({ ...f, video_url: publicUrl }));
-      }
-      toast({ title: `${type === "photo" ? "Image" : "Video"} uploaded` });
+      setForm(f => ({ ...f, video_url: urlData.publicUrl }));
+      toast({ title: "Video uploaded" });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
@@ -116,18 +109,16 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
           mrp: form.mrp ? parseFloat(form.mrp) : null,
           tax_rate: parseFloat(form.tax_rate),
           buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
-          photo_url: form.photo_url || null,
+          photo_url: serializePhotoUrls(photos),
           video_url: form.video_url || null,
         })
         .eq("id", product.id);
 
       if (error) throw error;
 
-      // Handle stock adjustment
       if (stockAdjustment && parseInt(stockAdjustment) !== 0) {
         const adj = parseInt(stockAdjustment);
         if (stockMode === "set") {
-          // Set stock: calculate difference from current and create a batch adjustment
           const diff = adj - currentStock;
           if (diff !== 0) {
             await supabase.from("inventory_batches").insert({
@@ -139,7 +130,6 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
             });
           }
         } else {
-          // Add stock
           await supabase.from("inventory_batches").insert({
             product_id: product.id,
             store_id: storeId,
@@ -182,46 +172,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
           {/* Media Section */}
           <div className="border-t pt-3 space-y-3">
             <p className="text-sm font-medium">Product Media</p>
-
-            {/* Photo */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Product Image</Label>
-              {form.photo_url ? (
-                <div className="relative mt-1 w-32 h-32 rounded-lg overflow-hidden border">
-                  <img src={form.photo_url} alt="Product" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, photo_url: null }))}
-                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-1"
-                  disabled={uploading}
-                  onClick={() => photoInputRef.current?.click()}
-                >
-                  {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ImagePlus className="h-4 w-4 mr-2" />}
-                  Upload Image
-                </Button>
-              )}
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadFile(file, "photo");
-                  e.target.value = "";
-                }}
-              />
-            </div>
+            <PhotoUploader photos={photos} onChange={setPhotos} storeId={storeId} productId={product?.id} />
 
             {/* Video */}
             <div>
@@ -257,7 +208,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                 className="hidden"
                 onChange={e => {
                   const file = e.target.files?.[0];
-                  if (file) uploadFile(file, "video");
+                  if (file) uploadVideo(file);
                   e.target.value = "";
                 }}
               />
