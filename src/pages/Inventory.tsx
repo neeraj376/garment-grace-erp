@@ -84,6 +84,7 @@ export default function Inventory() {
             mrp: form.mrp ? parseFloat(form.mrp) : null,
             tax_rate: parseFloat(form.tax_rate),
             buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+            photo_url: serializePhotoUrls(newProductPhotos),
           })
         .select()
         .single();
