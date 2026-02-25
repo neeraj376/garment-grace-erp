@@ -6,7 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { CalendarDays, Users } from "lucide-react";
+import { CalendarDays, Users, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import * as XLSX from "xlsx";
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
 
@@ -125,11 +127,42 @@ export default function Reports() {
 
   const formatCurrency = (v: number) => `₹${v.toLocaleString("en-IN")}`;
 
+  const downloadExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Summary sheet
+    const summaryRows = [
+      { Metric: "Revenue", Amount: summary.revenue },
+      { Metric: "Cost of Goods", Amount: summary.cost },
+      { Metric: "GST Collected", Amount: summary.tax },
+      { Metric: "Net Profit", Amount: summary.profit },
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "Summary");
+
+    // Sales trend sheet
+    if (salesData.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesData.map(d => ({ Date: d.date, Amount: d.amount }))), "Sales Trend");
+    }
+
+    // Employee performance sheet
+    if (employeeSales.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(employeeSales.map(e => ({
+        Employee: e.name, Role: e.role, Invoices: e.invoiceCount,
+        "Total Sales": e.totalSales, "Avg per Invoice": Math.round(e.totalSales / e.invoiceCount),
+      }))), "Employee Sales");
+    }
+
+    XLSX.writeFile(wb, `Report_${period}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="page-header">Reports</h1>
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={downloadExcel}>
+            <Download className="h-4 w-4 mr-1" /> Export Excel
+          </Button>
           <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
