@@ -43,7 +43,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(0);
   const [searchProduct, setSearchProduct] = useState("");
-  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number } | null>(null);
+  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           store_id: storeId,
           invoice_number: invoiceNumber,
           customer_id: customerId,
-          employee_id: selectedEmployee || null,
+          employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
           payment_method: paymentMethod,
           subtotal,
@@ -178,7 +178,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       }
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
-      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total });
+      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
       setCart([]);
       setDiscount(0);
     } catch (err: any) {
@@ -196,7 +196,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   };
 
   const handleSendWhatsApp = async () => {
-    if (!lastInvoice || !customerMobile) {
+    if (!lastInvoice) return;
+    const phone = lastInvoice.customerMobile;
+    if (!phone) {
       toast({ title: "Error", description: "Customer mobile number is required to send WhatsApp", variant: "destructive" });
       return;
     }
@@ -205,9 +207,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     try {
       const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
         body: {
-          phone: customerMobile,
+          phone,
           invoiceUrl: getInvoiceShareUrl(lastInvoice.id),
-          customerName: customerName || "Customer",
+          customerName: lastInvoice.customerName || "Customer",
           invoiceNumber: lastInvoice.invoice_number,
           totalAmount: lastInvoice.total.toLocaleString("en-IN"),
         },
@@ -216,10 +218,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       if (error) throw error;
       if (data?.success === false) throw new Error(data.error || "Failed to send");
 
-      toast({ title: "WhatsApp sent!", description: `Invoice link sent to ${customerMobile}` });
+      toast({ title: "WhatsApp sent!", description: `Invoice link sent to ${phone}` });
       setLastInvoice(null);
-      setCustomerMobile("");
-      setCustomerName("");
     } catch (err: any) {
       toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
     } finally {
@@ -351,7 +351,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <Label>Sales Employee</Label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]">
+                  <SelectItem value="none">— No employee —</SelectItem>
                   {employees.map(emp => (
                     <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.role})</SelectItem>
                   ))}
@@ -396,7 +397,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     size="sm"
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                     onClick={handleSendWhatsApp}
-                    disabled={sendingWhatsApp || !customerMobile}
+                    disabled={sendingWhatsApp || !lastInvoice.customerMobile}
                   >
                     {sendingWhatsApp ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -406,7 +407,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     Send WhatsApp
                   </Button>
                 </div>
-                {!customerMobile && (
+                {!lastInvoice.customerMobile && (
                   <p className="text-xs text-amber-600">Enter customer mobile to send via WhatsApp</p>
                 )}
               </div>
