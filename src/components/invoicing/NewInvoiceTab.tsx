@@ -190,6 +190,11 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     return `${window.location.origin}/invoice/${invoiceId}`;
   };
 
+  const getInvoiceShareUrl = (invoiceId: string) => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    return `https://${projectId}.supabase.co/functions/v1/invoice-og/${invoiceId}`;
+  };
+
   const handleSendWhatsApp = async () => {
     if (!lastInvoice || !customerMobile) {
       toast({ title: "Error", description: "Customer mobile number is required to send WhatsApp", variant: "destructive" });
@@ -201,7 +206,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
         body: {
           phone: customerMobile,
-          invoiceUrl: getInvoiceUrl(lastInvoice.id),
+          invoiceUrl: getInvoiceShareUrl(lastInvoice.id),
           customerName: customerName || "Customer",
           invoiceNumber: lastInvoice.invoice_number,
           totalAmount: lastInvoice.total.toLocaleString("en-IN"),
