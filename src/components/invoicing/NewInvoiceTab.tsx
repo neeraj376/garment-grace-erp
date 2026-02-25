@@ -208,7 +208,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
         body: {
           phone,
-          invoiceUrl: getInvoiceShareUrl(lastInvoice.id),
+          invoiceUrl: getInvoiceUrl(lastInvoice.id),
           customerName: lastInvoice.customerName || "Customer",
           invoiceNumber: lastInvoice.invoice_number,
           totalAmount: lastInvoice.total.toLocaleString("en-IN"),
