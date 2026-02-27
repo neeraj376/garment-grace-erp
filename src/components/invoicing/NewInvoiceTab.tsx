@@ -209,6 +209,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         body: {
           phone,
           invoiceUrl: getInvoiceUrl(lastInvoice.id),
+          invoiceImageUrl: getInvoiceShareUrl(lastInvoice.id) + "?format=image",
           customerName: lastInvoice.customerName || "Customer",
           invoiceNumber: lastInvoice.invoice_number,
           totalAmount: lastInvoice.total.toLocaleString("en-IN"),
