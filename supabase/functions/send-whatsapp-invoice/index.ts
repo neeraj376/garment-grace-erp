@@ -27,7 +27,7 @@ serve(async (req) => {
       throw new Error("WHATSAPP_TEMPLATE_NAME is not configured");
     }
 
-    const { phone, invoiceUrl, customerName, invoiceNumber, totalAmount } = await req.json();
+    const { phone, invoiceUrl, invoiceImageUrl, customerName, invoiceNumber, totalAmount } = await req.json();
 
     if (!phone || !invoiceUrl) {
       throw new Error("Missing required fields: phone, invoiceUrl");
@@ -42,7 +42,9 @@ serve(async (req) => {
     const phoneNumber = cleanPhone.replace("+", "");
 
     // Interakt/Wati API payload
-    // Adjust this payload structure based on your specific provider (Interakt vs Wati)
+    // Use the invoice image URL for the header if available
+    const headerMediaUrl = invoiceImageUrl || invoiceUrl;
+
     const payload = {
       countryCode: phoneNumber.substring(0, 2),
       phoneNumber: phoneNumber.substring(2),
@@ -51,7 +53,7 @@ serve(async (req) => {
       template: {
         name: WHATSAPP_TEMPLATE_NAME,
         languageCode: "en",
-        headerValues: [invoiceUrl],
+        headerValues: [headerMediaUrl],
         bodyValues: [
           customerName || "Customer",
           invoiceNumber || "N/A",
