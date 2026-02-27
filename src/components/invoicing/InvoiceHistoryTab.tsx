@@ -170,23 +170,56 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => window.open(`${window.location.origin}/invoice/${inv.id}`, "_blank")}
-                        title="View invoice"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => window.open(`${window.location.origin}/invoice/${inv.id}`, "_blank")}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>View invoice</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      {inv.customers?.mobile && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleSendWhatsApp(inv)}
+                                disabled={sendingWhatsApp === inv.id}
+                              >
+                                {sendingWhatsApp === inv.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <MessageCircle className="h-4 w-4 text-green-600" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send on WhatsApp</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {inv.status !== "fully_returned" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setReturnInvoice(inv)}
-                          title="Process return"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setReturnInvoice(inv)}
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Process return</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </TableCell>
