@@ -36,6 +36,42 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
+
+  const getInvoiceImageUrl = (invoiceId: string) => {
+    return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
+  };
+
+  const handleSendWhatsApp = async (inv: Invoice) => {
+    const phone = inv.customers?.mobile;
+    if (!phone) {
+      toast({ title: "Error", description: "No mobile number for this customer", variant: "destructive" });
+      return;
+    }
+
+    setSendingWhatsApp(inv.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          phone,
+          invoiceUrl: `${window.location.origin}/invoice/${inv.id}`,
+          invoiceImageUrl: getInvoiceImageUrl(inv.id),
+          customerName: inv.customers?.name || "Customer",
+          invoiceNumber: inv.invoice_number,
+          totalAmount: Number(inv.total_amount).toLocaleString("en-IN"),
+        },
+      });
+
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || "Failed to send");
+
+      toast({ title: "WhatsApp sent!", description: `Invoice sent to ${phone}` });
+    } catch (err: any) {
+      toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingWhatsApp(null);
+    }
+  };
 
   const fetchInvoices = async () => {
     if (!storeId) return;
