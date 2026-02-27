@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, RotateCcw, Search } from "lucide-react";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ReturnDialog from "./ReturnDialog";
 
 interface Invoice {
@@ -35,6 +36,42 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
+
+  const getInvoiceImageUrl = (invoiceId: string) => {
+    return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
+  };
+
+  const handleSendWhatsApp = async (inv: Invoice) => {
+    const phone = inv.customers?.mobile;
+    if (!phone) {
+      toast({ title: "Error", description: "No mobile number for this customer", variant: "destructive" });
+      return;
+    }
+
+    setSendingWhatsApp(inv.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          phone,
+          invoiceUrl: `${window.location.origin}/invoice/${inv.id}`,
+          invoiceImageUrl: getInvoiceImageUrl(inv.id),
+          customerName: inv.customers?.name || "Customer",
+          invoiceNumber: inv.invoice_number,
+          totalAmount: Number(inv.total_amount).toLocaleString("en-IN"),
+        },
+      });
+
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || "Failed to send");
+
+      toast({ title: "WhatsApp sent!", description: `Invoice sent to ${phone}` });
+    } catch (err: any) {
+      toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingWhatsApp(null);
+    }
+  };
 
   const fetchInvoices = async () => {
     if (!storeId) return;
@@ -133,23 +170,56 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => window.open(`${window.location.origin}/invoice/${inv.id}`, "_blank")}
-                        title="View invoice"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => window.open(`${window.location.origin}/invoice/${inv.id}`, "_blank")}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>View invoice</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      {inv.customers?.mobile && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleSendWhatsApp(inv)}
+                                disabled={sendingWhatsApp === inv.id}
+                              >
+                                {sendingWhatsApp === inv.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <MessageCircle className="h-4 w-4 text-green-600" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send on WhatsApp</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {inv.status !== "fully_returned" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setReturnInvoice(inv)}
-                          title="Process return"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setReturnInvoice(inv)}
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Process return</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </TableCell>
