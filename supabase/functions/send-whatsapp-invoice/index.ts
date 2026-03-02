@@ -38,9 +38,12 @@ serve(async (req) => {
     // Remove the + for API
     const phoneNumber = cleanPhone.replace("+", "");
 
-    // Interakt/Wati API payload
-    // Use the invoice image URL for the header if available
-    const headerMediaUrl = invoiceImageUrl || invoiceUrl;
+    // Convert SVG image URL to PNG via svg2png proxy for WhatsApp compatibility
+    let headerMediaUrl = invoiceImageUrl || invoiceUrl;
+    if (headerMediaUrl && headerMediaUrl.includes("format=image")) {
+      // Use svg2png.deno.dev proxy to convert SVG to PNG with proper font rendering
+      headerMediaUrl = `https://svg2png.deno.dev/${headerMediaUrl}`;
+    }
 
     const payload = {
       countryCode: phoneNumber.substring(0, 2),
