@@ -22,10 +22,7 @@ serve(async (req) => {
       throw new Error("WHATSAPP_API_URL is not configured");
     }
 
-    const WHATSAPP_TEMPLATE_NAME = Deno.env.get("WHATSAPP_TEMPLATE_NAME");
-    if (!WHATSAPP_TEMPLATE_NAME) {
-      throw new Error("WHATSAPP_TEMPLATE_NAME is not configured");
-    }
+    const WHATSAPP_TEMPLATE_NAME = Deno.env.get("WHATSAPP_TEMPLATE_NAME") || "originee_invoice_new";
 
     const { phone, invoiceUrl, invoiceImageUrl, customerName, invoiceNumber, totalAmount } = await req.json();
 
