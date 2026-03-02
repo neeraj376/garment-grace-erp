@@ -1,26 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Import resvg-wasm for SVG to PNG conversion
-import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
-
-let wasmInitialized = false;
-
-async function ensureWasmInitialized() {
-  if (!wasmInitialized) {
-    const wasmResponse = await fetch(
-      "https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"
-    );
-    await initWasm(wasmResponse);
-    wasmInitialized = true;
-  }
-}
-
 serve(async (req) => {
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/");
   const invoiceId = pathParts[pathParts.length - 1] || url.searchParams.get("id");
-  const format = url.searchParams.get("format"); // "image" for PNG
+  const format = url.searchParams.get("format");
 
   if (!invoiceId) {
     return new Response("Missing invoice ID", { status: 400 });
@@ -30,7 +15,6 @@ serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Fetch invoice with items and store info
   const { data: invoice } = await supabase
     .from("invoices")
     .select(`
@@ -45,7 +29,6 @@ serve(async (req) => {
     return new Response("Invoice not found", { status: 404 });
   }
 
-  // Fetch invoice items with product names
   const { data: items } = await supabase
     .from("invoice_items")
     .select("quantity, unit_price, total, tax_amount, products!invoice_items_product_id_fkey(name, sku)")
@@ -63,7 +46,6 @@ serve(async (req) => {
     ? new Date(invoice.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
     : "";
 
-  // If format=image, generate a PNG invoice image
   if (format === "image") {
     const invoiceItems = (items || []).map((item: any) => ({
       name: item.products?.name || "Product",
@@ -90,33 +72,13 @@ serve(async (req) => {
       paymentMethod: invoice.payment_method,
     });
 
-    // Convert SVG to PNG using resvg-wasm
-    try {
-      await ensureWasmInitialized();
-      const resvg = new Resvg(svgImage, {
-        fitTo: { mode: "width" as const, value: 600 },
-      });
-      const renderResult = resvg.render();
-      const pngBuffer = renderResult.asPng();
-
-      return new Response(pngBuffer, {
-        status: 200,
-        headers: {
-          "Content-Type": "image/png",
-          "Cache-Control": "public, max-age=3600",
-        },
-      });
-    } catch (err) {
-      console.error("PNG conversion failed, falling back to SVG:", err);
-      // Fallback to SVG if PNG conversion fails
-      return new Response(svgImage, {
-        status: 200,
-        headers: {
-          "Content-Type": "image/svg+xml",
-          "Cache-Control": "public, max-age=3600",
-        },
-      });
-    }
+    return new Response(svgImage, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/svg+xml",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
   }
 
   // Default: OG HTML for link previews
@@ -211,21 +173,17 @@ function generateInvoiceSVG(data: InvoiceData): string {
     </linearGradient>
   </defs>
   
-  <!-- Background -->
   <rect width="${width}" height="${totalHeight}" fill="white" rx="12"/>
   <rect width="${width}" height="8" fill="url(#headerGrad)" rx="12" ry="12"/>
   <rect x="0" y="4" width="${width}" height="4" fill="url(#headerGrad)"/>
   
-  <!-- Store Header -->
   <text x="300" y="45" font-size="20" font-weight="700" fill="#1a1a2e" font-family="Arial, sans-serif" text-anchor="middle">${escapeHtml(data.storeName)}</text>
   ${data.storeAddress ? `<text x="300" y="65" font-size="10" fill="#666" font-family="Arial, sans-serif" text-anchor="middle">${escapeHtml(data.storeAddress.substring(0, 70))}</text>` : ""}
   ${data.storePhone ? `<text x="300" y="80" font-size="10" fill="#666" font-family="Arial, sans-serif" text-anchor="middle">Ph: ${escapeHtml(data.storePhone)}</text>` : ""}
   ${data.storeGst ? `<text x="300" y="95" font-size="10" fill="#666" font-family="Arial, sans-serif" text-anchor="middle">GSTIN: ${escapeHtml(data.storeGst)}</text>` : ""}
   
-  <!-- Divider -->
   <line x1="20" y1="105" x2="580" y2="105" stroke="#e0e0e0" stroke-width="1"/>
   
-  <!-- Invoice Info -->
   <text x="30" y="130" font-size="14" font-weight="700" fill="#1a1a2e" font-family="Arial, sans-serif">INVOICE</text>
   <text x="30" y="148" font-size="11" fill="#555" font-family="Arial, sans-serif">${escapeHtml(data.invoiceNumber)}</text>
   <text x="30" y="165" font-size="11" fill="#555" font-family="Arial, sans-serif">Date: ${escapeHtml(data.date)}</text>
@@ -234,20 +192,16 @@ function generateInvoiceSVG(data: InvoiceData): string {
   ${data.customerMobile ? `<text x="570" y="148" font-size="11" fill="#555" font-family="Arial, sans-serif" text-anchor="end">Mobile: ${escapeHtml(data.customerMobile)}</text>` : ""}
   <text x="570" y="165" font-size="11" fill="#555" font-family="Arial, sans-serif" text-anchor="end">Payment: ${escapeHtml(data.paymentMethod.toUpperCase())}</text>
   
-  <!-- Divider -->
   <line x1="20" y1="180" x2="580" y2="180" stroke="#e0e0e0" stroke-width="1"/>
   
-  <!-- Items Header -->
   <rect x="20" y="188" width="560" height="24" fill="#1a1a2e" rx="4"/>
   <text x="30" y="${headerHeight - 12}" font-size="11" fill="white" font-weight="600" font-family="Arial, sans-serif">ITEM</text>
   <text x="340" y="${headerHeight - 12}" font-size="11" fill="white" font-weight="600" font-family="Arial, sans-serif" text-anchor="middle">QTY</text>
   <text x="430" y="${headerHeight - 12}" font-size="11" fill="white" font-weight="600" font-family="Arial, sans-serif" text-anchor="end">PRICE</text>
   <text x="560" y="${headerHeight - 12}" font-size="11" fill="white" font-weight="600" font-family="Arial, sans-serif" text-anchor="end">TOTAL</text>
   
-  <!-- Items -->
   ${itemRows}
   
-  <!-- Summary -->
   <line x1="350" y1="${summaryY}" x2="580" y2="${summaryY}" stroke="#e0e0e0" stroke-width="1"/>
   <text x="400" y="${summaryY + 22}" font-size="11" fill="#666" font-family="Arial, sans-serif">Subtotal:</text>
   <text x="560" y="${summaryY + 22}" font-size="11" fill="#333" font-family="Arial, sans-serif" text-anchor="end">${formatCurrency(data.subtotal)}</text>
@@ -264,7 +218,6 @@ function generateInvoiceSVG(data: InvoiceData): string {
   <text x="400" y="${summaryY + (data.discount > 0 ? 90 : 70)}" font-size="13" fill="white" font-weight="700" font-family="Arial, sans-serif">TOTAL:</text>
   <text x="560" y="${summaryY + (data.discount > 0 ? 90 : 70)}" font-size="13" fill="white" font-weight="700" font-family="Arial, sans-serif" text-anchor="end">${formatCurrency(data.total)}</text>
   
-  <!-- Footer -->
   <text x="300" y="${totalHeight - 20}" font-size="9" fill="#aaa" font-family="Arial, sans-serif" text-anchor="middle">Generated by Garment Grace ERP</text>
 </svg>`;
 }
