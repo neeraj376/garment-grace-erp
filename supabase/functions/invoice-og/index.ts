@@ -1,6 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Import resvg-wasm for SVG to PNG conversion
+import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
+
+let wasmInitialized = false;
+
+async function ensureWasmInitialized() {
+  if (!wasmInitialized) {
+    const wasmResponse = await fetch(
+      "https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"
+    );
+    await initWasm(wasmResponse);
+    wasmInitialized = true;
+  }
+}
+
 serve(async (req) => {
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/");
@@ -40,7 +55,6 @@ serve(async (req) => {
   const storeAddress = (invoice.stores as any)?.address || "";
   const storePhone = (invoice.stores as any)?.phone || "";
   const storeGst = (invoice.stores as any)?.gst_number || "";
-  const logoUrl = (invoice.stores as any)?.logo_url || "";
   const invoiceNumber = invoice.invoice_number || "Invoice";
   const totalAmount = invoice.total_amount ? `₹${Number(invoice.total_amount).toLocaleString("en-IN")}` : "";
   const customerName = (invoice.customers as any)?.name || "Customer";
@@ -49,7 +63,7 @@ serve(async (req) => {
     ? new Date(invoice.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
     : "";
 
-  // If format=image, generate an SVG invoice image
+  // If format=image, generate a PNG invoice image
   if (format === "image") {
     const invoiceItems = (items || []).map((item: any) => ({
       name: item.products?.name || "Product",
@@ -76,13 +90,33 @@ serve(async (req) => {
       paymentMethod: invoice.payment_method,
     });
 
-    return new Response(svgImage, {
-      status: 200,
-      headers: {
-        "Content-Type": "image/svg+xml",
-        "Cache-Control": "public, max-age=3600",
-      },
-    });
+    // Convert SVG to PNG using resvg-wasm
+    try {
+      await ensureWasmInitialized();
+      const resvg = new Resvg(svgImage, {
+        fitTo: { mode: "width" as const, value: 600 },
+      });
+      const renderResult = resvg.render();
+      const pngBuffer = renderResult.asPng();
+
+      return new Response(pngBuffer, {
+        status: 200,
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (err) {
+      console.error("PNG conversion failed, falling back to SVG:", err);
+      // Fallback to SVG if PNG conversion fails
+      return new Response(svgImage, {
+        status: 200,
+        headers: {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
   }
 
   // Default: OG HTML for link previews
