@@ -5,3 +5,15 @@ verify_jwt = false
 
 [functions.invoice-og]
 verify_jwt = false
+
+[functions.woo-sync-products]
+verify_jwt = false
+
+[functions.woo-sync-orders]
+verify_jwt = false
+
+[functions.woo-sync-stock]
+verify_jwt = false
+
+[functions.woo-webhook]
+verify_jwt = false

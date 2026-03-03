@@ -638,6 +638,50 @@ export type Database = {
         }
         Relationships: []
       }
+      woocommerce_config: {
+        Row: {
+          created_at: string
+          id: string
+          last_order_sync: string | null
+          last_product_sync: string | null
+          last_stock_sync: string | null
+          store_id: string
+          sync_enabled: boolean
+          updated_at: string
+          woo_store_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_order_sync?: string | null
+          last_product_sync?: string | null
+          last_stock_sync?: string | null
+          store_id: string
+          sync_enabled?: boolean
+          updated_at?: string
+          woo_store_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_order_sync?: string | null
+          last_product_sync?: string | null
+          last_stock_sync?: string | null
+          store_id?: string
+          sync_enabled?: boolean
+          updated_at?: string
+          woo_store_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "woocommerce_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
