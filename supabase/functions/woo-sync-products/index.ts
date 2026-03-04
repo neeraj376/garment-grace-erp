@@ -21,7 +21,8 @@ serve(async (req) => {
 
     if (!store_id) throw new Error("store_id is required");
 
-    const wooBase = `${wooUrl.replace(/\/$/, "")}/wp-json/wc/v3`;
+    const cleanUrl = wooUrl.replace(/\/$/, "").replace(/\/(shop|store|product)$/i, "");
+    const wooBase = `${cleanUrl}/wp-json/wc/v3`;
     const authHeader = "Basic " + btoa(`${wooKey}:${wooSecret}`);
 
     if (direction === "pull") {
@@ -88,9 +89,70 @@ serve(async (req) => {
         .eq("store_id", store_id)
         .eq("is_active", true);
 
+      // Fetch all existing WooCommerce categories
+      let allWooCategories: any[] = [];
+      let catPage = 1;
+      let catHasMore = true;
+      while (catHasMore) {
+        const catRes = await fetch(`${wooBase}/products/categories?page=${catPage}&per_page=100`, {
+          headers: { Authorization: authHeader },
+        });
+        const cats = await catRes.json();
+        if (!Array.isArray(cats) || cats.length === 0) { catHasMore = false; break; }
+        allWooCategories = allWooCategories.concat(cats);
+        catPage++;
+      }
+
+      // Helper to find or create a WooCommerce category
+      const categoryCache = new Map<string, number>();
+      for (const c of allWooCategories) {
+        categoryCache.set(c.name.toLowerCase(), c.id);
+      }
+
+      const getOrCreateCategory = async (name: string, parentId?: number): Promise<number> => {
+        const key = parentId ? `${parentId}:${name.toLowerCase()}` : name.toLowerCase();
+        if (categoryCache.has(key)) return categoryCache.get(key)!;
+        // Also check without parent key for top-level
+        if (!parentId && categoryCache.has(name.toLowerCase())) return categoryCache.get(name.toLowerCase())!;
+
+        const body: any = { name };
+        if (parentId) body.parent = parentId;
+        const res = await fetch(`${wooBase}/products/categories`, {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const created = await res.json();
+        if (created.id) {
+          categoryCache.set(key, created.id);
+          return created.id;
+        }
+        // If creation failed because it exists, try to find it
+        if (created.code === "term_exists" && created.data?.resource_id) {
+          categoryCache.set(key, created.data.resource_id);
+          return created.data.resource_id;
+        }
+        console.warn(`Failed to create category "${name}":`, JSON.stringify(created));
+        return 0;
+      };
+
       let pushed = 0;
       for (const p of products || []) {
-        const wooProduct = {
+        // Build categories array
+        const categories: { id: number }[] = [];
+        if (p.category) {
+          const catId = await getOrCreateCategory(p.category);
+          if (catId) {
+            categories.push({ id: catId });
+            // Subcategory as child of category
+            if (p.subcategory) {
+              const subId = await getOrCreateCategory(p.subcategory, catId);
+              if (subId) categories.push({ id: subId });
+            }
+          }
+        }
+
+        const wooProduct: any = {
           name: p.name,
           sku: p.sku,
           regular_price: String(p.mrp || p.selling_price),
@@ -98,6 +160,7 @@ serve(async (req) => {
           status: "publish",
           manage_stock: true,
         };
+        if (categories.length > 0) wooProduct.categories = categories;
 
         // Check if product exists in WooCommerce by SKU
         const searchRes = await fetch(`${wooBase}/products?sku=${encodeURIComponent(p.sku)}`, {
@@ -105,7 +168,7 @@ serve(async (req) => {
         });
         const searchResults = await searchRes.json();
 
-        if (searchResults.length > 0) {
+        if (Array.isArray(searchResults) && searchResults.length > 0) {
           await fetch(`${wooBase}/products/${searchResults[0].id}`, {
             method: "PUT",
             headers: { Authorization: authHeader, "Content-Type": "application/json" },
@@ -119,6 +182,7 @@ serve(async (req) => {
           });
         }
         pushed++;
+        console.log(`Pushed ${p.sku} (${p.name}) with categories: ${JSON.stringify(categories)}`);
       }
 
       await supabase
