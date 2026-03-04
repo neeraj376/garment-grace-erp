@@ -21,8 +21,12 @@ serve(async (req) => {
 
     if (!store_id) throw new Error("store_id is required");
 
-    const wooBase = `${wooUrl.replace(/\/$/, "")}/wp-json/wc/v3`;
+    // Strip common shop/store suffixes to get WordPress root URL
+    const cleanUrl = wooUrl.replace(/\/$/, "").replace(/\/(shop|store|product)$/i, "");
+    const wooBase = `${cleanUrl}/wp-json/wc/v3`;
     const authHeader = "Basic " + btoa(`${wooKey}:${wooSecret}`);
+
+    console.log(`Using WooCommerce API base: ${wooBase}`);
 
     // Get local products with stock
     const { data: products } = await supabase
@@ -32,6 +36,7 @@ serve(async (req) => {
       .eq("is_active", true);
 
     let synced = 0;
+    const errors: string[] = [];
 
     for (const product of products || []) {
       // Get total stock from inventory_batches
@@ -49,9 +54,10 @@ serve(async (req) => {
           headers: { Authorization: authHeader },
         });
         const searchResults = await searchRes.json();
+        console.log(`SKU ${product.sku} (${product.name}): found ${Array.isArray(searchResults) ? searchResults.length : 0} WooCommerce products, local stock: ${totalStock}`);
 
-        if (searchResults.length > 0) {
-          await fetch(`${wooBase}/products/${searchResults[0].id}`, {
+        if (Array.isArray(searchResults) && searchResults.length > 0) {
+          const updateRes = await fetch(`${wooBase}/products/${searchResults[0].id}`, {
             method: "PUT",
             headers: { Authorization: authHeader, "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -60,7 +66,17 @@ serve(async (req) => {
               stock_status: totalStock > 0 ? "instock" : "outofstock",
             }),
           });
-          synced++;
+          const updateBody = await updateRes.json();
+          if (!updateRes.ok) {
+            const errMsg = `Failed to update SKU ${product.sku}: ${updateRes.status} - ${JSON.stringify(updateBody)}`;
+            console.error(errMsg);
+            errors.push(errMsg);
+          } else {
+            console.log(`Updated SKU ${product.sku} stock to ${totalStock} on WooCommerce (woo_id: ${searchResults[0].id}), response stock_quantity: ${updateBody.stock_quantity}`);
+            synced++;
+          }
+        } else {
+          console.warn(`SKU ${product.sku} not found in WooCommerce`);
         }
       } else if (direction === "pull") {
         // Pull WooCommerce stock into local DB
@@ -69,7 +85,7 @@ serve(async (req) => {
         });
         const searchResults = await searchRes.json();
 
-        if (searchResults.length > 0 && searchResults[0].manage_stock) {
+        if (Array.isArray(searchResults) && searchResults.length > 0 && searchResults[0].manage_stock) {
           const wooStock = searchResults[0].stock_quantity || 0;
           const diff = wooStock - totalStock;
 
@@ -92,7 +108,7 @@ serve(async (req) => {
       .update({ last_stock_sync: new Date().toISOString() })
       .eq("store_id", store_id);
 
-    return new Response(JSON.stringify({ success: true, synced }), {
+    return new Response(JSON.stringify({ success: true, synced, errors: errors.length > 0 ? errors : undefined }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
