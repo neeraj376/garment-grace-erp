@@ -162,6 +162,49 @@ serve(async (req) => {
         };
         if (categories.length > 0) wooProduct.categories = categories;
 
+        // Add size and color as product attributes
+        const attributes: any[] = [];
+        if (p.size) {
+          attributes.push({
+            name: "Size",
+            position: 0,
+            visible: true,
+            options: [p.size],
+          });
+        }
+        if (p.color) {
+          attributes.push({
+            name: "Color",
+            position: 1,
+            visible: true,
+            options: [p.color],
+          });
+        }
+        if (attributes.length > 0) wooProduct.attributes = attributes;
+
+        // Add images from photo_url (JSON array or single URL)
+        if (p.photo_url) {
+          let photoUrls: string[] = [];
+          try {
+            const parsed = JSON.parse(p.photo_url);
+            if (Array.isArray(parsed)) photoUrls = parsed;
+            else photoUrls = [p.photo_url];
+          } catch {
+            photoUrls = [p.photo_url];
+          }
+          if (photoUrls.length > 0) {
+            wooProduct.images = photoUrls.map((src: string, i: number) => ({
+              src,
+              position: i,
+            }));
+          }
+        }
+
+        // Add video URL in short description if available
+        if (p.video_url) {
+          wooProduct.short_description = `<video src="${p.video_url}" controls style="max-width:100%"></video>`;
+        }
+
         // Check if product exists in WooCommerce by SKU
         const searchRes = await fetch(`${wooBase}/products?sku=${encodeURIComponent(p.sku)}`, {
           headers: { Authorization: authHeader },
