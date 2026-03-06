@@ -110,50 +110,90 @@ export default function Inventory() {
     }
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const cleanNumber = (val: string | undefined): number => {
+    if (!val) return 0;
+    // Remove currency symbols, spaces, and commas
+    const cleaned = val.replace(/[₹$€£,\s]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? 0 : num;
+  };
+
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !storeId) return;
 
     const text = await file.text();
-    const lines = text.split("\n").filter(l => l.trim());
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, ''));
+
+    console.log("CSV headers detected:", headers);
 
     let count = 0;
     for (let i = 1; i < lines.length; i++) {
-      const vals = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ''));
+      const vals = parseCSVLine(lines[i]);
       const row: any = {};
-      headers.forEach((h, idx) => { row[h] = vals[idx]; });
+      headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
+
+      console.log(`Row ${i}:`, row);
+
+      const sellingPrice = cleanNumber(row.selling_price || row.price || row.sp || row.rate);
+      const mrpVal = cleanNumber(row.mrp || row.maximum_retail_price);
+      const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.cost_price || row.cost || row.bp || row.cp);
+      const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
+      const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 18;
 
       try {
-        const { data: product } = await supabase
+        const { data: product, error } = await supabase
           .from("products")
           .insert({
             store_id: storeId,
-            sku: row.sku || `SKU-${Date.now()}-${i}`,
-            name: row.name || row.product_name || "Unnamed",
+            sku: row.sku || row.sku_code || row.barcode || `SKU-${Date.now()}-${i}`,
+            name: row.name || row.product_name || row.product || row.item || row.item_name || "Unnamed",
             category: row.category || null,
             subcategory: row.subcategory || row.sub_category || null,
             brand: row.brand || null,
             size: row.size || null,
-            color: row.color || null,
-            selling_price: parseFloat(row.selling_price || row.price || "0"),
-            mrp: row.mrp ? parseFloat(row.mrp) : null,
-            tax_rate: parseFloat(row.tax_rate || "18"),
-            buying_price: parseFloat(row.buying_price || row.purchase_price || "0"),
+            color: row.color || row.colour || null,
+            selling_price: sellingPrice,
+            mrp: mrpVal || null,
+            tax_rate: taxRate,
+            buying_price: buyingPrice,
           })
           .select()
           .single();
 
-        if (product && (row.buying_price || row.purchase_price || row.quantity)) {
+        if (error) { console.error(`Row ${i} insert error:`, error.message); continue; }
+
+        if (product && (buyingPrice > 0 || quantity > 0)) {
           await supabase.from("inventory_batches").insert({
             product_id: product.id,
             store_id: storeId,
-            buying_price: parseFloat(row.buying_price || row.purchase_price || "0"),
-            quantity: parseInt(row.quantity || "0"),
+            buying_price: buyingPrice,
+            quantity: quantity,
           });
         }
         count++;
-      } catch { /* skip invalid rows */ }
+      } catch (err: any) { console.error(`Row ${i} error:`, err.message); }
     }
 
     toast({ title: `${count} products imported` });
