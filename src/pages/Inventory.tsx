@@ -330,15 +330,28 @@ export default function Inventory() {
         </div>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      <div className="flex items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        {selectedIds.size > 0 && (
+          <Button variant="destructive" onClick={handleBulkDelete}>
+            <Trash2 className="h-4 w-4 mr-2" /> Delete {selectedIds.size} selected
+          </Button>
+        )}
       </div>
 
       <Card className="border rounded-xl overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-12"></TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Product</TableHead>
