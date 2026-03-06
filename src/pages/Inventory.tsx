@@ -41,6 +41,7 @@ export default function Inventory() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", brand: "", size: "", color: "",
