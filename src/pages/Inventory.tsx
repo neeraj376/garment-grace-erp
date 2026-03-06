@@ -365,14 +365,20 @@ export default function Inventory() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12">
+              <TableCell colSpan={9} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} className={selectedIds.has(p.id) ? "bg-muted/50" : ""}>
+                  <TableCell className="p-2">
+                    <Checkbox
+                      checked={selectedIds.has(p.id)}
+                      onCheckedChange={() => toggleSelect(p.id)}
+                    />
+                  </TableCell>
                   <TableCell className="p-1">
                     {(() => {
                       const photos = parsePhotoUrls(p.photo_url);
