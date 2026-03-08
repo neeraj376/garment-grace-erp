@@ -401,8 +401,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Base Price</span><span>₹{subtotal.toFixed(2)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Tax (incl.)</span><span>₹{taxAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Item Discounts</span><span>-₹{cart.reduce((s, i) => s + i.item_discount, 0).toFixed(2)}</span></div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Discount</span>
+              <span className="text-muted-foreground">Extra Discount</span>
               <Input type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} className="w-24 text-right" />
             </div>
             <div className="border-t pt-2 flex justify-between font-bold text-lg">
