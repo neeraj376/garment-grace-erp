@@ -171,8 +171,8 @@ export default function Reports() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="page-header">Reports</h1>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={downloadExcel}>
-            <Download className="h-4 w-4 mr-1" /> Export Excel
+          <Button variant="outline" size="sm" onClick={downloadReport}>
+            <Download className="h-4 w-4 mr-1" /> Export CSV
           </Button>
           <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
