@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
-import { User } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
@@ -9,9 +9,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
+// Read cached session synchronously to avoid loading flash
+function getCachedUser(): User | null {
+  try {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const raw = localStorage.getItem(`sb-${projectId}-auth-token`);
+    if (raw) {
+      const session = JSON.parse(raw) as Session;
+      if (session?.user && session.expires_at && session.expires_at * 1000 > Date.now()) {
+        return session.user;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedUser = getCachedUser();
+  const [user, setUser] = useState<User | null>(cachedUser);
+  const [loading, setLoading] = useState(!cachedUser); // no loading if we have a cached user
   const initializedRef = useRef(false);
 
   useEffect(() => {

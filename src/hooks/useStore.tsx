@@ -9,10 +9,19 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType>({ storeId: null, loading: true });
 
+const STORE_CACHE_KEY = "cached_store_id";
+
+function getCachedStoreId(): string | null {
+  try {
+    return localStorage.getItem(STORE_CACHE_KEY);
+  } catch { return null; }
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedStoreId = getCachedStoreId();
+  const [storeId, setStoreId] = useState<string | null>(user ? cachedStoreId : null);
+  const [loading, setLoading] = useState(user ? !cachedStoreId : false);
   const fetchedForUser = useRef<string | null>(null);
 
   useEffect(() => {
@@ -22,16 +31,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       fetchedForUser.current = null;
       setStoreId(null);
       setLoading(false);
+      localStorage.removeItem(STORE_CACHE_KEY);
       return;
     }
 
-    // Don't refetch if we already have data for this user
     if (fetchedForUser.current === userId) return;
-
-    // Only show loading on first fetch, not subsequent ones
-    if (fetchedForUser.current === null && storeId === null) {
-      // Keep loading true only on initial load
-    }
 
     const fetchProfile = async () => {
       const { data } = await supabase
@@ -40,9 +44,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .eq("user_id", userId)
         .maybeSingle();
       
+      const sid = data?.store_id ?? null;
       fetchedForUser.current = userId;
-      setStoreId(data?.store_id ?? null);
+      setStoreId(sid);
       setLoading(false);
+      if (sid) {
+        localStorage.setItem(STORE_CACHE_KEY, sid);
+      } else {
+        localStorage.removeItem(STORE_CACHE_KEY);
+      }
     };
 
     fetchProfile();
