@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,22 +31,40 @@ interface Props {
   userId: string | undefined;
 }
 
+const DRAFT_KEY = "invoice_draft";
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 export default function NewInvoiceTab({ storeId, userId }: Props) {
   const { toast } = useToast();
+  const draft = loadDraft();
   const [products, setProducts] = useState<any[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [customerMobile, setCustomerMobile] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerGender, setCustomerGender] = useState("");
-  const [customerLocation, setCustomerLocation] = useState("");
-  const [source, setSource] = useState("offline");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [cart, setCart] = useState<CartItem[]>(draft?.cart ?? []);
+  const [customerMobile, setCustomerMobile] = useState(draft?.customerMobile ?? "");
+  const [customerName, setCustomerName] = useState(draft?.customerName ?? "");
+  const [customerGender, setCustomerGender] = useState(draft?.customerGender ?? "");
+  const [customerLocation, setCustomerLocation] = useState(draft?.customerLocation ?? "");
+  const [source, setSource] = useState(draft?.source ?? "offline");
+  const [paymentMethod, setPaymentMethod] = useState(draft?.paymentMethod ?? "cash");
+  const [selectedEmployee, setSelectedEmployee] = useState(draft?.selectedEmployee ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState(draft?.discount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+
+  // Persist draft to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+      cart, customerMobile, customerName, customerGender, customerLocation,
+      source, paymentMethod, selectedEmployee, discount,
+    }));
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethod, selectedEmployee, discount]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -193,6 +211,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
       setCart([]);
       setDiscount(0);
+      setCustomerMobile("");
+      setCustomerName("");
+      setCustomerGender("");
+      setCustomerLocation("");
+      setSelectedEmployee("");
+      sessionStorage.removeItem(DRAFT_KEY);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
