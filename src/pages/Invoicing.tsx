@@ -23,11 +23,11 @@ export default function Invoicing() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="new" className="mt-4" forceMount className2="data-[state=inactive]:hidden">
+        <TabsContent value="new" className="mt-4 data-[state=inactive]:hidden" forceMount>
           <NewInvoiceTab storeId={storeId} userId={user?.id} />
         </TabsContent>
 
-        <TabsContent value="history" className="mt-4" forceMount className2="data-[state=inactive]:hidden">
+        <TabsContent value="history" className="mt-4 data-[state=inactive]:hidden" forceMount>
           <InvoiceHistoryTab storeId={storeId} userId={user?.id} />
         </TabsContent>
       </Tabs>
