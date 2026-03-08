@@ -211,6 +211,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
       setCart([]);
       setDiscount(0);
+      setCustomerMobile("");
+      setCustomerName("");
+      setCustomerGender("");
+      setCustomerLocation("");
+      setSelectedEmployee("");
+      sessionStorage.removeItem(DRAFT_KEY);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
