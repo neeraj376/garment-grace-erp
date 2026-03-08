@@ -35,35 +35,42 @@ const DRAFT_KEY = "invoice_draft";
 
 function loadDraft() {
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
+    const raw = localStorage.getItem(DRAFT_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
+function saveDraft(data: any) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch {}
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
 export default function NewInvoiceTab({ storeId, userId }: Props) {
   const { toast } = useToast();
-  const draft = loadDraft();
   const [products, setProducts] = useState<any[]>([]);
-  const [cart, setCart] = useState<CartItem[]>(draft?.cart ?? []);
-  const [customerMobile, setCustomerMobile] = useState(draft?.customerMobile ?? "");
-  const [customerName, setCustomerName] = useState(draft?.customerName ?? "");
-  const [customerGender, setCustomerGender] = useState(draft?.customerGender ?? "");
-  const [customerLocation, setCustomerLocation] = useState(draft?.customerLocation ?? "");
-  const [source, setSource] = useState(draft?.source ?? "offline");
-  const [paymentMethod, setPaymentMethod] = useState(draft?.paymentMethod ?? "cash");
-  const [selectedEmployee, setSelectedEmployee] = useState(draft?.selectedEmployee ?? "");
+  const [cart, setCart] = useState<CartItem[]>(() => loadDraft()?.cart ?? []);
+  const [customerMobile, setCustomerMobile] = useState(() => loadDraft()?.customerMobile ?? "");
+  const [customerName, setCustomerName] = useState(() => loadDraft()?.customerName ?? "");
+  const [customerGender, setCustomerGender] = useState(() => loadDraft()?.customerGender ?? "");
+  const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
+  const [source, setSource] = useState(() => loadDraft()?.source ?? "offline");
+  const [paymentMethod, setPaymentMethod] = useState(() => loadDraft()?.paymentMethod ?? "cash");
+  const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [discount, setDiscount] = useState(draft?.discount ?? 0);
+  const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
 
-  // Persist draft to sessionStorage
+  // Persist draft to localStorage
   useEffect(() => {
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+    saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation,
       source, paymentMethod, selectedEmployee, discount,
-    }));
+    });
   }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethod, selectedEmployee, discount]);
 
   useEffect(() => {
