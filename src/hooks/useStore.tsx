@@ -19,14 +19,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const userId = user?.id ?? null;
 
     if (!userId) {
+      fetchedForUser.current = null;
       setStoreId(null);
       setLoading(false);
-      fetchedForUser.current = null;
       return;
     }
 
-    // Skip refetch if we already loaded for this user
+    // Don't refetch if we already have data for this user
     if (fetchedForUser.current === userId) return;
+
+    // Only show loading on first fetch, not subsequent ones
+    if (fetchedForUser.current === null && storeId === null) {
+      // Keep loading true only on initial load
+    }
 
     const fetchProfile = async () => {
       const { data } = await supabase
@@ -41,7 +46,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user?.id]);
 
   return (
     <StoreContext.Provider value={{ storeId, loading }}>
