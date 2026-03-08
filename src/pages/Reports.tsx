@@ -127,32 +127,43 @@ export default function Reports() {
 
   const formatCurrency = (v: number) => `₹${v.toLocaleString("en-IN")}`;
 
-  const downloadExcel = () => {
-    const wb = XLSX.utils.book_new();
+  const toCsvString = (headers: string[], rows: (string | number)[][]) => {
+    const escape = (v: string | number) => {
+      const s = String(v);
+      return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return [headers.map(escape).join(","), ...rows.map(r => r.map(escape).join(","))].join("\n");
+  };
 
-    // Summary sheet
-    const summaryRows = [
-      { Metric: "Revenue", Amount: summary.revenue },
-      { Metric: "Cost of Goods", Amount: summary.cost },
-      { Metric: "GST Collected", Amount: summary.tax },
-      { Metric: "Net Profit", Amount: summary.profit },
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "Summary");
+  const downloadReport = () => {
+    let csv = "=== Summary ===\n";
+    csv += toCsvString(["Metric", "Amount"], [
+      ["Revenue", summary.revenue],
+      ["Cost of Goods", summary.cost],
+      ["GST Collected", summary.tax],
+      ["Net Profit", summary.profit],
+    ]);
 
-    // Sales trend sheet
     if (salesData.length > 0) {
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesData.map(d => ({ Date: d.date, Amount: d.amount }))), "Sales Trend");
+      csv += "\n\n=== Sales Trend ===\n";
+      csv += toCsvString(["Date", "Amount"], salesData.map(d => [d.date, d.amount]));
     }
 
-    // Employee performance sheet
     if (employeeSales.length > 0) {
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(employeeSales.map(e => ({
-        Employee: e.name, Role: e.role, Invoices: e.invoiceCount,
-        "Total Sales": e.totalSales, "Avg per Invoice": Math.round(e.totalSales / e.invoiceCount),
-      }))), "Employee Sales");
+      csv += "\n\n=== Employee Sales ===\n";
+      csv += toCsvString(
+        ["Employee", "Role", "Invoices", "Total Sales", "Avg per Invoice"],
+        employeeSales.map(e => [e.name, e.role, e.invoiceCount, e.totalSales, Math.round(e.totalSales / e.invoiceCount)])
+      );
     }
 
-    XLSX.writeFile(wb, `Report_${period}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Report_${period}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
