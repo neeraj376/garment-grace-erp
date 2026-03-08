@@ -123,51 +123,53 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    const confirmed = window.confirm(`Are you sure you want to delete ${selectedIds.size} invoice(s)? This will also remove their line items. This action cannot be undone.`);
-    if (!confirmed) return;
+  const deleteInvoicesByIds = async (ids: string[]) => {
+    const batchSize = 100;
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batch = ids.slice(i, i + batchSize);
+      // 1. Delete invoice_returns first (references invoice_items)
+      const { error: returnsError } = await supabase
+        .from("invoice_returns")
+        .delete()
+        .in("invoice_id", batch);
+      if (returnsError) throw returnsError;
 
+      // 2. Delete invoice_items
+      const { error: itemsError } = await supabase
+        .from("invoice_items")
+        .delete()
+        .in("invoice_id", batch);
+      if (itemsError) throw itemsError;
+
+      // 3. Delete invoices
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .in("id", batch);
+      if (error) throw error;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
     setDeleting(true);
     try {
-      const ids = Array.from(selectedIds);
-      const batchSize = 100;
-      for (let i = 0; i < ids.length; i += batchSize) {
-        const batch = ids.slice(i, i + batchSize);
-        // Delete invoice items first
-        const { error: itemsError } = await supabase
-          .from("invoice_items")
-          .delete()
-          .in("invoice_id", batch);
-        if (itemsError) throw itemsError;
+      const ids = deleteConfirm.type === "bulk"
+        ? Array.from(selectedIds)
+        : [deleteConfirm.invoice.id];
 
-        // Delete invoices
-        const { error } = await supabase
-          .from("invoices")
-          .delete()
-          .in("id", batch);
-        if (error) throw error;
-      }
-      toast({ title: "Deleted", description: `${selectedIds.size} invoice(s) deleted successfully` });
+      await deleteInvoicesByIds(ids);
+
+      toast({
+        title: "Deleted",
+        description: `${ids.length} invoice(s) deleted successfully`,
+      });
       fetchInvoices();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setDeleting(false);
-    }
-  };
-
-  const handleSingleDelete = async (inv: Invoice) => {
-    const confirmed = window.confirm(`Delete invoice ${inv.invoice_number}? This cannot be undone.`);
-    if (!confirmed) return;
-    try {
-      await supabase.from("invoice_items").delete().eq("invoice_id", inv.id);
-      const { error } = await supabase.from("invoices").delete().eq("id", inv.id);
-      if (error) throw error;
-      toast({ title: "Invoice deleted" });
-      fetchInvoices();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setDeleteConfirm(null);
     }
   };
 
