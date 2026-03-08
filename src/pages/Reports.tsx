@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { CalendarDays, Users, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import * as XLSX from "xlsx";
+
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
 
