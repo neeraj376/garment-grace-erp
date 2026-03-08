@@ -15,7 +15,9 @@ interface CartItem {
   sku: string;
   quantity: number;
   unit_price: number;
+  original_price: number;
   tax_rate: number;
+  item_discount: number;
 }
 
 interface Employee {
