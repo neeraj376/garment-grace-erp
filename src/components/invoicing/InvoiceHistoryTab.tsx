@@ -196,7 +196,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={handleBulkDelete}
+                onClick={() => setDeleteConfirm({ type: "bulk" })}
                 disabled={deleting}
               >
                 {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
