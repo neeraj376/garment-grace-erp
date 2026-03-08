@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { StoreProvider, useStore } from "@/hooks/useStore";
+import { useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
@@ -25,13 +26,22 @@ const queryClient = new QueryClient();
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { storeId, loading: storeLoading } = useStore();
+  const hasLoadedOnce = useRef(false);
 
-  if (authLoading || storeLoading) {
+  const isLoading = authLoading || storeLoading;
+
+  // Only show loading screen on first ever load
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     );
+  }
+
+  // Mark as loaded once we've successfully loaded
+  if (!isLoading) {
+    hasLoadedOnce.current = true;
   }
 
   if (!user) {
