@@ -15,7 +15,9 @@ interface CartItem {
   sku: string;
   quantity: number;
   unit_price: number;
+  original_price: number;
   tax_rate: number;
+  item_discount: number;
 }
 
 interface Employee {
@@ -67,28 +69,37 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (existing) {
       setCart(cart.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
     } else {
+      const price = Number(product.selling_price);
       setCart([...cart, {
         product_id: product.id,
         name: product.name,
         sku: product.sku,
         quantity: 1,
-        unit_price: Number(product.selling_price),
+        unit_price: price,
+        original_price: price,
         tax_rate: Number(product.tax_rate),
+        item_discount: 0,
       }]);
     }
     setSearchProduct("");
   };
 
+  const getLineTotal = (item: CartItem) => {
+    const gross = item.unit_price * item.quantity;
+    return gross - item.item_discount;
+  };
+
   const subtotal = cart.reduce((s, i) => {
-    const priceExclTax = (i.unit_price * i.quantity) / (1 + i.tax_rate / 100);
+    const lineTotal = getLineTotal(i);
+    const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
     return s + priceExclTax;
   }, 0);
   const taxAmount = cart.reduce((s, i) => {
-    const lineTotal = i.unit_price * i.quantity;
+    const lineTotal = getLineTotal(i);
     const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
     return s + (lineTotal - priceExclTax);
   }, 0);
-  const total = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0) - discount;
+  const total = cart.reduce((s, i) => s + getLineTotal(i), 0) - discount;
 
   const handleCreateInvoice = async () => {
     if (!storeId || !userId || cart.length === 0) return;
@@ -144,7 +155,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       if (error) throw error;
 
       const items = cart.map(i => {
-        const lineTotal = i.unit_price * i.quantity;
+        const lineTotal = getLineTotal(i);
         const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
         const lineTax = lineTotal - priceExclTax;
         return {
@@ -152,6 +163,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           product_id: i.product_id,
           quantity: i.quantity,
           unit_price: i.unit_price,
+          discount: i.item_discount,
           tax_amount: parseFloat(lineTax.toFixed(2)),
           total: lineTotal,
         };
@@ -266,6 +278,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   <TableHead>Product</TableHead>
                   <TableHead className="text-center">Qty</TableHead>
                   <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Disc (₹)</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -273,7 +286,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <TableBody>
                 {cart.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       <FileText className="h-6 w-6 mx-auto mb-2" />
                       Search and add products
                     </TableCell>
@@ -283,6 +296,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <TableCell>
                       <div className="font-medium">{item.name}</div>
                       <div className="text-xs text-muted-foreground">{item.sku}</div>
+                      {item.unit_price !== item.original_price && (
+                        <div className="text-xs text-muted-foreground line-through">₹{item.original_price.toLocaleString("en-IN")}</div>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       <Input
@@ -293,8 +309,25 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                         className="w-16 mx-auto text-center"
                       />
                     </TableCell>
-                    <TableCell className="text-right">₹{item.unit_price.toLocaleString("en-IN")}</TableCell>
-                    <TableCell className="text-right font-medium">₹{(item.unit_price * item.quantity).toLocaleString("en-IN")}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={item.unit_price}
+                        onChange={e => setCart(cart.map((c, i) => i === idx ? { ...c, unit_price: Number(e.target.value) || 0 } : c))}
+                        className="w-20 ml-auto text-right"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={item.item_discount}
+                        onChange={e => setCart(cart.map((c, i) => i === idx ? { ...c, item_discount: Number(e.target.value) || 0 } : c))}
+                        className="w-20 ml-auto text-right"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-medium">₹{getLineTotal(item).toLocaleString("en-IN")}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => setCart(cart.filter((_, i) => i !== idx))}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -368,8 +401,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Base Price</span><span>₹{subtotal.toFixed(2)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Tax (incl.)</span><span>₹{taxAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Item Discounts</span><span>-₹{cart.reduce((s, i) => s + i.item_discount, 0).toFixed(2)}</span></div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Discount</span>
+              <span className="text-muted-foreground">Extra Discount</span>
               <Input type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} className="w-24 text-right" />
             </div>
             <div className="border-t pt-2 flex justify-between font-bold text-lg">
