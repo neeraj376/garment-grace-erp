@@ -244,11 +244,16 @@ export default function Inventory() {
     if (selectedIds.size === 0) return;
     if (!confirm(`Are you sure you want to delete ${selectedIds.size} product(s)?`)) return;
     try {
-      const { error } = await supabase
-        .from("products")
-        .update({ is_active: false })
-        .in("id", Array.from(selectedIds));
-      if (error) throw error;
+      const ids = Array.from(selectedIds);
+      const batchSize = 100;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        const { error } = await supabase
+          .from("products")
+          .update({ is_active: false })
+          .in("id", batch);
+        if (error) throw error;
+      }
       toast({ title: `${selectedIds.size} product(s) deleted` });
       setSelectedIds(new Set());
       fetchProducts();
