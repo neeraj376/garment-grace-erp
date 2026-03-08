@@ -69,28 +69,37 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (existing) {
       setCart(cart.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
     } else {
+      const price = Number(product.selling_price);
       setCart([...cart, {
         product_id: product.id,
         name: product.name,
         sku: product.sku,
         quantity: 1,
-        unit_price: Number(product.selling_price),
+        unit_price: price,
+        original_price: price,
         tax_rate: Number(product.tax_rate),
+        item_discount: 0,
       }]);
     }
     setSearchProduct("");
   };
 
+  const getLineTotal = (item: CartItem) => {
+    const gross = item.unit_price * item.quantity;
+    return gross - item.item_discount;
+  };
+
   const subtotal = cart.reduce((s, i) => {
-    const priceExclTax = (i.unit_price * i.quantity) / (1 + i.tax_rate / 100);
+    const lineTotal = getLineTotal(i);
+    const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
     return s + priceExclTax;
   }, 0);
   const taxAmount = cart.reduce((s, i) => {
-    const lineTotal = i.unit_price * i.quantity;
+    const lineTotal = getLineTotal(i);
     const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
     return s + (lineTotal - priceExclTax);
   }, 0);
-  const total = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0) - discount;
+  const total = cart.reduce((s, i) => s + getLineTotal(i), 0) - discount;
 
   const handleCreateInvoice = async () => {
     if (!storeId || !userId || cart.length === 0) return;
