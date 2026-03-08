@@ -278,6 +278,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   <TableHead>Product</TableHead>
                   <TableHead className="text-center">Qty</TableHead>
                   <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Disc (₹)</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -285,7 +286,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <TableBody>
                 {cart.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       <FileText className="h-6 w-6 mx-auto mb-2" />
                       Search and add products
                     </TableCell>
@@ -295,6 +296,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <TableCell>
                       <div className="font-medium">{item.name}</div>
                       <div className="text-xs text-muted-foreground">{item.sku}</div>
+                      {item.unit_price !== item.original_price && (
+                        <div className="text-xs text-muted-foreground line-through">₹{item.original_price.toLocaleString("en-IN")}</div>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       <Input
@@ -305,8 +309,25 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                         className="w-16 mx-auto text-center"
                       />
                     </TableCell>
-                    <TableCell className="text-right">₹{item.unit_price.toLocaleString("en-IN")}</TableCell>
-                    <TableCell className="text-right font-medium">₹{(item.unit_price * item.quantity).toLocaleString("en-IN")}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={item.unit_price}
+                        onChange={e => setCart(cart.map((c, i) => i === idx ? { ...c, unit_price: Number(e.target.value) || 0 } : c))}
+                        className="w-20 ml-auto text-right"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={item.item_discount}
+                        onChange={e => setCart(cart.map((c, i) => i === idx ? { ...c, item_discount: Number(e.target.value) || 0 } : c))}
+                        className="w-20 ml-auto text-right"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-medium">₹{getLineTotal(item).toLocaleString("en-IN")}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => setCart(cart.filter((_, i) => i !== idx))}>
                         <Trash2 className="h-4 w-4 text-destructive" />
