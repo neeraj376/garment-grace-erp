@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ReturnDialog from "./ReturnDialog";
+import EditInvoiceDialog from "./EditInvoiceDialog";
 
 interface Invoice {
   id: string;
@@ -20,6 +22,7 @@ interface Invoice {
   payment_method: string;
   source: string;
   status: string;
+  notes: string | null;
   created_at: string;
   customer_id: string | null;
   customers: { name: string | null; mobile: string } | null;
@@ -36,7 +39,10 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
+  const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const getInvoiceImageUrl = (invoiceId: string) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
@@ -48,7 +54,6 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "No mobile number for this customer", variant: "destructive" });
       return;
     }
-
     setSendingWhatsApp(inv.id);
     try {
       const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
@@ -61,10 +66,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           totalAmount: Number(inv.total_amount).toLocaleString("en-IN"),
         },
       });
-
       if (error) throw error;
       if (data?.success === false) throw new Error(data.error || "Failed to send");
-
       toast({ title: "WhatsApp sent!", description: `Invoice sent to ${phone}` });
     } catch (err: any) {
       toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
@@ -88,6 +91,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     } else {
       setInvoices((data as any) ?? []);
     }
+    setSelectedIds(new Set());
     setLoading(false);
   };
 
@@ -100,6 +104,70 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     inv.customers?.name?.toLowerCase().includes(search.toLowerCase()) ||
     inv.customers?.mobile?.includes(search)
   );
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(i => i.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedIds.size} invoice(s)? This will also remove their line items. This action cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const batchSize = 100;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        // Delete invoice items first
+        const { error: itemsError } = await supabase
+          .from("invoice_items")
+          .delete()
+          .in("invoice_id", batch);
+        if (itemsError) throw itemsError;
+
+        // Delete invoices
+        const { error } = await supabase
+          .from("invoices")
+          .delete()
+          .in("id", batch);
+        if (error) throw error;
+      }
+      toast({ title: "Deleted", description: `${selectedIds.size} invoice(s) deleted successfully` });
+      fetchInvoices();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleSingleDelete = async (inv: Invoice) => {
+    const confirmed = window.confirm(`Delete invoice ${inv.invoice_number}? This cannot be undone.`);
+    if (!confirmed) return;
+    try {
+      await supabase.from("invoice_items").delete().eq("invoice_id", inv.id);
+      const { error } = await supabase.from("invoices").delete().eq("id", inv.id);
+      if (error) throw error;
+      toast({ title: "Invoice deleted" });
+      fetchInvoices();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -120,6 +188,17 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="section-title">Invoice History</CardTitle>
+            {selectedIds.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={deleting}
+              >
+                {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                Delete {selectedIds.size} selected
+              </Button>
+            )}
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -135,6 +214,12 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Date</TableHead>
@@ -147,14 +232,20 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
-                <TableRow key={inv.id}>
+                <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(inv.id)}
+                      onCheckedChange={() => toggleSelect(inv.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                   <TableCell>
                     <div>{inv.customers?.name || "Walk-in"}</div>
@@ -173,32 +264,29 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => window.open(`${window.location.origin}/invoice/${inv.id}`, "_blank")}
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => window.open(`${window.location.origin}/invoice/${inv.id}`, "_blank")}>
                               <ExternalLink className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>View invoice</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => setEditInvoice(inv)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit invoice</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       {inv.customers?.mobile && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleSendWhatsApp(inv)}
-                                disabled={sendingWhatsApp === inv.id}
-                              >
-                                {sendingWhatsApp === inv.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <MessageCircle className="h-4 w-4 text-green-600" />
-                                )}
+                              <Button variant="ghost" size="icon" onClick={() => handleSendWhatsApp(inv)} disabled={sendingWhatsApp === inv.id}>
+                                {sendingWhatsApp === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4 text-green-600" />}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Send on WhatsApp</TooltipContent>
@@ -209,11 +297,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setReturnInvoice(inv)}
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => setReturnInvoice(inv)}>
                                 <RotateCcw className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -221,6 +305,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleSingleDelete(inv)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete invoice</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -237,10 +331,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           userId={userId!}
           open={!!returnInvoice}
           onClose={() => setReturnInvoice(null)}
-          onSuccess={() => {
-            setReturnInvoice(null);
-            fetchInvoices();
-          }}
+          onSuccess={() => { setReturnInvoice(null); fetchInvoices(); }}
+        />
+      )}
+
+      {editInvoice && (
+        <EditInvoiceDialog
+          invoice={editInvoice}
+          open={!!editInvoice}
+          onClose={() => setEditInvoice(null)}
+          onSuccess={() => { setEditInvoice(null); fetchInvoices(); }}
         />
       )}
     </>
