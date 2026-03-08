@@ -15,15 +15,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const initializedRef = useRef(false);
 
   useEffect(() => {
-    // Get initial session first
+    console.log("[AuthProvider] useEffect running, mounting");
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("[AuthProvider] getSession resolved, user:", session?.user?.id ?? "null");
       setUser(session?.user ?? null);
       setLoading(false);
       initializedRef.current = true;
     });
 
-    // Listen for auth changes, but never go back to loading
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[AuthProvider] onAuthStateChange event:", event, "user:", session?.user?.id ?? "null");
       setUser(session?.user ?? null);
       if (!initializedRef.current) {
         setLoading(false);
@@ -31,7 +33,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log("[AuthProvider] UNMOUNTING - this should NOT happen on tab switch");
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

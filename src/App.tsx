@@ -30,8 +30,11 @@ function AppRoutes() {
 
   const isLoading = authLoading || storeLoading;
 
+  console.log("[AppRoutes] render — authLoading:", authLoading, "storeLoading:", storeLoading, "hasLoadedOnce:", hasLoadedOnce.current, "user:", user?.id ?? "null", "storeId:", storeId);
+
   // Only show loading screen on first ever load
   if (isLoading && !hasLoadedOnce.current) {
+    console.log("[AppRoutes] showing LOADING screen");
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
