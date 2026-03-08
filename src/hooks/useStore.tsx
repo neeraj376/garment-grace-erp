@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export function useStore() {
+interface StoreContextType {
+  storeId: string | null;
+  loading: boolean;
+}
+
+const StoreContext = createContext<StoreContextType>({ storeId: null, loading: true });
+
+export function StoreProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,5 +37,13 @@ export function useStore() {
     fetchProfile();
   }, [user]);
 
-  return { storeId, loading };
+  return (
+    <StoreContext.Provider value={{ storeId, loading }}>
+      {children}
+    </StoreContext.Provider>
+  );
+}
+
+export function useStore() {
+  return useContext(StoreContext);
 }
