@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -43,6 +44,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "bulk" } | { type: "single"; invoice: Invoice } | null>(null);
 
   const getInvoiceImageUrl = (invoiceId: string) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
@@ -121,51 +123,53 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    const confirmed = window.confirm(`Are you sure you want to delete ${selectedIds.size} invoice(s)? This will also remove their line items. This action cannot be undone.`);
-    if (!confirmed) return;
+  const deleteInvoicesByIds = async (ids: string[]) => {
+    const batchSize = 100;
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batch = ids.slice(i, i + batchSize);
+      // 1. Delete invoice_returns first (references invoice_items)
+      const { error: returnsError } = await supabase
+        .from("invoice_returns")
+        .delete()
+        .in("invoice_id", batch);
+      if (returnsError) throw returnsError;
 
+      // 2. Delete invoice_items
+      const { error: itemsError } = await supabase
+        .from("invoice_items")
+        .delete()
+        .in("invoice_id", batch);
+      if (itemsError) throw itemsError;
+
+      // 3. Delete invoices
+      const { error } = await supabase
+        .from("invoices")
+        .delete()
+        .in("id", batch);
+      if (error) throw error;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
     setDeleting(true);
     try {
-      const ids = Array.from(selectedIds);
-      const batchSize = 100;
-      for (let i = 0; i < ids.length; i += batchSize) {
-        const batch = ids.slice(i, i + batchSize);
-        // Delete invoice items first
-        const { error: itemsError } = await supabase
-          .from("invoice_items")
-          .delete()
-          .in("invoice_id", batch);
-        if (itemsError) throw itemsError;
+      const ids = deleteConfirm.type === "bulk"
+        ? Array.from(selectedIds)
+        : [deleteConfirm.invoice.id];
 
-        // Delete invoices
-        const { error } = await supabase
-          .from("invoices")
-          .delete()
-          .in("id", batch);
-        if (error) throw error;
-      }
-      toast({ title: "Deleted", description: `${selectedIds.size} invoice(s) deleted successfully` });
+      await deleteInvoicesByIds(ids);
+
+      toast({
+        title: "Deleted",
+        description: `${ids.length} invoice(s) deleted successfully`,
+      });
       fetchInvoices();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setDeleting(false);
-    }
-  };
-
-  const handleSingleDelete = async (inv: Invoice) => {
-    const confirmed = window.confirm(`Delete invoice ${inv.invoice_number}? This cannot be undone.`);
-    if (!confirmed) return;
-    try {
-      await supabase.from("invoice_items").delete().eq("invoice_id", inv.id);
-      const { error } = await supabase.from("invoices").delete().eq("id", inv.id);
-      if (error) throw error;
-      toast({ title: "Invoice deleted" });
-      fetchInvoices();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setDeleteConfirm(null);
     }
   };
 
@@ -192,7 +196,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={handleBulkDelete}
+                onClick={() => setDeleteConfirm({ type: "bulk" })}
                 disabled={deleting}
               >
                 {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
@@ -308,7 +312,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => handleSingleDelete(inv)}>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteConfirm({ type: "single", invoice: inv })}>
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </TooltipTrigger>
@@ -343,6 +347,26 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           onSuccess={() => { setEditInvoice(null); fetchInvoices(); }}
         />
       )}
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={open => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteConfirm?.type === "bulk"
+                ? `This will permanently delete ${selectedIds.size} invoice(s) along with their line items and returns. This action cannot be undone.`
+                : `This will permanently delete invoice ${deleteConfirm?.type === "single" ? deleteConfirm.invoice.invoice_number : ""} along with its line items and returns. This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
