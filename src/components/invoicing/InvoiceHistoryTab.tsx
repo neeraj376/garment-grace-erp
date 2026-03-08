@@ -312,7 +312,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => handleSingleDelete(inv)}>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteConfirm({ type: "single", invoice: inv })}>
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </TooltipTrigger>
