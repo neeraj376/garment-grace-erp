@@ -155,7 +155,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       if (error) throw error;
 
       const items = cart.map(i => {
-        const lineTotal = i.unit_price * i.quantity;
+        const lineTotal = getLineTotal(i);
         const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
         const lineTax = lineTotal - priceExclTax;
         return {
@@ -163,6 +163,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           product_id: i.product_id,
           quantity: i.quantity,
           unit_price: i.unit_price,
+          discount: i.item_discount,
           tax_amount: parseFloat(lineTax.toFixed(2)),
           total: lineTotal,
         };
