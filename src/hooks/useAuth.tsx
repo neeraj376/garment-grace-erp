@@ -33,16 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      // If getSession returns a valid session, update user
+      // If it returns null but we have a cached user, keep the cached user
+      // (this handles expired refresh tokens gracefully — user stays logged in visually)
+      if (session?.user) {
+        setUser(session.user);
+      }
       setLoading(false);
       initializedRef.current = true;
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      // Only accept auth state changes after getSession has initialized
-      // This prevents premature SIGNED_OUT events from clearing cached user
-      if (initializedRef.current) {
-        setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!initializedRef.current) return;
+      
+      // Only clear user on explicit sign out — not on TOKEN_REFRESHED failures
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+      } else if (session?.user) {
+        setUser(session.user);
       }
     });
 
