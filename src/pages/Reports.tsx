@@ -175,7 +175,11 @@ export default function Reports() {
       csv += toCsvString(["Date", "Amount"], salesData.map(d => [d.date, d.amount]));
     }
 
-    if (employeeSales.length > 0) {
+    if (paymentSplit.length > 0) {
+      csv += "\n\n=== Payment Source Split ===\n";
+      csv += toCsvString(["Payment Method", "Amount"], paymentSplit.map(p => [p.name, p.value]));
+    }
+
       csv += "\n\n=== Employee Sales ===\n";
       csv += toCsvString(
         ["Employee", "Role", "Invoices", "Total Sales", "Avg per Invoice"],
