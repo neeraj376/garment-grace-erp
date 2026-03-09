@@ -12,6 +12,19 @@ import { Button } from "@/components/ui/button";
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
 
+const PAYMENT_COLORS: Record<string, string> = {
+  cash: "hsl(142, 71%, 45%)",
+  upi: "hsl(262, 83%, 58%)",
+  card: "hsl(221, 83%, 53%)",
+  online: "hsl(24, 95%, 53%)",
+  other: "hsl(0, 0%, 60%)",
+};
+
+interface PaymentSplit {
+  name: string;
+  value: number;
+}
+
 interface EmployeeSales {
   id: string;
   name: string;
