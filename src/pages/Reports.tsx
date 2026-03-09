@@ -107,6 +107,18 @@ export default function Reports() {
 
     setSummary({ revenue, cost, tax, profit: revenue - cost - tax });
 
+    // Payment method split
+    const paymentMap: Record<string, number> = {};
+    (invData ?? []).forEach(inv => {
+      const method = (inv.payment_method || "other").toLowerCase();
+      paymentMap[method] = (paymentMap[method] || 0) + Number(inv.total_amount);
+    });
+    setPaymentSplit(
+      Object.entries(paymentMap)
+        .map(([name, value]) => ({ name: name.toUpperCase(), value }))
+        .sort((a, b) => b.value - a.value)
+    );
+
     const grouped: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
