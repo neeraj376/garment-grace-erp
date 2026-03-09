@@ -41,6 +41,7 @@ export default function Reports() {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [summary, setSummary] = useState({ revenue: 0, cost: 0, tax: 0, profit: 0 });
   const [employeeSales, setEmployeeSales] = useState<EmployeeSales[]>([]);
+  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit[]>([]);
 
   useEffect(() => {
     if (!storeId) return;
