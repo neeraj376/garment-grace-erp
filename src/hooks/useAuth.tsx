@@ -38,10 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (!initializedRef.current) {
-        setLoading(false);
-        initializedRef.current = true;
+      // Only accept auth state changes after getSession has initialized
+      // This prevents premature SIGNED_OUT events from clearing cached user
+      if (initializedRef.current) {
+        setUser(session?.user ?? null);
       }
     });
 
