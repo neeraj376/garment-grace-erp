@@ -5,12 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { CalendarDays, Users, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
+import { CalendarDays, Users, Download, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
+
+const PAYMENT_COLORS: Record<string, string> = {
+  cash: "hsl(142, 71%, 45%)",
+  upi: "hsl(262, 83%, 58%)",
+  card: "hsl(221, 83%, 53%)",
+  online: "hsl(24, 95%, 53%)",
+  other: "hsl(0, 0%, 60%)",
+};
+
+interface PaymentSplit {
+  name: string;
+  value: number;
+}
 
 interface EmployeeSales {
   id: string;
@@ -28,6 +41,7 @@ export default function Reports() {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [summary, setSummary] = useState({ revenue: 0, cost: 0, tax: 0, profit: 0 });
   const [employeeSales, setEmployeeSales] = useState<EmployeeSales[]>([]);
+  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit[]>([]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -93,6 +107,18 @@ export default function Reports() {
 
     setSummary({ revenue, cost, tax, profit: revenue - cost - tax });
 
+    // Payment method split
+    const paymentMap: Record<string, number> = {};
+    (invData ?? []).forEach(inv => {
+      const method = (inv.payment_method || "other").toLowerCase();
+      paymentMap[method] = (paymentMap[method] || 0) + Number(inv.total_amount);
+    });
+    setPaymentSplit(
+      Object.entries(paymentMap)
+        .map(([name, value]) => ({ name: name.toUpperCase(), value }))
+        .sort((a, b) => b.value - a.value)
+    );
+
     const grouped: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
@@ -149,7 +175,11 @@ export default function Reports() {
       csv += toCsvString(["Date", "Amount"], salesData.map(d => [d.date, d.amount]));
     }
 
-    if (employeeSales.length > 0) {
+    if (paymentSplit.length > 0) {
+      csv += "\n\n=== Payment Source Split ===\n";
+      csv += toCsvString(["Payment Method", "Amount"], paymentSplit.map(p => [p.name, p.value]));
+    }
+
       csv += "\n\n=== Employee Sales ===\n";
       csv += toCsvString(
         ["Employee", "Role", "Invoices", "Total Sales", "Avg per Invoice"],
@@ -244,6 +274,44 @@ export default function Reports() {
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="section-title">Payment Source Split</CardTitle></CardHeader>
+        <CardContent>
+          {paymentSplit.length > 0 ? (
+            <div className="h-72 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={paymentSplit}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    innerRadius={50}
+                    dataKey="value"
+                    nameKey="name"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: "hsl(220, 9%, 46%)" }}
+                  >
+                    {paymentSplit.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={PAYMENT_COLORS[entry.name.toLowerCase()] || PAYMENT_COLORS.other}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-muted-foreground">
+              <CreditCard className="h-6 w-6 mr-2" /> No payment data for this period
+            </div>
+          )}
         </CardContent>
       </Card>
 
