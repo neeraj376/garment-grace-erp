@@ -27,15 +27,15 @@ function getCachedUser(): User | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const cachedUser = getCachedUser();
+  console.log("[Auth] init — cachedUser:", cachedUser?.email ?? "null");
   const [user, setUser] = useState<User | null>(cachedUser);
-  const [loading, setLoading] = useState(!cachedUser); // no loading if we have a cached user
+  const [loading, setLoading] = useState(!cachedUser);
   const initializedRef = useRef(false);
 
   useEffect(() => {
+    console.log("[Auth] useEffect — calling getSession...");
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // If getSession returns a valid session, update user
-      // If it returns null but we have a cached user, keep the cached user
-      // (this handles expired refresh tokens gracefully — user stays logged in visually)
+      console.log("[Auth] getSession result:", session?.user?.email ?? "null");
       if (session?.user) {
         setUser(session.user);
       }
@@ -44,10 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[Auth] onAuthStateChange:", event, session?.user?.email ?? "null", "initialized:", initializedRef.current);
       if (!initializedRef.current) return;
       
-      // Only clear user on explicit sign out — not on TOKEN_REFRESHED failures
       if (event === 'SIGNED_OUT') {
+        console.log("[Auth] SIGNED_OUT — clearing user");
         setUser(null);
       } else if (session?.user) {
         setUser(session.user);
@@ -56,6 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  console.log("[Auth] render — user:", user?.email ?? "null", "loading:", loading);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
