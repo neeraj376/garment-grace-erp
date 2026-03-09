@@ -9,14 +9,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
-// Read cached session synchronously to avoid loading flash
+// Read cached session synchronously — trust it for instant render even if expired
+// (getSession will handle refresh in background)
 function getCachedUser(): User | null {
   try {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const raw = localStorage.getItem(`sb-${projectId}-auth-token`);
     if (raw) {
       const session = JSON.parse(raw) as Session;
-      if (session?.user && session.expires_at && session.expires_at * 1000 > Date.now()) {
+      if (session?.user) {
         return session.user;
       }
     }
