@@ -274,6 +274,44 @@ export default function Reports() {
       </Card>
 
       <Card>
+        <CardHeader><CardTitle className="section-title">Payment Source Split</CardTitle></CardHeader>
+        <CardContent>
+          {paymentSplit.length > 0 ? (
+            <div className="h-72 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={paymentSplit}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    innerRadius={50}
+                    dataKey="value"
+                    nameKey="name"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: "hsl(220, 9%, 46%)" }}
+                  >
+                    {paymentSplit.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={PAYMENT_COLORS[entry.name.toLowerCase()] || PAYMENT_COLORS.other}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-muted-foreground">
+              <CreditCard className="h-6 w-6 mr-2" /> No payment data for this period
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle className="section-title">Employee Sales Performance</CardTitle></CardHeader>
         <CardContent>
           {employeeSales.length > 0 ? (
