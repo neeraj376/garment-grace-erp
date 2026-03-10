@@ -1,0 +1,1 @@
+ALTER TABLE public.shop_customers DROP CONSTRAINT IF EXISTS shop_customers_user_id_fkey;
