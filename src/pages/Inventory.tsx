@@ -160,7 +160,7 @@ export default function Inventory() {
 
       const sellingPrice = cleanNumber(row.selling_price || row.price || row.sp || row.rate);
       const mrpVal = cleanNumber(row.mrp || row.maximum_retail_price);
-      const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.cost_price || row.cost || row.bp || row.cp);
+      const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.purchasprice || row.purchaseprice || row.cost_price || row.cost || row.bp || row.cp);
       const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
       const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 18;
 
