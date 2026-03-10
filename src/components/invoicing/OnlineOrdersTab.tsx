@@ -553,6 +553,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
 
 function ShippingLabel({ order }: { order: any }) {
   const addr = order.shipping_addresses;
+  const cust = order.shop_customers;
+  const name = addr?.name || cust?.name || "—";
+  const phone = addr?.phone || cust?.phone || "—";
   return (
     <div style={{ width: "400px", border: "2px solid #000", padding: "20px", fontFamily: "Arial, sans-serif" }}>
       <div style={{ textAlign: "center", borderBottom: "2px solid #000", paddingBottom: "12px", marginBottom: "16px" }}>
@@ -565,8 +568,8 @@ function ShippingLabel({ order }: { order: any }) {
         <p style={{ fontSize: "11px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>
           Deliver To:
         </p>
-        <p style={{ fontSize: "16px", fontWeight: "bold", margin: "0 0 4px 0" }}>{addr?.name || "—"}</p>
-        <p style={{ fontSize: "14px", margin: "0 0 2px 0" }}>📞 {addr?.phone || "—"}</p>
+        <p style={{ fontSize: "16px", fontWeight: "bold", margin: "0 0 4px 0" }}>{name}</p>
+        <p style={{ fontSize: "14px", margin: "0 0 2px 0" }}>📞 {phone}</p>
       </div>
 
       <div style={{ marginBottom: "16px", padding: "10px", background: "#f5f5f5", borderRadius: "4px" }}>
