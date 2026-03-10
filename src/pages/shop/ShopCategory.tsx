@@ -27,7 +27,7 @@ export default function ShopCategory() {
       const { data } = await supabase.rpc("get_in_stock_shop_products", {
         p_store_id: STORE_ID,
         p_category: selectedCategory === "all" ? null : selectedCategory,
-        p_limit: 200,
+        p_limit: 5000,
       });
       setProducts(data ?? []);
       setLoading(false);
