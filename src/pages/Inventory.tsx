@@ -335,6 +335,10 @@ export default function Inventory() {
             <Download className="h-4 w-4 mr-2" /> Export CSV
           </Button>
           <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
+          <input type="file" ref={priceFileInputRef} accept=".csv" className="hidden" onChange={handleUpdatePricesCSV} />
+          <Button variant="outline" onClick={() => priceFileInputRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-2" /> Update Prices
+          </Button>
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>
