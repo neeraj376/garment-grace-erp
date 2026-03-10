@@ -48,13 +48,6 @@ export type Database = {
             foreignKeyName: "cart_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "in_stock_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cart_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -202,13 +195,6 @@ export type Database = {
             foreignKeyName: "inventory_batches_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "in_stock_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "inventory_batches_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -277,13 +263,6 @@ export type Database = {
             foreignKeyName: "invoice_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "in_stock_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoice_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -339,13 +318,6 @@ export type Database = {
             columns: ["invoice_item_id"]
             isOneToOne: false
             referencedRelation: "invoice_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoice_returns_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "in_stock_products"
             referencedColumns: ["id"]
           },
           {
@@ -532,13 +504,6 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "in_stock_products"
             referencedColumns: ["id"]
           },
           {
@@ -977,88 +942,43 @@ export type Database = {
       }
     }
     Views: {
-      in_stock_products: {
-        Row: {
-          brand: string | null
-          buying_price: number | null
-          category: string | null
-          color: string | null
-          created_at: string | null
-          hsn_code: string | null
-          id: string | null
-          is_active: boolean | null
-          material: string | null
-          mrp: number | null
-          name: string | null
-          photo_url: string | null
-          selling_price: number | null
-          size: string | null
-          sku: string | null
-          store_id: string | null
-          subcategory: string | null
-          tax_rate: number | null
-          updated_at: string | null
-          video_url: string | null
-        }
-        Insert: {
-          brand?: string | null
-          buying_price?: number | null
-          category?: string | null
-          color?: string | null
-          created_at?: string | null
-          hsn_code?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          material?: string | null
-          mrp?: number | null
-          name?: string | null
-          photo_url?: string | null
-          selling_price?: number | null
-          size?: string | null
-          sku?: string | null
-          store_id?: string | null
-          subcategory?: string | null
-          tax_rate?: number | null
-          updated_at?: string | null
-          video_url?: string | null
-        }
-        Update: {
-          brand?: string | null
-          buying_price?: number | null
-          category?: string | null
-          color?: string | null
-          created_at?: string | null
-          hsn_code?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          material?: string | null
-          mrp?: number | null
-          name?: string | null
-          photo_url?: string | null
-          selling_price?: number | null
-          size?: string | null
-          sku?: string | null
-          store_id?: string | null
-          subcategory?: string | null
-          tax_rate?: number | null
-          updated_at?: string | null
-          video_url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "products_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       get_in_stock_product_ids: {
         Args: { p_store_id: string }
         Returns: string[]
+      }
+      get_in_stock_shop_products: {
+        Args: { p_category?: string; p_limit?: number; p_store_id: string }
+        Returns: {
+          brand: string | null
+          buying_price: number | null
+          category: string | null
+          color: string | null
+          created_at: string
+          hsn_code: string | null
+          id: string
+          is_active: boolean
+          material: string | null
+          mrp: number | null
+          name: string
+          photo_url: string | null
+          selling_price: number
+          size: string | null
+          sku: string
+          store_id: string
+          subcategory: string | null
+          tax_rate: number
+          updated_at: string
+          video_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {
