@@ -115,11 +115,11 @@ export default function ShopCart() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
-              <span className="font-medium text-success">{subtotal >= 999 ? "FREE" : "₹79"}</span>
+              <span className="font-medium text-muted-foreground text-xs">Calculated at checkout</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between text-base font-bold">
               <span>Total</span>
-              <span>₹{(subtotal + (subtotal >= 999 ? 0 : 79)).toLocaleString()}</span>
+              <span>₹{subtotal.toLocaleString("en-IN")}</span>
             </div>
           </div>
           <Button className="w-full mt-6" size="lg" onClick={() => navigate("/shop/checkout")}>
