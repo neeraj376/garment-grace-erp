@@ -93,9 +93,8 @@ serve(async (req) => {
       }).eq("id", orderId);
     }
 
-    // Redirect to frontend
-    const baseUrl = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "";
-    const frontendBase = baseUrl || Deno.env.get("SITE_URL") || "https://garment-grace-erp.lovable.app";
+    // Redirect to frontend — origin/referer headers come from PayU, not the user's browser
+    const frontendBase = Deno.env.get("SITE_URL") || "https://garment-grace-erp.lovable.app";
     const redirectUrl = `${frontendBase}/shop/payment-result?status=${isSuccess ? "success" : "failed"}&order_id=${orderId}`;
 
     return new Response(null, {
