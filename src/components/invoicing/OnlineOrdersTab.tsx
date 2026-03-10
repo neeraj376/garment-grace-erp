@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -66,6 +68,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [editAwb, setEditAwb] = useState("");
   const [saving, setSaving] = useState(false);
   const [labelOrder, setLabelOrder] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const labelRef = useRef<HTMLDivElement>(null);
 
   const { data: orders, isLoading } = useQuery({
@@ -172,6 +177,52 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }, 100);
   };
 
+  const toggleSelect = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((o: any) => o.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error: itemsErr } = await supabase
+        .from("order_items")
+        .delete()
+        .in("order_id", ids);
+      if (itemsErr) throw itemsErr;
+
+      const { error: ordersErr } = await supabase
+        .from("orders")
+        .delete()
+        .in("id", ids);
+      if (ordersErr) throw ordersErr;
+
+      toast.success(`${ids.length} order(s) deleted`);
+      setSelectedIds(new Set());
+      setShowDeleteConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete orders");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -238,6 +289,24 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         ))}
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <span className="text-sm font-medium">{selectedIds.size} order(s) selected</span>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="gap-1.5"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       {/* Orders table */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
@@ -249,6 +318,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead className="w-8" />
                 <TableHead>Order #</TableHead>
                 <TableHead>Date</TableHead>
@@ -268,9 +343,15 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                   <>
                     <TableRow
                       key={order.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(order.id) ? "bg-muted/40" : ""}`}
                       onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(order.id)}
+                          onCheckedChange={() => toggleSelect(order.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         {isExpanded ? (
                           <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -329,7 +410,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                     </TableRow>
                     {isExpanded && (
                       <TableRow key={`${order.id}-details`}>
-                        <TableCell colSpan={9} className="bg-muted/30 p-4">
+                        <TableCell colSpan={10} className="bg-muted/30 p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Items */}
                             <div>
@@ -442,6 +523,29 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           </div>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete {selectedIds.size} order(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. All selected orders and their items will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
