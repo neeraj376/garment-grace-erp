@@ -114,12 +114,12 @@ export default function ShopCheckout() {
   }, [form.pincode]);
 
   useEffect(() => {
-    if (items.length === 0) {
+    if (items.length === 0 && !payuData && !loading) {
       navigate("/shop/cart");
     }
-  }, [items.length, navigate]);
+  }, [items.length, navigate, payuData, loading]);
 
-  if (items.length === 0) {
+  if (items.length === 0 && !payuData) {
     return null;
   }
 
@@ -182,7 +182,7 @@ export default function ShopCheckout() {
 
       if (error) throw error;
 
-      clearCart();
+      // Don't clear cart here — it triggers redirect before PayU form submits
 
       const payu = data.payu;
       setPayuData({
