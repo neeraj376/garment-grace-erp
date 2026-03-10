@@ -127,20 +127,26 @@ export default function ShopProduct() {
           </div>
 
           {/* Qty + Add to cart */}
-          <div className="flex items-center gap-4 mt-6">
-            <div className="flex items-center border border-border rounded-lg">
-              <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(Math.max(1, qty - 1))}>
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="px-4 text-sm font-medium">{qty}</span>
-              <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(qty + 1)}>
-                <Plus className="h-4 w-4" />
-              </button>
+          {outOfStock ? (
+            <div className="mt-6">
+              <Badge variant="destructive" className="text-sm px-4 py-2">Out of Stock</Badge>
             </div>
-            <Button size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
-              <ShoppingBag className="h-4 w-4" /> Add to Cart
-            </Button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-4 mt-6">
+              <div className="flex items-center border border-border rounded-lg">
+                <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(Math.max(1, qty - 1))}>
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="px-4 text-sm font-medium">{qty}</span>
+                <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(qty + 1)}>
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <Button size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
+                <ShoppingBag className="h-4 w-4" /> Add to Cart
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
