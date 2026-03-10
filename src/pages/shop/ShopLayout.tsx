@@ -13,10 +13,6 @@ export default function ShopLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top banner */}
-      <div className="bg-foreground text-background text-center text-xs py-1.5 font-medium tracking-wide">
-        FREE SHIPPING ON ORDERS ABOVE ₹999 • COD AVAILABLE
-      </div>
 
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
