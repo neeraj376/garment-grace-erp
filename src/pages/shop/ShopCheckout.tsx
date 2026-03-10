@@ -113,8 +113,13 @@ export default function ShopCheckout() {
     return () => clearTimeout(timer);
   }, [form.pincode]);
 
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate("/shop/cart");
+    }
+  }, [items.length, navigate]);
+
   if (items.length === 0) {
-    navigate("/shop/cart");
     return null;
   }
 
