@@ -48,11 +48,25 @@ export function ShopAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function fetchCustomer(userId: string) {
-    const { data } = await supabase
+    let { data } = await supabase
       .from("shop_customers")
       .select("id, name, email, phone")
       .eq("user_id", userId)
       .maybeSingle();
+    
+    // Auto-create shop_customer profile if missing
+    if (!data) {
+      const { data: session } = await supabase.auth.getSession();
+      const email = session?.session?.user?.email ?? null;
+      const name = session?.session?.user?.user_metadata?.full_name ?? null;
+      const { data: created } = await supabase
+        .from("shop_customers")
+        .insert({ user_id: userId, email, name })
+        .select("id, name, email, phone")
+        .single();
+      data = created;
+    }
+    
     setCustomer(data);
     setLoading(false);
   }
