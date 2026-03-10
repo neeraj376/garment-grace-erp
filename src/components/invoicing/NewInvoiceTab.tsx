@@ -83,7 +83,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       while (true) {
         const { data } = await supabase
           .from("products")
-          .select("id, sku, name, selling_price, tax_rate")
+          .select("id, sku, name, selling_price, tax_rate, category")
           .eq("store_id", storeId)
           .eq("is_active", true)
           .range(from, from + pageSize - 1);
