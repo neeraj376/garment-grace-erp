@@ -32,6 +32,7 @@ import ShopCart from "@/pages/shop/ShopCart";
 import ShopCheckout from "@/pages/shop/ShopCheckout";
 import ShopLogin from "@/pages/shop/ShopLogin";
 import ShopAccount from "@/pages/shop/ShopAccount";
+import ShopPaymentResult from "@/pages/shop/ShopPaymentResult";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,7 @@ function AppRoutes() {
         <Route path="checkout" element={<ShopCheckout />} />
         <Route path="login" element={<ShopLogin />} />
         <Route path="account" element={<ShopAccount />} />
+        <Route path="payment-result" element={<ShopPaymentResult />} />
       </Route>
       <Route path="/auth" element={<Navigate to="/" replace />} />
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
