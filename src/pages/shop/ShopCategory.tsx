@@ -35,7 +35,7 @@ export default function ShopCategory() {
       // Fetch categories from all in-stock products
       const { data: allData } = await supabase.rpc("get_in_stock_shop_products", {
         p_store_id: STORE_ID,
-        p_limit: 1000,
+        p_limit: 5000,
       });
       const unique = [...new Set((allData ?? []).map((d: any) => d.category).filter(Boolean))].sort() as string[];
       setCategories(unique);
