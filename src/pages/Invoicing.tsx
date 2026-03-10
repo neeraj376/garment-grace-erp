@@ -1,9 +1,10 @@
 import { useStore } from "@/hooks/useStore";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, History } from "lucide-react";
+import { Plus, History, ShoppingBag } from "lucide-react";
 import NewInvoiceTab from "@/components/invoicing/NewInvoiceTab";
 import InvoiceHistoryTab from "@/components/invoicing/InvoiceHistoryTab";
+import OnlineOrdersTab from "@/components/invoicing/OnlineOrdersTab";
 
 export default function Invoicing() {
   const { storeId } = useStore();
@@ -21,6 +22,9 @@ export default function Invoicing() {
           <TabsTrigger value="history" className="gap-1.5">
             <History className="h-4 w-4" /> Invoice History
           </TabsTrigger>
+          <TabsTrigger value="orders" className="gap-1.5">
+            <ShoppingBag className="h-4 w-4" /> Online Orders
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="new" className="mt-4 data-[state=inactive]:hidden" forceMount>
@@ -29,6 +33,10 @@ export default function Invoicing() {
 
         <TabsContent value="history" className="mt-4 data-[state=inactive]:hidden" forceMount>
           <InvoiceHistoryTab storeId={storeId} userId={user?.id} />
+        </TabsContent>
+
+        <TabsContent value="orders" className="mt-4">
+          <OnlineOrdersTab storeId={storeId} />
         </TabsContent>
       </Tabs>
     </div>
