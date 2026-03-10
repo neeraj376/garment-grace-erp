@@ -289,6 +289,24 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         ))}
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <span className="text-sm font-medium">{selectedIds.size} order(s) selected</span>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="gap-1.5"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       {/* Orders table */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
@@ -300,6 +318,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead className="w-8" />
                 <TableHead>Order #</TableHead>
                 <TableHead>Date</TableHead>
