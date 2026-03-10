@@ -1,21 +1,35 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCart } from "@/hooks/useCart";
 import { useShopAuth } from "@/hooks/useShopAuth";
 import { toast } from "sonner";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+];
+
 export default function ShopCheckout() {
   const { items, clearCart } = useCart();
   const { customer, user } = useShopAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const payuFormRef = useRef<HTMLFormElement>(null);
+  const [payuData, setPayuData] = useState<Record<string, string> | null>(null);
+
   const [form, setForm] = useState({
     name: customer?.name ?? "",
     phone: customer?.phone ?? "",
@@ -47,8 +61,7 @@ export default function ShopCheckout() {
     return sum + (p.selling_price * item.quantity * p.tax_rate) / (100 + p.tax_rate);
   }, 0);
 
-  const shipping = subtotal >= 999 ? 0 : 79;
-  const total = subtotal + shipping;
+  const total = subtotal;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -56,6 +69,16 @@ export default function ShopCheckout() {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form.phone.match(/^[6-9]\d{9}$/)) {
+      toast.error("Please enter a valid 10-digit Indian mobile number");
+      return;
+    }
+    if (!form.pincode.match(/^[1-9]\d{5}$/)) {
+      toast.error("Please enter a valid 6-digit pincode");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -84,10 +107,11 @@ export default function ShopCheckout() {
         shipping_address_id: addr.id,
         subtotal,
         tax_amount: Math.round(taxTotal),
-        shipping_amount: shipping,
+        shipping_amount: 0,
         total_amount: total,
         status: "pending",
         payment_status: "pending",
+        payment_method: "payu",
       }).select("id").single();
 
       if (orderErr) throw orderErr;
@@ -106,13 +130,49 @@ export default function ShopCheckout() {
       });
 
       await supabase.from("order_items").insert(orderItems);
+
+      // Get PayU hash from edge function
+      const productinfo = `Order ${orderNumber}`;
+      const surl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payu-verify`;
+      const furl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payu-verify`;
+
+      const { data: hashData, error: hashErr } = await supabase.functions.invoke("payu-hash", {
+        body: {
+          txnid: order.id,
+          amount: total.toFixed(2),
+          productinfo,
+          firstname: form.name,
+          email: customer.email || "customer@originee.in",
+          phone: form.phone,
+          surl,
+          furl,
+        },
+      });
+
+      if (hashErr) throw hashErr;
+
       await clearCart();
 
-      toast.success("Order placed successfully! Order #" + orderNumber);
-      navigate("/shop/account");
+      // Set PayU data and submit form
+      setPayuData({
+        key: hashData.key,
+        txnid: hashData.txnid,
+        amount: hashData.amount,
+        productinfo: hashData.productinfo,
+        firstname: hashData.firstname,
+        email: hashData.email,
+        phone: hashData.phone,
+        surl: hashData.surl,
+        furl: hashData.furl,
+        hash: hashData.hash,
+      });
+
+      // Submit the hidden form after state update
+      setTimeout(() => {
+        payuFormRef.current?.submit();
+      }, 100);
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
-    } finally {
       setLoading(false);
     }
   };
@@ -135,30 +195,61 @@ export default function ShopCheckout() {
                   <Input id="name" name="name" value={form.name} onChange={handleChange} required />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" name="phone" value={form.phone} onChange={handleChange} required />
+                  <Label htmlFor="phone">Mobile Number</Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+91</span>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      required
+                      pattern="[6-9]\d{9}"
+                      maxLength={10}
+                      placeholder="9876543210"
+                      className="rounded-l-none"
+                    />
+                  </div>
                 </div>
               </div>
               <div>
                 <Label htmlFor="address_line1">Address Line 1</Label>
-                <Input id="address_line1" name="address_line1" value={form.address_line1} onChange={handleChange} required />
+                <Input id="address_line1" name="address_line1" value={form.address_line1} onChange={handleChange} required placeholder="House/Flat No., Building, Street" />
               </div>
               <div>
                 <Label htmlFor="address_line2">Address Line 2 (optional)</Label>
-                <Input id="address_line2" name="address_line2" value={form.address_line2} onChange={handleChange} />
+                <Input id="address_line2" name="address_line2" value={form.address_line2} onChange={handleChange} placeholder="Landmark, Area, Colony" />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input
+                    id="pincode"
+                    name="pincode"
+                    value={form.pincode}
+                    onChange={handleChange}
+                    required
+                    pattern="[1-9]\d{5}"
+                    maxLength={6}
+                    placeholder="110001"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" name="city" value={form.city} onChange={handleChange} required />
+                  <Input id="city" name="city" value={form.city} onChange={handleChange} required placeholder="New Delhi" />
                 </div>
                 <div>
                   <Label htmlFor="state">State</Label>
-                  <Input id="state" name="state" value={form.state} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="pincode">Pincode</Label>
-                  <Input id="pincode" name="pincode" value={form.pincode} onChange={handleChange} required pattern="[0-9]{6}" />
+                  <Select value={form.state} onValueChange={(val) => setForm((f) => ({ ...f, state: val }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDIAN_STATES.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
@@ -178,7 +269,7 @@ export default function ShopCheckout() {
                   return (
                     <div key={item.id} className="flex justify-between">
                       <span className="text-muted-foreground line-clamp-1 flex-1">{p?.name} × {item.quantity}</span>
-                      <span className="font-medium ml-2">₹{((p?.selling_price ?? 0) * item.quantity).toLocaleString()}</span>
+                      <span className="font-medium ml-2">₹{((p?.selling_price ?? 0) * item.quantity).toLocaleString("en-IN")}</span>
                     </div>
                   );
                 })}
@@ -186,27 +277,36 @@ export default function ShopCheckout() {
               <div className="border-t border-border pt-2 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>₹{subtotal.toLocaleString()}</span>
+                  <span>₹{subtotal.toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className={shipping === 0 ? "text-success" : ""}>{shipping === 0 ? "FREE" : `₹${shipping}`}</span>
+                  <span className="text-muted-foreground">Incl. GST</span>
+                  <span>₹{Math.round(taxTotal).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
                   <span>Total</span>
-                  <span>₹{total.toLocaleString()}</span>
+                  <span>₹{total.toLocaleString("en-IN")}</span>
                 </div>
               </div>
-              <Button type="submit" className="w-full mt-4" size="lg" disabled={loading}>
-                {loading ? "Placing Order..." : "Place Order (COD)"}
+              <Button type="submit" className="w-full mt-4" size="lg" disabled={loading || !form.state}>
+                {loading ? "Processing..." : `Pay ₹${total.toLocaleString("en-IN")} with PayU`}
               </Button>
               <p className="text-[11px] text-muted-foreground text-center mt-2">
-                PayU payment integration coming soon. Currently COD only.
+                Secure payment via PayU. UPI, Cards, Net Banking accepted.
               </p>
             </CardContent>
           </Card>
         </div>
       </form>
+
+      {/* Hidden PayU redirect form */}
+      {payuData && (
+        <form ref={payuFormRef} method="POST" action="https://secure.payu.in/_payment" style={{ display: "none" }}>
+          {Object.entries(payuData).map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
+        </form>
+      )}
     </div>
   );
 }
