@@ -1,0 +1,1 @@
+ALTER TABLE products ALTER COLUMN tax_rate SET DEFAULT 5;
