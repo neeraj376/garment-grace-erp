@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, XCircle, Loader2, Truck } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useShopAuth } from "@/hooks/useShopAuth";
 import { toast } from "sonner";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
+const PICKUP_PINCODE = "110001"; // Store's pickup pincode
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -21,6 +24,14 @@ const INDIAN_STATES = [
   "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
   "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
 ];
+
+interface CourierOption {
+  courier_company_id: number;
+  courier_name: string;
+  rate: number;
+  etd: string;
+  estimated_delivery_days: number;
+}
 
 export default function ShopCheckout() {
   const { items, clearCart } = useCart();
@@ -39,6 +50,71 @@ export default function ShopCheckout() {
     state: "",
     pincode: "",
   });
+
+  // Serviceability state
+  const [checkingPincode, setCheckingPincode] = useState(false);
+  const [serviceable, setServiceable] = useState<boolean | null>(null);
+  const [couriers, setCouriers] = useState<CourierOption[]>([]);
+  const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
+  const [shippingCost, setShippingCost] = useState(0);
+
+  // Check pincode serviceability
+  useEffect(() => {
+    const pincode = form.pincode;
+    if (pincode.length !== 6 || !/^[1-9]\d{5}$/.test(pincode)) {
+      setServiceable(null);
+      setCouriers([]);
+      setSelectedCourier(null);
+      setShippingCost(0);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingPincode(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("shiprocket", {
+          body: {
+            action: "check_serviceability",
+            pickup_pincode: PICKUP_PINCODE,
+            delivery_pincode: pincode,
+            weight: "0.5",
+          },
+        });
+
+        if (error) throw error;
+
+        const available = data?.data?.available_courier_companies;
+        if (available && available.length > 0) {
+          setServiceable(true);
+          const sorted = available
+            .map((c: any) => ({
+              courier_company_id: c.courier_company_id,
+              courier_name: c.courier_name,
+              rate: c.rate,
+              etd: c.etd,
+              estimated_delivery_days: c.estimated_delivery_days,
+            }))
+            .sort((a: CourierOption, b: CourierOption) => a.rate - b.rate);
+          setCouriers(sorted);
+          // Auto-select cheapest
+          setSelectedCourier(sorted[0]);
+          setShippingCost(sorted[0].rate);
+        } else {
+          setServiceable(false);
+          setCouriers([]);
+          setSelectedCourier(null);
+          setShippingCost(0);
+        }
+      } catch {
+        setServiceable(null);
+        setCouriers([]);
+      } finally {
+        setCheckingPincode(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [form.pincode]);
 
   if (!user || !customer) {
     navigate("/shop/login");
@@ -61,7 +137,7 @@ export default function ShopCheckout() {
     return sum + (p.selling_price * item.quantity * p.tax_rate) / (100 + p.tax_rate);
   }, 0);
 
-  const total = subtotal;
+  const total = subtotal + shippingCost;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -76,6 +152,10 @@ export default function ShopCheckout() {
     }
     if (!form.pincode.match(/^[1-9]\d{5}$/)) {
       toast.error("Please enter a valid 6-digit pincode");
+      return;
+    }
+    if (!serviceable || !selectedCourier) {
+      toast.error("Delivery is not available to this pincode");
       return;
     }
 
@@ -96,10 +176,8 @@ export default function ShopCheckout() {
 
       if (addrErr) throw addrErr;
 
-      // Generate order number
       const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
 
-      // Create order
       const { data: order, error: orderErr } = await supabase.from("orders").insert({
         order_number: orderNumber,
         customer_id: customer.id,
@@ -107,16 +185,16 @@ export default function ShopCheckout() {
         shipping_address_id: addr.id,
         subtotal,
         tax_amount: Math.round(taxTotal),
-        shipping_amount: 0,
+        shipping_amount: shippingCost,
         total_amount: total,
         status: "pending",
         payment_status: "pending",
         payment_method: "payu",
+        courier_name: selectedCourier.courier_name,
       }).select("id").single();
 
       if (orderErr) throw orderErr;
 
-      // Create order items
       const orderItems = items.map((item) => {
         const p = (item as any).products;
         return {
@@ -131,7 +209,7 @@ export default function ShopCheckout() {
 
       await supabase.from("order_items").insert(orderItems);
 
-      // Get PayU hash from edge function
+      // Get PayU hash
       const productinfo = `Order ${orderNumber}`;
       const surl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payu-verify`;
       const furl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payu-verify`;
@@ -153,7 +231,6 @@ export default function ShopCheckout() {
 
       await clearCart();
 
-      // Set PayU data and submit form
       setPayuData({
         key: hashData.key,
         txnid: hashData.txnid,
@@ -167,7 +244,6 @@ export default function ShopCheckout() {
         hash: hashData.hash,
       });
 
-      // Submit the hidden form after state update
       setTimeout(() => {
         payuFormRef.current?.submit();
       }, 100);
@@ -233,6 +309,18 @@ export default function ShopCheckout() {
                     maxLength={6}
                     placeholder="110001"
                   />
+                  {/* Serviceability indicator */}
+                  {form.pincode.length === 6 && (
+                    <div className="mt-1 flex items-center gap-1 text-xs">
+                      {checkingPincode ? (
+                        <><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /><span className="text-muted-foreground">Checking...</span></>
+                      ) : serviceable === true ? (
+                        <><CheckCircle className="h-3 w-3 text-green-600" /><span className="text-green-600">Delivery available</span></>
+                      ) : serviceable === false ? (
+                        <><XCircle className="h-3 w-3 text-destructive" /><span className="text-destructive">Not deliverable</span></>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="city">City</Label>
@@ -254,6 +342,47 @@ export default function ShopCheckout() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Courier options */}
+          {couriers.length > 1 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Truck className="h-4 w-4" /> Shipping Options
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {couriers.slice(0, 4).map((c) => (
+                  <label
+                    key={c.courier_company_id}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedCourier?.courier_company_id === c.courier_company_id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="courier"
+                        checked={selectedCourier?.courier_company_id === c.courier_company_id}
+                        onChange={() => {
+                          setSelectedCourier(c);
+                          setShippingCost(c.rate);
+                        }}
+                        className="accent-primary"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">{c.courier_name}</p>
+                        <p className="text-xs text-muted-foreground">Est. {c.etd}</p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold">₹{c.rate}</span>
+                  </label>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Summary */}
@@ -283,12 +412,21 @@ export default function ShopCheckout() {
                   <span className="text-muted-foreground">Incl. GST</span>
                   <span>₹{Math.round(taxTotal).toLocaleString("en-IN")}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span>{shippingCost > 0 ? `₹${shippingCost}` : serviceable ? "₹0" : "—"}</span>
+                </div>
                 <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
                   <span>Total</span>
                   <span>₹{total.toLocaleString("en-IN")}</span>
                 </div>
               </div>
-              <Button type="submit" className="w-full mt-4" size="lg" disabled={loading || !form.state}>
+              <Button
+                type="submit"
+                className="w-full mt-4"
+                size="lg"
+                disabled={loading || !form.state || !serviceable || !selectedCourier}
+              >
                 {loading ? "Processing..." : `Pay ₹${total.toLocaleString("en-IN")} with PayU`}
               </Button>
               <p className="text-[11px] text-muted-foreground text-center mt-2">
