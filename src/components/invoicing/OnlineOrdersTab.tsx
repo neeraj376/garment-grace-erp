@@ -85,7 +85,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
             id, product_id, quantity, unit_price, tax_amount, total,
             products:product_id ( name, sku, photo_url )
           ),
-          shipping_addresses:shipping_address_id ( name, phone, address_line1, address_line2, city, state, pincode )
+          shipping_addresses:shipping_address_id ( name, phone, address_line1, address_line2, city, state, pincode ),
+          shop_customers:customer_id ( name, phone, email )
         `)
         .eq("store_id", storeId)
         .order("created_at", { ascending: false });
