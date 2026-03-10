@@ -75,12 +75,26 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   useEffect(() => {
     if (!storeId) return;
-    supabase
-      .from("products")
-      .select("id, sku, name, selling_price, tax_rate")
-      .eq("store_id", storeId)
-      .eq("is_active", true)
-      .then(({ data }) => setProducts(data ?? []));
+    // Fetch all products (paginated to avoid 1000-row limit)
+    const fetchAllProducts = async () => {
+      let allProducts: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("products")
+          .select("id, sku, name, selling_price, tax_rate")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .range(from, from + pageSize - 1);
+        if (!data || data.length === 0) break;
+        allProducts = allProducts.concat(data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      setProducts(allProducts);
+    };
+    fetchAllProducts();
     supabase
       .from("employees")
       .select("id, name, role")
