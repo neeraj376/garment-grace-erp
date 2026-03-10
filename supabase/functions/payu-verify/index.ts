@@ -55,6 +55,37 @@ serve(async (req) => {
         payment_method: "payu",
         status: "confirmed",
       }).eq("id", orderId);
+
+      // Deduct stock from inventory_batches after successful payment
+      const { data: orderItems } = await supabase
+        .from("order_items")
+        .select("product_id, quantity")
+        .eq("order_id", orderId);
+
+      if (orderItems && orderItems.length > 0) {
+        for (const item of orderItems) {
+          // Get the oldest batch with available stock (FIFO)
+          const { data: batches } = await supabase
+            .from("inventory_batches")
+            .select("id, quantity")
+            .eq("product_id", item.product_id)
+            .gt("quantity", 0)
+            .order("received_at", { ascending: true });
+
+          let remaining = item.quantity;
+          if (batches) {
+            for (const batch of batches) {
+              if (remaining <= 0) break;
+              const deduct = Math.min(remaining, batch.quantity);
+              await supabase
+                .from("inventory_batches")
+                .update({ quantity: batch.quantity - deduct })
+                .eq("id", batch.id);
+              remaining -= deduct;
+            }
+          }
+        }
+      }
     } else {
       await supabase.from("orders").update({
         payment_status: "failed",
