@@ -177,6 +177,52 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }, 100);
   };
 
+  const toggleSelect = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((o: any) => o.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error: itemsErr } = await supabase
+        .from("order_items")
+        .delete()
+        .in("order_id", ids);
+      if (itemsErr) throw itemsErr;
+
+      const { error: ordersErr } = await supabase
+        .from("orders")
+        .delete()
+        .in("id", ids);
+      if (ordersErr) throw ordersErr;
+
+      toast.success(`${ids.length} order(s) deleted`);
+      setSelectedIds(new Set());
+      setShowDeleteConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete orders");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
