@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.payu-verify]
 verify_jwt = false
+
+[functions.shiprocket]
+verify_jwt = false
