@@ -6,14 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Loader2, Truck } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
-import { useShopAuth } from "@/hooks/useShopAuth";
 import { toast } from "sonner";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
-const PICKUP_PINCODE = "110001"; // Store's pickup pincode
+const PICKUP_PINCODE = "110001";
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -35,15 +33,15 @@ interface CourierOption {
 
 export default function ShopCheckout() {
   const { items, clearCart } = useCart();
-  const { customer, user } = useShopAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const payuFormRef = useRef<HTMLFormElement>(null);
   const [payuData, setPayuData] = useState<Record<string, string> | null>(null);
 
   const [form, setForm] = useState({
-    name: customer?.name ?? "",
-    phone: customer?.phone ?? "",
+    name: "",
+    email: "",
+    phone: "",
     address_line1: "",
     address_line2: "",
     city: "",
@@ -96,7 +94,6 @@ export default function ShopCheckout() {
             }))
             .sort((a: CourierOption, b: CourierOption) => a.rate - b.rate);
           setCouriers(sorted);
-          // Auto-select cheapest
           setSelectedCourier(sorted[0]);
           setShippingCost(sorted[0].rate);
         } else {
@@ -116,23 +113,23 @@ export default function ShopCheckout() {
     return () => clearTimeout(timer);
   }, [form.pincode]);
 
-  if (!user || !customer) {
-    navigate("/shop/login");
-    return null;
-  }
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate("/shop/cart");
+    }
+  }, [items.length, navigate]);
 
   if (items.length === 0) {
-    navigate("/shop/cart");
     return null;
   }
 
   const subtotal = items.reduce((sum, item) => {
-    const price = (item as any).products?.selling_price ?? 0;
+    const price = item.product?.selling_price ?? 0;
     return sum + price * item.quantity;
   }, 0);
 
   const taxTotal = items.reduce((sum, item) => {
-    const p = (item as any).products;
+    const p = item.product;
     if (!p) return sum;
     return sum + (p.selling_price * item.quantity * p.tax_rate) / (100 + p.tax_rate);
   }, 0);
@@ -146,6 +143,10 @@ export default function ShopCheckout() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!form.name.trim()) {
+      toast.error("Please enter your full name");
+      return;
+    }
     if (!form.phone.match(/^[6-9]\d{9}$/)) {
       toast.error("Please enter a valid 10-digit Indian mobile number");
       return;
@@ -162,86 +163,39 @@ export default function ShopCheckout() {
     setLoading(true);
 
     try {
-      // Save shipping address
-      const { data: addr, error: addrErr } = await supabase.from("shipping_addresses").insert({
-        customer_id: customer.id,
-        name: form.name,
-        phone: form.phone,
-        address_line1: form.address_line1,
-        address_line2: form.address_line2 || null,
-        city: form.city,
-        state: form.state,
-        pincode: form.pincode,
-      }).select("id").single();
-
-      if (addrErr) throw addrErr;
-
-      const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
-
-      const { data: order, error: orderErr } = await supabase.from("orders").insert({
-        order_number: orderNumber,
-        customer_id: customer.id,
-        store_id: STORE_ID,
-        shipping_address_id: addr.id,
-        subtotal,
-        tax_amount: Math.round(taxTotal),
-        shipping_amount: shippingCost,
-        total_amount: total,
-        status: "pending",
-        payment_status: "pending",
-        payment_method: "payu",
-        courier_name: selectedCourier.courier_name,
-      }).select("id").single();
-
-      if (orderErr) throw orderErr;
-
-      const orderItems = items.map((item) => {
-        const p = (item as any).products;
-        return {
-          order_id: order.id,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          unit_price: p.selling_price,
-          tax_amount: (p.selling_price * item.quantity * p.tax_rate) / (100 + p.tax_rate),
-          total: p.selling_price * item.quantity,
-        };
-      });
-
-      await supabase.from("order_items").insert(orderItems);
-
-      // Get PayU hash
-      const productinfo = `Order ${orderNumber}`;
-      const surl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payu-verify`;
-      const furl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payu-verify`;
-
-      const { data: hashData, error: hashErr } = await supabase.functions.invoke("payu-hash", {
+      const { data, error } = await supabase.functions.invoke("guest-checkout", {
         body: {
-          txnid: order.id,
-          amount: total.toFixed(2),
-          productinfo,
-          firstname: form.name,
-          email: customer.email || "customer@originee.in",
-          phone: form.phone,
-          surl,
-          furl,
+          guest_name: form.name,
+          guest_email: form.email || null,
+          guest_phone: form.phone,
+          address_line1: form.address_line1,
+          address_line2: form.address_line2 || null,
+          city: form.city,
+          state: form.state,
+          pincode: form.pincode,
+          items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+          store_id: STORE_ID,
+          courier_name: selectedCourier.courier_name,
+          shipping_cost: shippingCost,
         },
       });
 
-      if (hashErr) throw hashErr;
+      if (error) throw error;
 
-      await clearCart();
+      clearCart();
 
+      const payu = data.payu;
       setPayuData({
-        key: hashData.key,
-        txnid: hashData.txnid,
-        amount: hashData.amount,
-        productinfo: hashData.productinfo,
-        firstname: hashData.firstname,
-        email: hashData.email,
-        phone: hashData.phone,
-        surl: hashData.surl,
-        furl: hashData.furl,
-        hash: hashData.hash,
+        key: payu.key,
+        txnid: payu.txnid,
+        amount: payu.amount,
+        productinfo: payu.productinfo,
+        firstname: payu.firstname,
+        email: payu.email,
+        phone: payu.phone,
+        surl: payu.surl,
+        furl: payu.furl,
+        hash: payu.hash,
       });
 
       setTimeout(() => {
@@ -258,20 +212,20 @@ export default function ShopCheckout() {
       <h1 className="font-display text-2xl font-bold mb-6">Checkout</h1>
 
       <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* Shipping form */}
+        {/* Contact & Shipping form */}
         <div className="lg:col-span-3 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Shipping Address</CardTitle>
+              <CardTitle className="text-lg">Contact & Shipping</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" name="name" value={form.name} onChange={handleChange} required />
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input id="name" name="name" value={form.name} onChange={handleChange} required placeholder="Your full name" />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Mobile Number</Label>
+                  <Label htmlFor="phone">Mobile Number *</Label>
                   <div className="flex">
                     <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+91</span>
                     <Input
@@ -289,7 +243,11 @@ export default function ShopCheckout() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="address_line1">Address Line 1</Label>
+                <Label htmlFor="email">Email (optional, for order updates)</Label>
+                <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com" />
+              </div>
+              <div>
+                <Label htmlFor="address_line1">Address Line 1 *</Label>
                 <Input id="address_line1" name="address_line1" value={form.address_line1} onChange={handleChange} required placeholder="House/Flat No., Building, Street" />
               </div>
               <div>
@@ -298,7 +256,7 @@ export default function ShopCheckout() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label htmlFor="pincode">Pincode</Label>
+                  <Label htmlFor="pincode">Pincode *</Label>
                   <Input
                     id="pincode"
                     name="pincode"
@@ -309,7 +267,6 @@ export default function ShopCheckout() {
                     maxLength={6}
                     placeholder="110001"
                   />
-                  {/* Serviceability indicator */}
                   {form.pincode.length === 6 && (
                     <div className="mt-1 flex items-center gap-1 text-xs">
                       {checkingPincode ? (
@@ -323,11 +280,11 @@ export default function ShopCheckout() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="city">City</Label>
+                  <Label htmlFor="city">City *</Label>
                   <Input id="city" name="city" value={form.city} onChange={handleChange} required placeholder="New Delhi" />
                 </div>
                 <div>
-                  <Label htmlFor="state">State</Label>
+                  <Label htmlFor="state">State *</Label>
                   <Select value={form.state} onValueChange={(val) => setForm((f) => ({ ...f, state: val }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select state" />
@@ -394,9 +351,9 @@ export default function ShopCheckout() {
             <CardContent>
               <div className="space-y-2 text-sm mb-4">
                 {items.map((item) => {
-                  const p = (item as any).products;
+                  const p = item.product;
                   return (
-                    <div key={item.id} className="flex justify-between">
+                    <div key={item.product_id} className="flex justify-between">
                       <span className="text-muted-foreground line-clamp-1 flex-1">{p?.name} × {item.quantity}</span>
                       <span className="font-medium ml-2">₹{((p?.selling_price ?? 0) * item.quantity).toLocaleString("en-IN")}</span>
                     </div>

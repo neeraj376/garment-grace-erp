@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { StoreProvider, useStore } from "@/hooks/useStore";
-import { ShopAuthProvider } from "@/hooks/useShopAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
@@ -125,11 +124,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <StoreProvider>
-            <ShopAuthProvider>
-              <CartProvider>
+            <CartProvider>
                 <AppRoutes />
-              </CartProvider>
-            </ShopAuthProvider>
+            </CartProvider>
           </StoreProvider>
         </AuthProvider>
       </BrowserRouter>

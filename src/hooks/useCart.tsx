@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useShopAuth } from "./useShopAuth";
 
-interface CartItem {
-  id: string;
+const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
+const CART_KEY = "originee_cart";
+
+export interface LocalCartItem {
   product_id: string;
   quantity: number;
+  // Populated after fetch
   product?: {
     id: string;
     name: string;
@@ -19,77 +21,107 @@ interface CartItem {
 }
 
 interface CartContextType {
-  items: CartItem[];
+  items: LocalCartItem[];
   cartCount: number;
   loading: boolean;
-  addToCart: (productId: string, qty?: number) => Promise<void>;
-  updateQuantity: (itemId: string, qty: number) => Promise<void>;
-  removeFromCart: (itemId: string) => Promise<void>;
-  clearCart: () => Promise<void>;
-  refreshCart: () => Promise<void>;
+  addToCart: (productId: string, qty?: number) => void;
+  updateQuantity: (productId: string, qty: number) => void;
+  removeFromCart: (productId: string) => void;
+  clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType>({
   items: [],
   cartCount: 0,
   loading: false,
-  addToCart: async () => {},
-  updateQuantity: async () => {},
-  removeFromCart: async () => {},
-  clearCart: async () => {},
-  refreshCart: async () => {},
+  addToCart: () => {},
+  updateQuantity: () => {},
+  removeFromCart: () => {},
+  clearCart: () => {},
 });
 
+function getRawCart(): { product_id: string; quantity: number }[] {
+  try {
+    return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveRawCart(cart: { product_id: string; quantity: number }[]) {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { customer } = useShopAuth();
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<LocalCartItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const refreshCart = useCallback(async () => {
-    if (!customer) { setItems([]); return; }
-    setLoading(true);
-    const { data } = await supabase
-      .from("cart_items")
-      .select("id, product_id, quantity, products:product_id(id, name, selling_price, mrp, photo_url, size, color, tax_rate)")
-      .eq("customer_id", customer.id);
-    setItems((data as any) ?? []);
-    setLoading(false);
-  }, [customer]);
-
-  useEffect(() => { refreshCart(); }, [refreshCart]);
-
-  const addToCart = async (productId: string, qty = 1) => {
-    if (!customer) return;
-    const existing = items.find((i) => i.product_id === productId);
-    if (existing) {
-      await supabase.from("cart_items").update({ quantity: existing.quantity + qty }).eq("id", existing.id);
-    } else {
-      await supabase.from("cart_items").insert({ customer_id: customer.id, product_id: productId, quantity: qty });
+  const hydrateProducts = useCallback(async () => {
+    const raw = getRawCart();
+    if (raw.length === 0) {
+      setItems([]);
+      return;
     }
-    await refreshCart();
+    setLoading(true);
+    const productIds = raw.map((r) => r.product_id);
+    const { data: products } = await supabase
+      .from("products")
+      .select("id, name, selling_price, mrp, photo_url, size, color, tax_rate")
+      .in("id", productIds)
+      .eq("store_id", STORE_ID);
+
+    const productMap = new Map((products ?? []).map((p) => [p.id, p]));
+    const hydrated: LocalCartItem[] = raw
+      .filter((r) => productMap.has(r.product_id))
+      .map((r) => ({
+        product_id: r.product_id,
+        quantity: r.quantity,
+        product: productMap.get(r.product_id)!,
+      }));
+    setItems(hydrated);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    hydrateProducts();
+  }, [hydrateProducts]);
+
+  const addToCart = (productId: string, qty = 1) => {
+    const raw = getRawCart();
+    const existing = raw.find((r) => r.product_id === productId);
+    if (existing) {
+      existing.quantity += qty;
+    } else {
+      raw.push({ product_id: productId, quantity: qty });
+    }
+    saveRawCart(raw);
+    hydrateProducts();
   };
 
-  const updateQuantity = async (itemId: string, qty: number) => {
-    if (qty <= 0) return removeFromCart(itemId);
-    await supabase.from("cart_items").update({ quantity: qty }).eq("id", itemId);
-    await refreshCart();
+  const updateQuantity = (productId: string, qty: number) => {
+    if (qty <= 0) return removeFromCart(productId);
+    const raw = getRawCart();
+    const item = raw.find((r) => r.product_id === productId);
+    if (item) item.quantity = qty;
+    saveRawCart(raw);
+    hydrateProducts();
   };
 
-  const removeFromCart = async (itemId: string) => {
-    await supabase.from("cart_items").delete().eq("id", itemId);
-    await refreshCart();
+  const removeFromCart = (productId: string) => {
+    const raw = getRawCart().filter((r) => r.product_id !== productId);
+    saveRawCart(raw);
+    hydrateProducts();
   };
 
-  const clearCart = async () => {
-    if (!customer) return;
-    await supabase.from("cart_items").delete().eq("customer_id", customer.id);
+  const clearCart = () => {
+    localStorage.removeItem(CART_KEY);
     setItems([]);
   };
 
   const cartCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, cartCount, loading, addToCart, updateQuantity, removeFromCart, clearCart, refreshCart }}>
+    <CartContext.Provider value={{ items, cartCount, loading, addToCart, updateQuantity, removeFromCart, clearCart }}>
       {children}
     </CartContext.Provider>
   );

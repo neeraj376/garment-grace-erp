@@ -1,13 +1,11 @@
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import { ShoppingBag, Search, User, Menu, X } from "lucide-react";
+import { ShoppingBag, Search, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useShopAuth } from "@/hooks/useShopAuth";
 import { useCart } from "@/hooks/useCart";
 
 export default function ShopLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { customer, user } = useShopAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
 
@@ -41,9 +39,6 @@ export default function ShopLayout() {
                   {cartCount}
                 </span>
               )}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate(user ? "/shop/account" : "/shop/login")}>
-              <User className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
