@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.woo-webhook]
 verify_jwt = false
+
+[functions.payu-hash]
+verify_jwt = false
+
+[functions.payu-verify]
+verify_jwt = false

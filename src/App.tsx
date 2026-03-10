@@ -107,6 +107,7 @@ function AppRoutes() {
         <Route path="checkout" element={<ShopCheckout />} />
         <Route path="login" element={<ShopLogin />} />
         <Route path="account" element={<ShopAccount />} />
+        <Route path="payment-result" element={<ShopPaymentResult />} />
       </Route>
       <Route path="/auth" element={<Navigate to="/" replace />} />
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
