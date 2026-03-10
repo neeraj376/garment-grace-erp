@@ -32,6 +32,7 @@ import ShopCart from "@/pages/shop/ShopCart";
 import ShopCheckout from "@/pages/shop/ShopCheckout";
 import ShopLogin from "@/pages/shop/ShopLogin";
 import ShopAccount from "@/pages/shop/ShopAccount";
+import ShopPaymentResult from "@/pages/shop/ShopPaymentResult";
 
 const queryClient = new QueryClient();
 
