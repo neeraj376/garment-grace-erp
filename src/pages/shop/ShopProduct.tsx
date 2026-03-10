@@ -27,14 +27,9 @@ export default function ShopProduct() {
         .maybeSingle();
       setProduct(data);
 
-      // Check if product is in stock
       if (data) {
-        const { data: batches } = await supabase
-          .from("inventory_batches")
-          .select("quantity")
-          .eq("product_id", id);
-        const totalStock = (batches ?? []).reduce((sum: number, b: any) => sum + (b.quantity || 0), 0);
-        setOutOfStock(totalStock <= 0);
+        const { data: stockData } = await supabase.rpc("get_product_stock", { p_product_id: id });
+        setOutOfStock((stockData ?? 0) <= 0);
       }
       setLoading(false);
     };

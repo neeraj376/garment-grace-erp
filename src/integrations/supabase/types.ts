@@ -980,6 +980,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_product_stock: { Args: { p_product_id: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never
