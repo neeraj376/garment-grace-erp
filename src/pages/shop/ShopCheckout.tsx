@@ -182,7 +182,7 @@ export default function ShopCheckout() {
 
       if (error) throw error;
 
-      clearCart();
+      // Don't clear cart here — it triggers redirect before PayU form submits
 
       const payu = data.payu;
       setPayuData({

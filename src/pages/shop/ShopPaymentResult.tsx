@@ -1,14 +1,23 @@
+import { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useCart } from "@/hooks/useCart";
 
 export default function ShopPaymentResult() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { clearCart } = useCart();
   const status = params.get("status");
   const isSuccess = status === "success";
 
+  // Clear cart after successful payment
+  useEffect(() => {
+    if (isSuccess) {
+      clearCart();
+    }
+  }, [isSuccess, clearCart]);
   return (
     <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[60vh]">
       <Card className="max-w-md w-full text-center">
