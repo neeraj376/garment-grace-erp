@@ -68,6 +68,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [editAwb, setEditAwb] = useState("");
   const [saving, setSaving] = useState(false);
   const [labelOrder, setLabelOrder] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const labelRef = useRef<HTMLDivElement>(null);
 
   const { data: orders, isLoading } = useQuery({
