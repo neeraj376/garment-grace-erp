@@ -365,8 +365,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                         {format(new Date(order.created_at), "dd MMM yy, h:mm a")}
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm font-medium">{addr?.name || "—"}</div>
-                        <div className="text-xs text-muted-foreground">{addr?.phone || ""}</div>
+                        <div className="text-sm font-medium">{addr?.name || order.shop_customers?.name || "—"}</div>
+                        <div className="text-xs text-muted-foreground">{addr?.phone || order.shop_customers?.phone || ""}</div>
                       </TableCell>
                       <TableCell className="font-semibold">
                         ₹{Number(order.total_amount).toLocaleString("en-IN")}
