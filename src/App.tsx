@@ -124,11 +124,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <StoreProvider>
-            <ShopAuthProvider>
-              <CartProvider>
+            <CartProvider>
                 <AppRoutes />
-              </CartProvider>
-            </ShopAuthProvider>
+            </CartProvider>
           </StoreProvider>
         </AuthProvider>
       </BrowserRouter>
