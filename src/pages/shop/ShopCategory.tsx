@@ -22,33 +22,48 @@ export default function ShopCategory() {
   }, [slug]);
 
   useEffect(() => {
-    setLoading(true);
-    let query = supabase
-      .from("products")
-      .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
-      .eq("store_id", STORE_ID)
-      .eq("is_active", true);
+    const fetchProducts = async () => {
+      setLoading(true);
+      // Get in-stock product IDs
+      const { data: stockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: STORE_ID });
+      const inStockIds = (stockIds ?? []) as string[];
 
-    if (selectedCategory !== "all") {
-      query = query.eq("category", selectedCategory);
-    }
+      if (inStockIds.length === 0) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
 
-    query.order("created_at", { ascending: false }).limit(200).then(({ data }) => {
-      setProducts(data ?? []);
-      setLoading(false);
-    });
+      let query = supabase
+        .from("products")
+        .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
+        .eq("store_id", STORE_ID)
+        .eq("is_active", true)
+        .in("id", inStockIds);
 
-    // Fetch categories
-    supabase
-      .from("products")
-      .select("category")
-      .eq("store_id", STORE_ID)
-      .eq("is_active", true)
-      .not("category", "is", null)
-      .then(({ data }) => {
-        const unique = [...new Set((data ?? []).map((d: any) => d.category))].sort() as string[];
-        setCategories(unique);
+      if (selectedCategory !== "all") {
+        query = query.eq("category", selectedCategory);
+      }
+
+      query.order("created_at", { ascending: false }).limit(200).then(({ data }) => {
+        setProducts(data ?? []);
+        setLoading(false);
       });
+
+      // Fetch categories (only from in-stock products)
+      supabase
+        .from("products")
+        .select("category")
+        .eq("store_id", STORE_ID)
+        .eq("is_active", true)
+        .in("id", inStockIds)
+        .not("category", "is", null)
+        .then(({ data }) => {
+          const unique = [...new Set((data ?? []).map((d: any) => d.category))].sort() as string[];
+          setCategories(unique);
+        });
+    };
+    fetchProducts();
   }, [selectedCategory]);
 
   const filtered = useMemo(() => {

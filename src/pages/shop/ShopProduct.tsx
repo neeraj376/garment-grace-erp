@@ -15,17 +15,30 @@ export default function ShopProduct() {
   const [qty, setQty] = useState(1);
   const { addToCart } = useCart();
 
+  const [outOfStock, setOutOfStock] = useState(false);
+
   useEffect(() => {
     if (!id) return;
-    supabase
-      .from("products")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setProduct(data);
-        setLoading(false);
-      });
+    const fetchProduct = async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      setProduct(data);
+
+      // Check if product is in stock
+      if (data) {
+        const { data: batches } = await supabase
+          .from("inventory_batches")
+          .select("quantity")
+          .eq("product_id", id);
+        const totalStock = (batches ?? []).reduce((sum: number, b: any) => sum + (b.quantity || 0), 0);
+        setOutOfStock(totalStock <= 0);
+      }
+      setLoading(false);
+    };
+    fetchProduct();
   }, [id]);
 
   const handleAddToCart = () => {

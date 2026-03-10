@@ -21,26 +21,40 @@ export default function ShopHome() {
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
 
   useEffect(() => {
-    // Featured: products with photos
-    supabase
-      .from("products")
-      .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
-      .eq("store_id", STORE_ID)
-      .eq("is_active", true)
-      .not("photo_url", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(8)
-      .then(({ data }) => setFeatured(data ?? []));
+    const fetchProducts = async () => {
+      // Get in-stock product IDs
+      const { data: stockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: STORE_ID });
+      const inStockIds = (stockIds ?? []) as string[];
+      if (inStockIds.length === 0) {
+        setFeatured([]);
+        setNewArrivals([]);
+        return;
+      }
 
-    // New arrivals
-    supabase
-      .from("products")
-      .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
-      .eq("store_id", STORE_ID)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(8)
-      .then(({ data }) => setNewArrivals(data ?? []));
+      // Featured: products with photos that are in stock
+      supabase
+        .from("products")
+        .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
+        .eq("store_id", STORE_ID)
+        .eq("is_active", true)
+        .not("photo_url", "is", null)
+        .in("id", inStockIds)
+        .order("created_at", { ascending: false })
+        .limit(8)
+        .then(({ data }) => setFeatured(data ?? []));
+
+      // New arrivals in stock
+      supabase
+        .from("products")
+        .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
+        .eq("store_id", STORE_ID)
+        .eq("is_active", true)
+        .in("id", inStockIds)
+        .order("created_at", { ascending: false })
+        .limit(8)
+        .then(({ data }) => setNewArrivals(data ?? []));
+    };
+    fetchProducts();
   }, []);
 
   return (
