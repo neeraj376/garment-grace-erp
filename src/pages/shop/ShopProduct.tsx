@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, ArrowLeft, Minus, Plus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
-import { useShopAuth } from "@/hooks/useShopAuth";
 import { toast } from "sonner";
 
 export default function ShopProduct() {
@@ -15,7 +14,6 @@ export default function ShopProduct() {
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const { addToCart } = useCart();
-  const { user } = useShopAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -30,13 +28,8 @@ export default function ShopProduct() {
       });
   }, [id]);
 
-  const handleAddToCart = async () => {
-    if (!user) {
-      toast.info("Please login to add items to your cart");
-      navigate("/shop/login");
-      return;
-    }
-    await addToCart(product.id, qty);
+  const handleAddToCart = () => {
+    addToCart(product.id, qty);
     toast.success("Added to cart!");
   };
 
