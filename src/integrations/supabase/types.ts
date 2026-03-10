@@ -949,6 +949,37 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: string[]
       }
+      get_in_stock_shop_products: {
+        Args: { p_category?: string; p_limit?: number; p_store_id: string }
+        Returns: {
+          brand: string | null
+          buying_price: number | null
+          category: string | null
+          color: string | null
+          created_at: string
+          hsn_code: string | null
+          id: string
+          is_active: boolean
+          material: string | null
+          mrp: number | null
+          name: string
+          photo_url: string | null
+          selling_price: number
+          size: string | null
+          sku: string
+          store_id: string
+          subcategory: string | null
+          tax_rate: number
+          updated_at: string
+          video_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never

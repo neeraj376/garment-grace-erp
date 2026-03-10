@@ -22,37 +22,14 @@ export default function ShopHome() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      // Get in-stock product IDs
-      const { data: stockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: STORE_ID });
-      const inStockIds = (stockIds ?? []) as string[];
-      if (inStockIds.length === 0) {
-        setFeatured([]);
-        setNewArrivals([]);
-        return;
-      }
-
-      // Featured: products with photos that are in stock
-      supabase
-        .from("products")
-        .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
-        .eq("store_id", STORE_ID)
-        .eq("is_active", true)
-        .not("photo_url", "is", null)
-        .in("id", inStockIds)
-        .order("created_at", { ascending: false })
-        .limit(8)
-        .then(({ data }) => setFeatured(data ?? []));
-
-      // New arrivals in stock
-      supabase
-        .from("products")
-        .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
-        .eq("store_id", STORE_ID)
-        .eq("is_active", true)
-        .in("id", inStockIds)
-        .order("created_at", { ascending: false })
-        .limit(8)
-        .then(({ data }) => setNewArrivals(data ?? []));
+      // Featured: in-stock products with photos
+      const { data: featuredData } = await supabase.rpc("get_in_stock_shop_products", {
+        p_store_id: STORE_ID,
+        p_limit: 50,
+      });
+      const allProducts = featuredData ?? [];
+      setFeatured(allProducts.filter((p: any) => p.photo_url).slice(0, 8));
+      setNewArrivals(allProducts.slice(0, 8));
     };
     fetchProducts();
   }, []);

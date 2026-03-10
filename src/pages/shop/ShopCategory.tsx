@@ -24,44 +24,21 @@ export default function ShopCategory() {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
-      // Get in-stock product IDs
-      const { data: stockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: STORE_ID });
-      const inStockIds = (stockIds ?? []) as string[];
-
-      if (inStockIds.length === 0) {
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
-      let query = supabase
-        .from("products")
-        .select("id, name, selling_price, mrp, photo_url, category, brand, size, color")
-        .eq("store_id", STORE_ID)
-        .eq("is_active", true)
-        .in("id", inStockIds);
-
-      if (selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory);
-      }
-
-      query.order("created_at", { ascending: false }).limit(200).then(({ data }) => {
-        setProducts(data ?? []);
-        setLoading(false);
+      const { data } = await supabase.rpc("get_in_stock_shop_products", {
+        p_store_id: STORE_ID,
+        p_category: selectedCategory === "all" ? null : selectedCategory,
+        p_limit: 200,
       });
+      setProducts(data ?? []);
+      setLoading(false);
 
-      // Fetch categories (only from in-stock products)
-      supabase
-        .from("products")
-        .select("category")
-        .eq("store_id", STORE_ID)
-        .eq("is_active", true)
-        .in("id", inStockIds)
-        .not("category", "is", null)
-        .then(({ data }) => {
-          const unique = [...new Set((data ?? []).map((d: any) => d.category))].sort() as string[];
-          setCategories(unique);
-        });
+      // Fetch categories from all in-stock products
+      const { data: allData } = await supabase.rpc("get_in_stock_shop_products", {
+        p_store_id: STORE_ID,
+        p_limit: 1000,
+      });
+      const unique = [...new Set((allData ?? []).map((d: any) => d.category).filter(Boolean))].sort() as string[];
+      setCategories(unique);
     };
     fetchProducts();
   }, [selectedCategory]);
