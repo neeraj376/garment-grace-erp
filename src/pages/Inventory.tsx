@@ -203,6 +203,46 @@ export default function Inventory() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const priceFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpdatePricesCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !storeId) return;
+
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, ''));
+
+    console.log("Price update CSV headers:", headers);
+
+    let updated = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const vals = parseCSVLine(lines[i]);
+      const row: any = {};
+      headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
+
+      const sku = row.sku || row.sku_code || row.barcode || '';
+      if (!sku) continue;
+
+      const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.purchasprice || row.purchaseprice || row.cost_price || row.cost || row.bp || row.cp);
+      if (buyingPrice <= 0) continue;
+
+      const { error } = await supabase
+        .from("products")
+        .update({ buying_price: buyingPrice })
+        .eq("store_id", storeId)
+        .eq("sku", sku)
+        .eq("is_active", true);
+
+      if (error) { console.error(`Row ${i} price update error:`, error.message); continue; }
+      updated++;
+    }
+
+    toast({ title: `${updated} product prices updated` });
+    fetchProducts();
+    if (priceFileInputRef.current) priceFileInputRef.current.value = "";
+  };
+
   const handleDownloadCSV = () => {
     const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Purchase Price", "Stock"];
     const rows = products.map(p => {
