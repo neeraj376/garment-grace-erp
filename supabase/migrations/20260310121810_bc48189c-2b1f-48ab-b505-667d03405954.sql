@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_in_stock_product_ids(uuid) TO anon, authenticated;
