@@ -1,14 +1,17 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Search, Package, ChevronDown, ChevronUp } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface OnlineOrdersTabProps {
   storeId: string | null;
@@ -29,6 +32,8 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "paid", label: "Paid" },
   { value: "failed", label: "Failed" },
 ];
+
+const ORDER_STATUS_FLOW = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
 const statusColor = (status: string) => {
   switch (status) {
@@ -51,10 +56,17 @@ const paymentColor = (status: string) => {
 };
 
 export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [editStatus, setEditStatus] = useState("");
+  const [editAwb, setEditAwb] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [labelOrder, setLabelOrder] = useState<any>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["online-orders", storeId, statusFilter, paymentFilter],
@@ -90,9 +102,75 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     return (
       o.order_number?.toLowerCase().includes(s) ||
       addr?.name?.toLowerCase().includes(s) ||
-      addr?.phone?.includes(s)
+      addr?.phone?.includes(s) ||
+      o.tracking_number?.toLowerCase().includes(s)
     );
   });
+
+  const handleOpenEdit = (order: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingOrder(order);
+    setEditStatus(order.status);
+    setEditAwb(order.tracking_number || "");
+  };
+
+  const handleSaveOrder = async () => {
+    if (!editingOrder) return;
+    setSaving(true);
+    try {
+      const updates: any = { status: editStatus };
+      if (editAwb.trim()) updates.tracking_number = editAwb.trim();
+
+      const { error } = await supabase
+        .from("orders")
+        .update(updates)
+        .eq("id", editingOrder.id);
+
+      if (error) throw error;
+      toast.success("Order updated");
+      queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+      setEditingOrder(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update order");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePrintLabel = (order: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLabelOrder(order);
+    setTimeout(() => {
+      const content = labelRef.current;
+      if (!content) return;
+      const printWindow = window.open("", "_blank", "width=500,height=700");
+      if (!printWindow) {
+        toast.error("Please allow popups to print labels");
+        return;
+      }
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Shipping Label — ${order.order_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            @media print { body { padding: 12px; } }
+          </style>
+        </head>
+        <body>${content.innerHTML}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      setTimeout(() => {
+        printWindow.close();
+        setLabelOrder(null);
+      }, 500);
+    }, 100);
+  };
 
   if (isLoading) {
     return (
@@ -109,7 +187,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by order #, name, or phone..."
+            placeholder="Search by order #, name, phone, or AWB..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -178,7 +256,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 <TableHead>Amount</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Courier</TableHead>
+                <TableHead>AWB / Courier</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -220,13 +299,37 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                           {order.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {order.courier_name || "—"}
+                      <TableCell className="text-sm">
+                        {order.tracking_number ? (
+                          <span className="font-mono">{order.tracking_number}</span>
+                        ) : (
+                          <span className="text-muted-foreground">{order.courier_name || "—"}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Update Status / AWB"
+                            onClick={(e) => handleOpenEdit(order, e)}
+                          >
+                            <Truck className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Print Shipping Label"
+                            onClick={(e) => handlePrintLabel(order, e)}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                     {isExpanded && (
                       <TableRow key={`${order.id}-details`}>
-                        <TableCell colSpan={8} className="bg-muted/30 p-4">
+                        <TableCell colSpan={9} className="bg-muted/30 p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Items */}
                             <div>
@@ -267,7 +370,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                               )}
                               {order.tracking_number && (
                                 <div className="mt-3">
-                                  <p className="text-xs text-muted-foreground">Tracking #</p>
+                                  <p className="text-xs text-muted-foreground">AWB / Tracking #</p>
                                   <p className="text-sm font-mono">{order.tracking_number}</p>
                                 </div>
                               )}
@@ -289,6 +392,105 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           </Table>
         </div>
       )}
+
+      {/* Edit Status / AWB Dialog */}
+      <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Order — {editingOrder?.order_number}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Order Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_STATUS_FLOW.map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>AWB / Tracking Number</Label>
+              <Input
+                value={editAwb}
+                onChange={(e) => setEditAwb(e.target.value)}
+                placeholder="Enter AWB or tracking number"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingOrder(null)}>Cancel</Button>
+            <Button onClick={handleSaveOrder} disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hidden printable shipping label */}
+      {labelOrder && (
+        <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+          <div ref={labelRef}>
+            <ShippingLabel order={labelOrder} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShippingLabel({ order }: { order: any }) {
+  const addr = order.shipping_addresses;
+  return (
+    <div style={{ width: "400px", border: "2px solid #000", padding: "20px", fontFamily: "Arial, sans-serif" }}>
+      <div style={{ textAlign: "center", borderBottom: "2px solid #000", paddingBottom: "12px", marginBottom: "16px" }}>
+        <h2 style={{ fontSize: "18px", fontWeight: "bold", margin: 0 }}>SHIPPING LABEL</h2>
+        <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>Order: {order.order_number}</p>
+        <p style={{ fontSize: "11px", color: "#666" }}>{format(new Date(order.created_at), "dd MMM yyyy")}</p>
+      </div>
+
+      <div style={{ marginBottom: "16px" }}>
+        <p style={{ fontSize: "11px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>
+          Deliver To:
+        </p>
+        <p style={{ fontSize: "16px", fontWeight: "bold", margin: "0 0 4px 0" }}>{addr?.name || "—"}</p>
+        <p style={{ fontSize: "14px", margin: "0 0 2px 0" }}>📞 {addr?.phone || "—"}</p>
+      </div>
+
+      <div style={{ marginBottom: "16px", padding: "10px", background: "#f5f5f5", borderRadius: "4px" }}>
+        <p style={{ fontSize: "13px", margin: "0 0 2px 0" }}>{addr?.address_line1 || ""}</p>
+        {addr?.address_line2 && <p style={{ fontSize: "13px", margin: "0 0 2px 0" }}>{addr.address_line2}</p>}
+        <p style={{ fontSize: "13px", fontWeight: "bold", margin: "4px 0 0 0" }}>
+          {addr?.city}, {addr?.state} — {addr?.pincode}
+        </p>
+      </div>
+
+      {order.tracking_number && (
+        <div style={{ borderTop: "1px dashed #ccc", paddingTop: "12px", marginTop: "12px" }}>
+          <p style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>AWB / Tracking Number:</p>
+          <p style={{ fontSize: "16px", fontWeight: "bold", fontFamily: "monospace", letterSpacing: "1px" }}>
+            {order.tracking_number}
+          </p>
+        </div>
+      )}
+
+      {order.courier_name && (
+        <div style={{ marginTop: "8px" }}>
+          <p style={{ fontSize: "11px", color: "#666" }}>Courier: <strong>{order.courier_name}</strong></p>
+        </div>
+      )}
+
+      <div style={{ borderTop: "1px dashed #ccc", paddingTop: "10px", marginTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
+        <span>Payment: <strong>{order.payment_status}</strong></span>
+        <span>Total: <strong>₹{Number(order.total_amount).toLocaleString("en-IN")}</strong></span>
+      </div>
     </div>
   );
 }
