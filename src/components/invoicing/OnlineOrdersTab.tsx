@@ -343,9 +343,15 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                   <>
                     <TableRow
                       key={order.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(order.id) ? "bg-muted/40" : ""}`}
                       onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(order.id)}
+                          onCheckedChange={() => toggleSelect(order.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         {isExpanded ? (
                           <ChevronUp className="h-4 w-4 text-muted-foreground" />
