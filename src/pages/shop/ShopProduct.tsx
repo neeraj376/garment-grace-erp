@@ -15,17 +15,30 @@ export default function ShopProduct() {
   const [qty, setQty] = useState(1);
   const { addToCart } = useCart();
 
+  const [outOfStock, setOutOfStock] = useState(false);
+
   useEffect(() => {
     if (!id) return;
-    supabase
-      .from("products")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setProduct(data);
-        setLoading(false);
-      });
+    const fetchProduct = async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      setProduct(data);
+
+      // Check if product is in stock
+      if (data) {
+        const { data: batches } = await supabase
+          .from("inventory_batches")
+          .select("quantity")
+          .eq("product_id", id);
+        const totalStock = (batches ?? []).reduce((sum: number, b: any) => sum + (b.quantity || 0), 0);
+        setOutOfStock(totalStock <= 0);
+      }
+      setLoading(false);
+    };
+    fetchProduct();
   }, [id]);
 
   const handleAddToCart = () => {
@@ -114,20 +127,26 @@ export default function ShopProduct() {
           </div>
 
           {/* Qty + Add to cart */}
-          <div className="flex items-center gap-4 mt-6">
-            <div className="flex items-center border border-border rounded-lg">
-              <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(Math.max(1, qty - 1))}>
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="px-4 text-sm font-medium">{qty}</span>
-              <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(qty + 1)}>
-                <Plus className="h-4 w-4" />
-              </button>
+          {outOfStock ? (
+            <div className="mt-6">
+              <Badge variant="destructive" className="text-sm px-4 py-2">Out of Stock</Badge>
             </div>
-            <Button size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
-              <ShoppingBag className="h-4 w-4" /> Add to Cart
-            </Button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-4 mt-6">
+              <div className="flex items-center border border-border rounded-lg">
+                <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(Math.max(1, qty - 1))}>
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="px-4 text-sm font-medium">{qty}</span>
+                <button className="p-2 hover:bg-muted transition-colors" onClick={() => setQty(qty + 1)}>
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <Button size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
+                <ShoppingBag className="h-4 w-4" /> Add to Cart
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
