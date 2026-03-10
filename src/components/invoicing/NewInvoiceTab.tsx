@@ -83,7 +83,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       while (true) {
         const { data } = await supabase
           .from("products")
-          .select("id, sku, name, selling_price, tax_rate")
+          .select("id, sku, name, selling_price, tax_rate, category")
           .eq("store_id", storeId)
           .eq("is_active", true)
           .range(from, from + pageSize - 1);
@@ -311,7 +311,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between"
                   >
                     <span>{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
-                    <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                    <span className="flex items-center gap-2">
+                      {p.category && <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.category}</span>}
+                      <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                    </span>
                   </button>
                 ))}
               </div>
