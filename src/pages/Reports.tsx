@@ -180,6 +180,7 @@ export default function Reports() {
       csv += toCsvString(["Payment Method", "Amount"], paymentSplit.map(p => [p.name, p.value]));
     }
 
+    if (employeeSales.length > 0) {
       csv += "\n\n=== Employee Sales ===\n";
       csv += toCsvString(
         ["Employee", "Role", "Invoices", "Total Sales", "Avg per Invoice"],
