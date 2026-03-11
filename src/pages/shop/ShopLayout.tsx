@@ -95,8 +95,8 @@ export default function ShopLayout() {
           </div>
           <div>
             <h4 className="font-display font-semibold text-background mb-3">Contact</h4>
-            <p className="text-sm">Phone: +91 98106 99887</p>
-            <p className="text-sm mt-1">Email: support@originee.in</p>
+            <p className="text-sm">Phone: +91 93109 04557, +91 88828 66833</p>
+            <p className="text-sm mt-1">Email: originee-store@gmail.com</p>
           </div>
         </div>
         <div className="border-t border-background/10 py-4 text-center text-xs text-background/50">
