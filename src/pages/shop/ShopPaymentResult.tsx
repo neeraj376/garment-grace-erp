@@ -57,13 +57,13 @@ export default function ShopPaymentResult() {
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button asChild size="lg">
-              <Link to="/shop">
+              <Link to="/">
                 <Home className="h-4 w-4 mr-2" />
                 Back to Home
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link to="/shop/account">View My Orders</Link>
+              <Link to="/account">View My Orders</Link>
             </Button>
           </div>
         </div>
@@ -83,10 +83,10 @@ export default function ShopPaymentResult() {
         </div>
         <div className="flex gap-3 justify-center pt-2">
           <Button asChild>
-            <Link to="/shop/cart">Try Again</Link>
+            <Link to="/cart">Try Again</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link to="/shop">Go Home</Link>
+            <Link to="/">Go Home</Link>
           </Button>
         </div>
       </div>

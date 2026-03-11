@@ -17,7 +17,7 @@ export default function ShopCart() {
         <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h2 className="font-display text-xl font-bold mb-2">Your cart is empty</h2>
         <p className="text-muted-foreground mb-4">Browse our collection and add items to your cart.</p>
-        <Link to="/shop/category/all">
+        <Link to="/category/all">
           <Button>Continue Shopping</Button>
         </Link>
       </div>
@@ -108,7 +108,7 @@ export default function ShopCart() {
               <span>₹{subtotal.toLocaleString("en-IN")}</span>
             </div>
           </div>
-          <Button className="w-full mt-6" size="lg" onClick={() => navigate("/shop/checkout")}>
+          <Button className="w-full mt-6" size="lg" onClick={() => navigate("/checkout")}>
             Proceed to Checkout
           </Button>
         </div>

@@ -25,13 +25,13 @@ export default function ShopAccount() {
   }, [customer]);
 
   if (!user) {
-    navigate("/shop/login");
+    navigate("/login");
     return null;
   }
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/shop");
+    navigate("/");
   };
 
   const handleTrack = async (order: any) => {

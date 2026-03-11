@@ -50,28 +50,32 @@ function AppRoutes() {
     );
   }
 
-  // Mark as loaded once we've successfully loaded
   if (!isLoading) {
     hasLoadedOnce.current = true;
   }
 
+  // Shop routes (always accessible)
+  const shopRoutes = (
+    <Route path="/" element={<ShopLayout />}>
+      <Route index element={<ShopHome />} />
+      <Route path="category/:slug" element={<ShopCategory />} />
+      <Route path="product/:id" element={<ShopProduct />} />
+      <Route path="cart" element={<ShopCart />} />
+      <Route path="checkout" element={<ShopCheckout />} />
+      <Route path="login" element={<ShopLogin />} />
+      <Route path="account" element={<ShopAccount />} />
+      <Route path="payment-result" element={<ShopPaymentResult />} />
+    </Route>
+  );
+
   if (!user) {
     return (
       <Routes>
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/administrator/auth" element={<Auth />} />
         <Route path="/invoice/:id" element={<InvoicePublic />} />
-        {/* Shop routes accessible without admin auth */}
-        <Route path="/shop" element={<ShopLayout />}>
-          <Route index element={<ShopHome />} />
-          <Route path="category/:slug" element={<ShopCategory />} />
-          <Route path="product/:id" element={<ShopProduct />} />
-          <Route path="cart" element={<ShopCart />} />
-          <Route path="checkout" element={<ShopCheckout />} />
-          <Route path="login" element={<ShopLogin />} />
-          <Route path="account" element={<ShopAccount />} />
-          <Route path="payment-result" element={<ShopPaymentResult />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/auth" replace />} />
+        {shopRoutes}
+        <Route path="/administrator/*" element={<Navigate to="/administrator/auth" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     );
   }
@@ -79,38 +83,30 @@ function AppRoutes() {
   if (!storeId) {
     return (
       <Routes>
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="*" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/administrator/onboarding" element={<Onboarding />} />
+        {shopRoutes}
+        <Route path="/administrator/*" element={<Navigate to="/administrator/onboarding" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     );
   }
 
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/invoicing" element={<Invoicing />} />
-        <Route path="/stock" element={<StockSummary />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/loyalty" element={<Loyalty />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/employees" element={<Employees />} />
-        <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/administrator" element={<AppLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="invoicing" element={<Invoicing />} />
+        <Route path="stock" element={<StockSummary />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="loyalty" element={<Loyalty />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="employees" element={<Employees />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
-      {/* Shop routes also accessible when admin is logged in */}
-      <Route path="/shop" element={<ShopLayout />}>
-        <Route index element={<ShopHome />} />
-        <Route path="category/:slug" element={<ShopCategory />} />
-        <Route path="product/:id" element={<ShopProduct />} />
-        <Route path="cart" element={<ShopCart />} />
-        <Route path="checkout" element={<ShopCheckout />} />
-        <Route path="login" element={<ShopLogin />} />
-        <Route path="account" element={<ShopAccount />} />
-        <Route path="payment-result" element={<ShopPaymentResult />} />
-      </Route>
-      <Route path="/auth" element={<Navigate to="/" replace />} />
-      <Route path="/onboarding" element={<Navigate to="/" replace />} />
+      {shopRoutes}
+      <Route path="/administrator/auth" element={<Navigate to="/administrator" replace />} />
+      <Route path="/administrator/onboarding" element={<Navigate to="/administrator" replace />} />
       <Route path="/invoice/:id" element={<InvoicePublic />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

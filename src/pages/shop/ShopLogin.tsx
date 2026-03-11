@@ -50,7 +50,7 @@ export default function ShopLogin() {
         return;
       }
       toast.success("Welcome back!");
-      navigate("/shop");
+      navigate("/");
     }
     setLoading(false);
   };

@@ -115,7 +115,7 @@ export default function ShopCheckout() {
 
   useEffect(() => {
     if (items.length === 0 && !payuData && !loading) {
-      navigate("/shop/cart");
+      navigate("/cart");
     }
   }, [items.length, navigate, payuData, loading]);
 

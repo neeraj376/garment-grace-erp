@@ -15,24 +15,24 @@ export default function ShopLayout() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          <Link to="/shop" className="font-display text-xl font-bold text-foreground tracking-tight shrink-0">
+          <Link to="/" className="font-display text-xl font-bold text-foreground tracking-tight shrink-0">
             Originee
           </Link>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <Link to="/shop" className="hover:text-foreground transition-colors">Home</Link>
-            <Link to="/shop/category/all" className="hover:text-foreground transition-colors">All Products</Link>
-            <Link to="/shop/category/Jeans" className="hover:text-foreground transition-colors">Jeans</Link>
-            <Link to="/shop/category/T-shirt" className="hover:text-foreground transition-colors">T-Shirts</Link>
-            <Link to="/shop/category/Jacket" className="hover:text-foreground transition-colors">Jackets</Link>
+            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+            <Link to="/category/all" className="hover:text-foreground transition-colors">All Products</Link>
+            <Link to="/category/Jeans" className="hover:text-foreground transition-colors">Jeans</Link>
+            <Link to="/category/T-shirt" className="hover:text-foreground transition-colors">T-Shirts</Link>
+            <Link to="/category/Jacket" className="hover:text-foreground transition-colors">Jackets</Link>
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/shop/category/all")}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/category/all")}>
               <Search className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/shop/cart")}>
+            <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/cart")}>
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
@@ -54,7 +54,7 @@ export default function ShopLayout() {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t border-border bg-card px-4 py-3 space-y-1">
-            {["Home:/shop", "All Products:/shop/category/all", "Jeans:/shop/category/Jeans", "T-Shirts:/shop/category/T-shirt", "Jackets:/shop/category/Jacket"].map((item) => {
+            {["Home:/", "All Products:/category/all", "Jeans:/category/Jeans", "T-Shirts:/category/T-shirt", "Jackets:/category/Jacket"].map((item) => {
               const [label, path] = item.split(":");
               return (
                 <Link
@@ -88,9 +88,9 @@ export default function ShopLayout() {
           <div>
             <h4 className="font-display font-semibold text-background mb-3">Quick Links</h4>
             <div className="space-y-2 text-sm">
-              <Link to="/shop" className="block hover:text-background transition-colors">Home</Link>
-              <Link to="/shop/category/all" className="block hover:text-background transition-colors">All Products</Link>
-              <Link to="/shop/cart" className="block hover:text-background transition-colors">Cart</Link>
+              <Link to="/" className="block hover:text-background transition-colors">Home</Link>
+              <Link to="/category/all" className="block hover:text-background transition-colors">All Products</Link>
+              <Link to="/cart" className="block hover:text-background transition-colors">Cart</Link>
             </div>
           </div>
           <div>

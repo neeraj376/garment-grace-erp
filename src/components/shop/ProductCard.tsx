@@ -20,7 +20,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link
-      to={`/shop/product/${product.id}`}
+      to={`/product/${product.id}`}
       className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-200"
     >
       <div className="aspect-[3/4] bg-muted relative overflow-hidden">
