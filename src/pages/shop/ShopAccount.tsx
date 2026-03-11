@@ -31,7 +31,7 @@ export default function ShopAccount() {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/shop");
+    navigate("/");
   };
 
   const handleTrack = async (order: any) => {

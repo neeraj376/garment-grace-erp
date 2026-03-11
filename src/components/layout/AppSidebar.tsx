@@ -16,15 +16,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Package, label: "Inventory", path: "/inventory" },
-  { icon: FileText, label: "Invoicing", path: "/invoicing" },
-  { icon: Boxes, label: "Stock Summary", path: "/stock" },
-  { icon: Users, label: "Customers", path: "/customers" },
-  { icon: Award, label: "Loyalty", path: "/loyalty" },
-  { icon: BarChart3, label: "Reports", path: "/reports" },
-  { icon: UserCog, label: "Employees", path: "/employees" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/administrator" },
+  { icon: Package, label: "Inventory", path: "/administrator/inventory" },
+  { icon: FileText, label: "Invoicing", path: "/administrator/invoicing" },
+  { icon: Boxes, label: "Stock Summary", path: "/administrator/stock" },
+  { icon: Users, label: "Customers", path: "/administrator/customers" },
+  { icon: Award, label: "Loyalty", path: "/administrator/loyalty" },
+  { icon: BarChart3, label: "Reports", path: "/administrator/reports" },
+  { icon: UserCog, label: "Employees", path: "/administrator/employees" },
+  { icon: Settings, label: "Settings", path: "/administrator/settings" },
 ];
 
 export default function AppSidebar() {
@@ -33,7 +33,7 @@ export default function AppSidebar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    navigate("/administrator/auth");
   };
 
   return (
@@ -48,7 +48,7 @@ export default function AppSidebar() {
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {navItems.map(({ icon: Icon, label, path }) => {
           const isActive = location.pathname === path || 
-            (path !== "/" && location.pathname.startsWith(path));
+            (path !== "/administrator" && location.pathname.startsWith(path));
           return (
             <Link
               key={path}
