@@ -97,6 +97,14 @@ export default function ShopLayout() {
             <h4 className="font-display font-semibold text-background mb-3">Contact</h4>
             <p className="text-sm">Phone: +91 93109 04557, +91 88828 66833</p>
             <p className="text-sm mt-1">Email: originee-store@gmail.com</p>
+            <div className="flex items-center gap-3 mt-3">
+              <a href="https://www.instagram.com/origi_nee/" target="_blank" rel="noopener noreferrer" className="hover:text-background transition-colors">
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a href="https://www.youtube.com/@originee-store" target="_blank" rel="noopener noreferrer" className="hover:text-background transition-colors">
+                <Youtube className="h-5 w-5" />
+              </a>
+            </div>
           </div>
         </div>
         <div className="border-t border-background/10 py-4 text-center text-xs text-background/50">
