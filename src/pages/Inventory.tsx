@@ -246,7 +246,7 @@ export default function Inventory() {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Purchase Price", "Stock"];
+    const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Purchase Price", "Stock", "Photo URL"];
     const rows = products.map(p => {
       const batches = p.inventory_batches || [];
       const avgBuyingPrice = batches.length
@@ -254,7 +254,7 @@ export default function Inventory() {
         : "";
       return [
         p.sku, p.name, p.category || "", p.subcategory || "", p.brand || "", p.size || "", p.color || "",
-        p.selling_price, p.mrp ?? "", p.tax_rate, avgBuyingPrice, p.total_stock ?? 0,
+        p.selling_price, p.mrp ?? "", p.tax_rate, avgBuyingPrice, p.total_stock ?? 0, p.photo_url || "",
       ];
     });
     const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
