@@ -25,7 +25,7 @@ export default function ShopAccount() {
   }, [customer]);
 
   if (!user) {
-    navigate("/shop/login");
+    navigate("/login");
     return null;
   }
 
