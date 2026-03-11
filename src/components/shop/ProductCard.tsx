@@ -51,6 +51,9 @@ export default function ProductCard({ product }: { product: Product }) {
         <h3 className="text-sm font-medium text-foreground line-clamp-1 mb-1">
           {product.name}
         </h3>
+        {product.category && (
+          <p className="text-[11px] text-muted-foreground mb-1">{product.category}</p>
+        )}
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-foreground">₹{product.selling_price.toLocaleString()}</span>
           {product.mrp && product.mrp > product.selling_price && (
