@@ -165,6 +165,7 @@ export default function Inventory() {
       const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 18;
 
       try {
+        const photoUrl = row.photo_url || row.image_url || row.image || row.photo || row.picture || null;
         const { data: product, error } = await supabase
           .from("products")
           .insert({
@@ -180,6 +181,7 @@ export default function Inventory() {
             mrp: mrpVal || null,
             tax_rate: taxRate,
             buying_price: buyingPrice,
+            photo_url: photoUrl || null,
           })
           .select()
           .single();
