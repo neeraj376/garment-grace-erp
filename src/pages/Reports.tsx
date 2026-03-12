@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
 import { CalendarDays, Users, Download, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import InventoryAgingReport from "@/components/reports/InventoryAgingReport";
 
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
@@ -199,169 +201,182 @@ export default function Reports() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="page-header">Reports</h1>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={downloadReport}>
-            <Download className="h-4 w-4 mr-1" /> Export CSV
-          </Button>
-          <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Today</SelectItem>
-              <SelectItem value="weekly">This Week</SelectItem>
-              <SelectItem value="monthly">This Month</SelectItem>
-              <SelectItem value="quarterly">This Quarter</SelectItem>
-              <SelectItem value="yearly">This Year</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
-            </SelectContent>
-          </Select>
-          {period === "custom" && (
-            <div className="flex gap-2 items-center">
-              <Input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-36" />
-              <span className="text-muted-foreground">to</span>
-              <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-36" />
+      <h1 className="page-header">Reports</h1>
+      <Tabs defaultValue="sales" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="sales">Sales & P&L</TabsTrigger>
+          <TabsTrigger value="aging">Inventory Aging</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="sales" className="space-y-6">
+          <div className="flex items-center justify-end flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={downloadReport}>
+                <Download className="h-4 w-4 mr-1" /> Export CSV
+              </Button>
+              <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Today</SelectItem>
+                  <SelectItem value="weekly">This Week</SelectItem>
+                  <SelectItem value="monthly">This Month</SelectItem>
+                  <SelectItem value="quarterly">This Quarter</SelectItem>
+                  <SelectItem value="yearly">This Year</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+              {period === "custom" && (
+                <div className="flex gap-2 items-center">
+                  <Input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-36" />
+                  <span className="text-muted-foreground">to</span>
+                  <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-36" />
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Revenue</p>
-            <p className="text-2xl font-bold font-display">{formatCurrency(summary.revenue)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Cost of Goods</p>
-            <p className="text-2xl font-bold font-display">{formatCurrency(summary.cost)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">GST Collected</p>
-            <p className="text-2xl font-bold font-display">{formatCurrency(summary.tax)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Net Profit</p>
-            <p className={`text-2xl font-bold font-display ${summary.profit >= 0 ? "text-success" : "text-destructive"}`}>
-              {formatCurrency(summary.profit)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle className="section-title">Sales Trend</CardTitle></CardHeader>
-        <CardContent>
-          <div className="h-72">
-            {salesData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                  <XAxis dataKey="date" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
-                  <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Line type="monotone" dataKey="amount" stroke="hsl(221, 83%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground">
-                <CalendarDays className="h-6 w-6 mr-2" /> No data for this period
-              </div>
-            )}
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="section-title">Payment Source Split</CardTitle></CardHeader>
-        <CardContent>
-          {paymentSplit.length > 0 ? (
-            <div className="h-72 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={paymentSplit}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    innerRadius={50}
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={{ stroke: "hsl(220, 9%, 46%)" }}
-                  >
-                    {paymentSplit.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={PAYMENT_COLORS[entry.name.toLowerCase()] || PAYMENT_COLORS.other}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-32 flex items-center justify-center text-muted-foreground">
-              <CreditCard className="h-6 w-6 mr-2" /> No payment data for this period
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-5">
+                <p className="text-sm text-muted-foreground">Revenue</p>
+                <p className="text-2xl font-bold font-display">{formatCurrency(summary.revenue)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <p className="text-sm text-muted-foreground">Cost of Goods</p>
+                <p className="text-2xl font-bold font-display">{formatCurrency(summary.cost)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <p className="text-sm text-muted-foreground">GST Collected</p>
+                <p className="text-2xl font-bold font-display">{formatCurrency(summary.tax)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5">
+                <p className="text-sm text-muted-foreground">Net Profit</p>
+                <p className={`text-2xl font-bold font-display ${summary.profit >= 0 ? "text-success" : "text-destructive"}`}>
+                  {formatCurrency(summary.profit)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Card>
-        <CardHeader><CardTitle className="section-title">Employee Sales Performance</CardTitle></CardHeader>
-        <CardContent>
-          {employeeSales.length > 0 ? (
-            <>
-              <div className="h-64 mb-6">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={employeeSales}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                    <XAxis dataKey="name" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
-                    <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                    <Bar dataKey="totalSales" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} name="Total Sales" />
-                  </BarChart>
-                </ResponsiveContainer>
+          <Card>
+            <CardHeader><CardTitle className="section-title">Sales Trend</CardTitle></CardHeader>
+            <CardContent>
+              <div className="h-72">
+                {salesData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={salesData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                      <XAxis dataKey="date" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
+                      <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
+                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Line type="monotone" dataKey="amount" stroke="hsl(221, 83%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground">
+                    <CalendarDays className="h-6 w-6 mr-2" /> No data for this period
+                  </div>
+                )}
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead className="text-center">Invoices</TableHead>
-                    <TableHead className="text-right">Total Sales</TableHead>
-                    <TableHead className="text-right">Avg per Invoice</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employeeSales.map(emp => (
-                    <TableRow key={emp.id}>
-                      <TableCell className="font-medium">{emp.name}</TableCell>
-                      <TableCell className="text-muted-foreground capitalize">{emp.role}</TableCell>
-                      <TableCell className="text-center">{emp.invoiceCount}</TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(emp.totalSales)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(Math.round(emp.totalSales / emp.invoiceCount))}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </>
-          ) : (
-            <div className="h-32 flex items-center justify-center text-muted-foreground">
-              <Users className="h-6 w-6 mr-2" /> No employee sales data for this period
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="section-title">Payment Source Split</CardTitle></CardHeader>
+            <CardContent>
+              {paymentSplit.length > 0 ? (
+                <div className="h-72 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={paymentSplit}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        innerRadius={50}
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={{ stroke: "hsl(220, 9%, 46%)" }}
+                      >
+                        {paymentSplit.map((entry) => (
+                          <Cell
+                            key={entry.name}
+                            fill={PAYMENT_COLORS[entry.name.toLowerCase()] || PAYMENT_COLORS.other}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-32 flex items-center justify-center text-muted-foreground">
+                  <CreditCard className="h-6 w-6 mr-2" /> No payment data for this period
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="section-title">Employee Sales Performance</CardTitle></CardHeader>
+            <CardContent>
+              {employeeSales.length > 0 ? (
+                <>
+                  <div className="h-64 mb-6">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={employeeSales}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                        <XAxis dataKey="name" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
+                        <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
+                        <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                        <Bar dataKey="totalSales" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} name="Total Sales" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead className="text-center">Invoices</TableHead>
+                        <TableHead className="text-right">Total Sales</TableHead>
+                        <TableHead className="text-right">Avg per Invoice</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {employeeSales.map(emp => (
+                        <TableRow key={emp.id}>
+                          <TableCell className="font-medium">{emp.name}</TableCell>
+                          <TableCell className="text-muted-foreground capitalize">{emp.role}</TableCell>
+                          <TableCell className="text-center">{emp.invoiceCount}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(emp.totalSales)}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Math.round(emp.totalSales / emp.invoiceCount))}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
+              ) : (
+                <div className="h-32 flex items-center justify-center text-muted-foreground">
+                  <Users className="h-6 w-6 mr-2" /> No employee sales data for this period
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="aging">
+          <InventoryAgingReport />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
