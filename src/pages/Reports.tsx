@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
 import { CalendarDays, Users, Download, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import InventoryAgingReport from "@/components/reports/InventoryAgingReport";
 
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
