@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Save, RefreshCw, ShoppingCart, ArrowDownToLine, ArrowUpFromLine, Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Save } from "lucide-react";
 
 export default function SettingsPage() {
   const { storeId } = useStore();
