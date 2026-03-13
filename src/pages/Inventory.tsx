@@ -344,6 +344,18 @@ export default function Inventory() {
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>
+          <Button variant="link" size="sm" className="text-xs px-1" onClick={() => {
+            const sampleHeaders = ["sku","name","category","subcategory","brand","size","color","selling_price","mrp","tax_rate","buying_price","quantity","photo_url"];
+            const sampleRow = ["SKU001","Sample Product","Shirts","Casual","BrandX","M","Blue","999","1199","5","500","10","https://example.com/image.jpg"];
+            const csv = [sampleHeaders.join(","), sampleRow.join(",")].join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = "sample-inventory-template.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}>
+            <Download className="h-3 w-3 mr-1" /> Sample CSV
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
