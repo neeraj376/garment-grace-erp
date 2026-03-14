@@ -219,12 +219,12 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
                 <p className="text-[10px] text-muted-foreground truncate">{photo.name}</p>
               </div>
               {/* Overlay actions */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none">
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => openAssignDialog(photo)}
+                  className="h-7 text-xs gap-1 pointer-events-auto"
+                  onClick={(e) => { e.stopPropagation(); openAssignDialog(photo); }}
                 >
                   <Link2 className="h-3 w-3" />
                   Assign
@@ -232,8 +232,8 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
                 <Button
                   size="sm"
                   variant="destructive"
-                  className="h-7 w-7 p-0"
-                  onClick={() => deletePhoto(photo)}
+                  className="h-7 w-7 p-0 pointer-events-auto"
+                  onClick={(e) => { e.stopPropagation(); deletePhoto(photo); }}
                   disabled={deleting === photo.id}
                 >
                   {deleting === photo.id ? (
