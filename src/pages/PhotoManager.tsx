@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Upload, ImagePlus, Trash2, Link2, Search, X, Loader2, CheckCircle2, Package, FolderOpen } from "lucide-react";
+import { Upload, ImagePlus, Trash2, Link2, Search, X, Loader2, CheckCircle2, Package, FolderOpen, Image as ImageIcon } from "lucide-react";
 import { parsePhotoUrls, serializePhotoUrls, MAX_PHOTOS } from "@/lib/photoUtils";
 import StoragePhotosTab from "@/components/photos/StoragePhotosTab";
+import AssignedPhotosTab from "@/components/photos/AssignedPhotosTab";
 import PhotoPreviewDialog from "@/components/photos/PhotoPreviewDialog";
 
 interface UploadedPhoto {
@@ -277,6 +278,10 @@ export default function PhotoManager() {
             <FolderOpen className="h-4 w-4" />
             Uploaded Photos
           </TabsTrigger>
+          <TabsTrigger value="assigned" className="gap-2">
+            <ImageIcon className="h-4 w-4" />
+            Assigned Photos
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="upload" className="space-y-4">
@@ -394,6 +399,10 @@ export default function PhotoManager() {
 
         <TabsContent value="library">
           <StoragePhotosTab storeId={storeId} />
+        </TabsContent>
+
+        <TabsContent value="assigned">
+          <AssignedPhotosTab storeId={storeId} />
         </TabsContent>
       </Tabs>
 
