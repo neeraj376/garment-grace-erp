@@ -82,9 +82,36 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
     }
   }, [storeId, toast]);
 
+  const loadAssignedUrls = useCallback(async () => {
+    if (!storeId) return;
+    try {
+      let allUrls: string[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("products")
+          .select("photo_url")
+          .eq("store_id", storeId)
+          .not("photo_url", "is", null)
+          .range(from, from + pageSize - 1);
+        if (!data || data.length === 0) break;
+        data.forEach((p) => {
+          parsePhotoUrls(p.photo_url).forEach((url) => allUrls.push(url));
+        });
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      setAssignedUrls(new Set(allUrls));
+    } catch (err) {
+      console.error("Failed to load assigned URLs", err);
+    }
+  }, [storeId]);
+
   useEffect(() => {
     loadStoragePhotos();
-  }, [loadStoragePhotos]);
+    loadAssignedUrls();
+  }, [loadStoragePhotos, loadAssignedUrls]);
 
   const deletePhoto = async (photo: StoragePhoto) => {
     if (!storeId) return;
