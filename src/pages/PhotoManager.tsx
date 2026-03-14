@@ -335,7 +335,7 @@ export default function PhotoManager() {
                           : "border-border hover:border-primary/30"
                       }`}
                     >
-                      <div className="aspect-square">
+                      <div className="aspect-square cursor-pointer" onClick={() => setPreviewPhoto(photo)}>
                         <img
                           src={photo.url}
                           alt={photo.filename}
