@@ -35,6 +35,7 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
   const [storagePhotos, setStoragePhotos] = useState<StoragePhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [assignedUrls, setAssignedUrls] = useState<Set<string>>(new Set());
 
   // Assign dialog
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -81,9 +82,36 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
     }
   }, [storeId, toast]);
 
+  const loadAssignedUrls = useCallback(async () => {
+    if (!storeId) return;
+    try {
+      let allUrls: string[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("products")
+          .select("photo_url")
+          .eq("store_id", storeId)
+          .not("photo_url", "is", null)
+          .range(from, from + pageSize - 1);
+        if (!data || data.length === 0) break;
+        data.forEach((p) => {
+          parsePhotoUrls(p.photo_url).forEach((url) => allUrls.push(url));
+        });
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      setAssignedUrls(new Set(allUrls));
+    } catch (err) {
+      console.error("Failed to load assigned URLs", err);
+    }
+  }, [storeId]);
+
   useEffect(() => {
     loadStoragePhotos();
-  }, [loadStoragePhotos]);
+    loadAssignedUrls();
+  }, [loadStoragePhotos, loadAssignedUrls]);
 
   const deletePhoto = async (photo: StoragePhoto) => {
     if (!storeId) return;
@@ -144,6 +172,8 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
         .update({ photo_url: serializePhotoUrls(updatedPhotos) })
         .eq("id", product.id);
       if (error) throw error;
+      // Mark as assigned so it disappears from the grid
+      setAssignedUrls((prev) => new Set([...prev, selectedPhoto.url]));
       toast({ title: `Photo assigned to ${product.name}` });
       setAssignDialogOpen(false);
     } catch (err: any) {
@@ -153,9 +183,15 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
     }
   };
 
-  const filteredPhotos = storagePhotos.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Normalize URL for comparison (strip query params)
+  const normalizeUrl = (url: string) => url.split("?")[0];
+
+  const filteredPhotos = storagePhotos.filter((p) => {
+    const normalizedPhotoUrl = normalizeUrl(p.url);
+    const isAssigned = Array.from(assignedUrls).some((u) => normalizeUrl(u) === normalizedPhotoUrl);
+    if (isAssigned) return false;
+    return p.name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const filteredProducts = products.filter((p) => {
     const q = productSearch.toLowerCase();
