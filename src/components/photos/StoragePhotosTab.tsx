@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Search, X, Link2, Trash2, Package, RefreshCw, CheckCircle2 } from "lucide-react";
+import PhotoPreviewDialog from "@/components/photos/PhotoPreviewDialog";
 import { parsePhotoUrls, serializePhotoUrls, MAX_PHOTOS } from "@/lib/photoUtils";
 
 interface StoragePhoto {
