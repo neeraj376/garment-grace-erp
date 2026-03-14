@@ -147,6 +147,12 @@ export default function PhotoPreviewDialog({
       setRemovingBg(false);
     }
   };
+  const undoBackgroundRemoval = () => {
+    setCurrentUrl(originalUrl);
+    setBgRemoved(false);
+    onImageUpdated?.(originalUrl);
+    toast({ title: "Reverted to original image" });
+  };
 
   const isProcessing = saving || removingBg;
 
