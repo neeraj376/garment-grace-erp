@@ -115,7 +115,7 @@ export default function ShopCheckout() {
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [form.pincode]);
+  }, [form.pincode, items]);
 
   useEffect(() => {
     if (items.length === 0 && !payuData && !loading) {
