@@ -35,6 +35,7 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
   const [storagePhotos, setStoragePhotos] = useState<StoragePhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [assignedUrls, setAssignedUrls] = useState<Set<string>>(new Set());
 
   // Assign dialog
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
