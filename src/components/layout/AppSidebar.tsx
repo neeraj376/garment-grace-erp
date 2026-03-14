@@ -11,6 +11,7 @@ import {
   Award,
   LogOut,
   Store,
+  ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ const navItems = [
   { icon: Award, label: "Loyalty", path: "/administrator/loyalty" },
   { icon: BarChart3, label: "Reports", path: "/administrator/reports" },
   { icon: UserCog, label: "Employees", path: "/administrator/employees" },
+  { icon: ImagePlus, label: "Photo Manager", path: "/administrator/photos" },
   { icon: Settings, label: "Settings", path: "/administrator/settings" },
 ];
 
