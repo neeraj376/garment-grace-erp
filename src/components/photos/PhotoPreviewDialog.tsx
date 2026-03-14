@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Link2, Trash2, ZoomIn, ZoomOut, RotateCw, Save, Sparkles, Loader2 } from "lucide-react";
+import { Link2, Trash2, ZoomIn, ZoomOut, RotateCw, Save, Sparkles, Loader2, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
