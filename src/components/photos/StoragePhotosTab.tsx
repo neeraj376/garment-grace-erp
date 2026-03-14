@@ -330,6 +330,8 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
         onOpenChange={(open) => !open && setPreviewPhoto(null)}
         photoUrl={previewPhoto?.url || ""}
         photoName={previewPhoto?.name || ""}
+        storagePath={previewPhoto && storeId ? `${storeId}/bulk-photos/${previewPhoto.name}` : undefined}
+        storeId={storeId}
         onAssign={() => {
           if (previewPhoto) {
             setPreviewPhoto(null);
@@ -341,6 +343,14 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
           setPreviewPhoto(null);
           deletePhoto(photo);
         } : undefined}
+        onImageUpdated={(newUrl) => {
+          if (previewPhoto) {
+            setStoragePhotos((prev) =>
+              prev.map((p) => p.id === previewPhoto.id ? { ...p, url: newUrl } : p)
+            );
+            setPreviewPhoto((prev) => prev ? { ...prev, url: newUrl } : null);
+          }
+        }}
       />
     </div>
   );
