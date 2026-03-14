@@ -268,7 +268,7 @@ export default function PhotoManager() {
               {uploading ? "Processing..." : "Select ZIP File"}
             </Button>
             <span className="text-xs text-muted-foreground">
-              Supports PNG, JPG, WEBP, BMP, GIF, TIFF — all converted to JPG
+              Supports PNG, JPG, WEBP, BMP, GIF, TIFF, HEIC — auto-converted to optimized JPG (max 1600px)
             </span>
           </div>
           <input
