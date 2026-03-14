@@ -357,7 +357,11 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {product.sku} {product.brand ? `• ${product.brand}` : ""} {product.category ? `• ${product.category}` : ""}
+                        {product.sku}
+                        {product.category ? ` • ${product.category}` : ""}
+                        {product.size ? ` • ${product.size}` : ""}
+                        {product.brand ? ` • ${product.brand}` : ""}
+                        {` • ₹${product.selling_price.toLocaleString()}`}
                       </p>
                     </div>
                     <Badge variant="outline" className="text-[10px] shrink-0">
