@@ -116,7 +116,7 @@ export default function PhotoManager() {
       zip.forEach((relativePath, zipEntry) => {
         if (zipEntry.dir) return;
         const lower = relativePath.toLowerCase();
-        if (lower.match(/\.(png|jpg|jpeg|webp|bmp|gif|tiff?)$/)) {
+        if (lower.match(/\.(png|jpg|jpeg|webp|bmp|gif|tiff?|heic|heif)$/)) {
           // Skip macOS resource fork files
           if (relativePath.includes("__MACOSX")) return;
           imageFiles.push({ name: relativePath.split("/").pop() || relativePath, file: zipEntry });
