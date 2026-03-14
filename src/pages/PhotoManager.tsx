@@ -400,6 +400,10 @@ export default function PhotoManager() {
         <TabsContent value="library">
           <StoragePhotosTab storeId={storeId} />
         </TabsContent>
+
+        <TabsContent value="assigned">
+          <AssignedPhotosTab storeId={storeId} />
+        </TabsContent>
       </Tabs>
 
       {/* Assign Dialog */}
