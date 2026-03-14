@@ -70,12 +70,16 @@ export default function ShopCheckout() {
     const timer = setTimeout(async () => {
       setCheckingPincode(true);
       try {
+        // Calculate total weight: 300g (0.3kg) per item
+        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+        const totalWeightKg = Math.max(0.5, totalQuantity * 0.3); // minimum 0.5kg
+
         const { data, error } = await supabase.functions.invoke("shiprocket", {
           body: {
             action: "check_serviceability",
             pickup_pincode: PICKUP_PINCODE,
             delivery_pincode: pincode,
-            weight: "0.5",
+            weight: totalWeightKg.toFixed(1),
           },
         });
 
@@ -111,7 +115,7 @@ export default function ShopCheckout() {
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [form.pincode]);
+  }, [form.pincode, items]);
 
   useEffect(() => {
     if (items.length === 0 && !payuData && !loading) {
