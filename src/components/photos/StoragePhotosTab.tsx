@@ -204,7 +204,7 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
               key={photo.id}
               className="relative group rounded-lg border border-border overflow-hidden hover:border-primary/30 transition-all"
             >
-              <div className="aspect-square">
+              <div className="aspect-square cursor-pointer" onClick={() => setPreviewPhoto(photo)}>
                 <img
                   src={photo.url}
                   alt={photo.name}
