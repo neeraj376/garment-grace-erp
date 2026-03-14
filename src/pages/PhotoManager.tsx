@@ -331,6 +331,9 @@ export default function PhotoManager() {
                       alt={photo.filename}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                      }}
                     />
                   </div>
                   <div className="p-1.5 bg-background/95 backdrop-blur-sm">
