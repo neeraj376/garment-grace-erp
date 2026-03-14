@@ -23,6 +23,8 @@ interface Product {
   photo_url: string | null;
   category: string | null;
   brand: string | null;
+  size: string | null;
+  selling_price: number;
 }
 
 interface StoragePhotosTabProps {
