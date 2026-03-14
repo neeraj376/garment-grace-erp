@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Search, X, Link2, Trash2, Package, RefreshCw, CheckCircle2 } from "lucide-react";
+import PhotoPreviewDialog from "@/components/photos/PhotoPreviewDialog";
 import { parsePhotoUrls, serializePhotoUrls, MAX_PHOTOS } from "@/lib/photoUtils";
 
 interface StoragePhoto {
@@ -43,6 +44,7 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<StoragePhoto | null>(null);
 
   const loadStoragePhotos = useCallback(async () => {
     if (!storeId) return;
@@ -202,7 +204,7 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
               key={photo.id}
               className="relative group rounded-lg border border-border overflow-hidden hover:border-primary/30 transition-all"
             >
-              <div className="aspect-square">
+              <div className="aspect-square cursor-pointer" onClick={() => setPreviewPhoto(photo)}>
                 <img
                   src={photo.url}
                   alt={photo.name}
@@ -321,6 +323,25 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Photo Preview */}
+      <PhotoPreviewDialog
+        open={!!previewPhoto}
+        onOpenChange={(open) => !open && setPreviewPhoto(null)}
+        photoUrl={previewPhoto?.url || ""}
+        photoName={previewPhoto?.name || ""}
+        onAssign={() => {
+          if (previewPhoto) {
+            setPreviewPhoto(null);
+            openAssignDialog(previewPhoto);
+          }
+        }}
+        onDelete={previewPhoto ? () => {
+          const photo = previewPhoto;
+          setPreviewPhoto(null);
+          deletePhoto(photo);
+        } : undefined}
+      />
     </div>
   );
 }

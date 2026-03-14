@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, ImagePlus, Trash2, Link2, Search, X, Loader2, CheckCircle2, Package, FolderOpen } from "lucide-react";
 import { parsePhotoUrls, serializePhotoUrls, MAX_PHOTOS } from "@/lib/photoUtils";
 import StoragePhotosTab from "@/components/photos/StoragePhotosTab";
+import PhotoPreviewDialog from "@/components/photos/PhotoPreviewDialog";
 
 interface UploadedPhoto {
   id: string;
@@ -50,6 +51,7 @@ export default function PhotoManager() {
   const [productSearch, setProductSearch] = useState("");
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState<UploadedPhoto | null>(null);
 
   const MAX_DIMENSION = 1600;
   const JPEG_QUALITY = 0.82;
@@ -333,7 +335,7 @@ export default function PhotoManager() {
                           : "border-border hover:border-primary/30"
                       }`}
                     >
-                      <div className="aspect-square">
+                      <div className="aspect-square cursor-pointer" onClick={() => setPreviewPhoto(photo)}>
                         <img
                           src={photo.url}
                           alt={photo.filename}
@@ -466,6 +468,29 @@ export default function PhotoManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Photo Preview */}
+      <PhotoPreviewDialog
+        open={!!previewPhoto}
+        onOpenChange={(open) => !open && setPreviewPhoto(null)}
+        photoUrl={previewPhoto?.url || ""}
+        photoName={previewPhoto?.filename || ""}
+        onAssign={() => {
+          if (previewPhoto) {
+            const photo = previewPhoto;
+            setPreviewPhoto(null);
+            openAssignDialog(photo);
+          }
+        }}
+        onDelete={() => {
+          if (previewPhoto) {
+            const id = previewPhoto.id;
+            setPreviewPhoto(null);
+            removePhoto(id);
+          }
+        }}
+        assignLabel={previewPhoto?.assignedProductId ? "Reassign" : "Assign to Product"}
+      />
     </div>
   );
 }
