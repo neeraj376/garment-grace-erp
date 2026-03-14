@@ -147,8 +147,8 @@ export default function PhotoManager() {
       for (let i = 0; i < imageFiles.length; i++) {
         const { name, file: zipEntry } = imageFiles[i];
         try {
-          const blob = await zipEntry.async("blob");
-          const jpgBlob = await convertToJpg(blob, name);
+          const rawBlob = await zipEntry.async("blob");
+          const jpgBlob = await convertToJpg(rawBlob, name);
           const baseName = name.replace(/\.[^.]+$/, "");
           const storagePath = `${storeId}/bulk-photos/${baseName}-${Date.now()}-${i}.jpg`;
 
