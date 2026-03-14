@@ -44,6 +44,7 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<StoragePhoto | null>(null);
 
   const loadStoragePhotos = useCallback(async () => {
     if (!storeId) return;
