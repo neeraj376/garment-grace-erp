@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import JSZip from "jszip";
+import heic2any from "heic2any";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { useToast } from "@/hooks/use-toast";
