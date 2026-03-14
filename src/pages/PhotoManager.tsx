@@ -475,6 +475,14 @@ export default function PhotoManager() {
         onOpenChange={(open) => !open && setPreviewPhoto(null)}
         photoUrl={previewPhoto?.url || ""}
         photoName={previewPhoto?.filename || ""}
+        storagePath={previewPhoto && storeId ? (() => {
+          try {
+            const url = new URL(previewPhoto.url);
+            const match = url.pathname.match(/\/object\/public\/product-media\/(.+)/);
+            return match ? match[1] : undefined;
+          } catch { return undefined; }
+        })() : undefined}
+        storeId={storeId}
         onAssign={() => {
           if (previewPhoto) {
             const photo = previewPhoto;
@@ -487,6 +495,14 @@ export default function PhotoManager() {
             const id = previewPhoto.id;
             setPreviewPhoto(null);
             removePhoto(id);
+          }
+        }}
+        onImageUpdated={(newUrl) => {
+          if (previewPhoto) {
+            setPhotos((prev) =>
+              prev.map((p) => p.id === previewPhoto.id ? { ...p, url: newUrl } : p)
+            );
+            setPreviewPhoto((prev) => prev ? { ...prev, url: newUrl } : null);
           }
         }}
         assignLabel={previewPhoto?.assignedProductId ? "Reassign" : "Assign to Product"}
