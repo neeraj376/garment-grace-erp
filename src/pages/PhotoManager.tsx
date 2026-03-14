@@ -51,6 +51,7 @@ export default function PhotoManager() {
   const [productSearch, setProductSearch] = useState("");
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState<UploadedPhoto | null>(null);
 
   const MAX_DIMENSION = 1600;
   const JPEG_QUALITY = 0.82;
