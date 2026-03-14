@@ -172,6 +172,8 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
         .update({ photo_url: serializePhotoUrls(updatedPhotos) })
         .eq("id", product.id);
       if (error) throw error;
+      // Mark as assigned so it disappears from the grid
+      setAssignedUrls((prev) => new Set([...prev, selectedPhoto.url]));
       toast({ title: `Photo assigned to ${product.name}` });
       setAssignDialogOpen(false);
     } catch (err: any) {
