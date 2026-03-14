@@ -11,6 +11,7 @@ import {
   Award,
   LogOut,
   Store,
+  ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
