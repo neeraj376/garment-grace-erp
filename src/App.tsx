@@ -19,6 +19,7 @@ import Loyalty from "@/pages/Loyalty";
 import Reports from "@/pages/Reports";
 import Employees from "@/pages/Employees";
 import SettingsPage from "@/pages/SettingsPage";
+import PhotoManager from "@/pages/PhotoManager";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
 

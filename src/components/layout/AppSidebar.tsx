@@ -25,6 +25,7 @@ const navItems = [
   { icon: Award, label: "Loyalty", path: "/administrator/loyalty" },
   { icon: BarChart3, label: "Reports", path: "/administrator/reports" },
   { icon: UserCog, label: "Employees", path: "/administrator/employees" },
+  { icon: ImagePlus, label: "Photo Manager", path: "/administrator/photos" },
   { icon: Settings, label: "Settings", path: "/administrator/settings" },
 ];
 
