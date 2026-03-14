@@ -46,6 +46,8 @@ export default function PhotoPreviewDialog({
   if (photoUrl !== lastPhotoUrl) {
     setLastPhotoUrl(photoUrl);
     setCurrentUrl(photoUrl);
+    setOriginalUrl(photoUrl);
+    setBgRemoved(false);
     setZoom(1);
     setRotation(0);
   }
