@@ -108,14 +108,23 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
     setProductSearch("");
     if (!storeId) return;
     setLoadingProducts(true);
-    const { data } = await supabase
-      .from("products")
-      .select("id, sku, name, photo_url, category, brand")
-      .eq("store_id", storeId)
-      .eq("is_active", true)
-      .order("name")
-      .limit(500);
-    setProducts(data || []);
+    let allProducts: Product[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data } = await supabase
+        .from("products")
+        .select("id, sku, name, photo_url, category, brand")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .order("name")
+        .range(from, from + pageSize - 1);
+      if (!data || data.length === 0) break;
+      allProducts = [...allProducts, ...data];
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    setProducts(allProducts);
     setLoadingProducts(false);
   };
 
