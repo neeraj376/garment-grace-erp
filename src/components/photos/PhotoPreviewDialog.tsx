@@ -239,7 +239,7 @@ export default function PhotoPreviewDialog({
                 Delete
               </Button>
             )}
-            {storagePath && storeId && (
+            {storagePath && storeId && !bgRemoved && (
               <Button
                 variant="outline"
                 size="sm"
@@ -249,6 +249,18 @@ export default function PhotoPreviewDialog({
               >
                 {removingBg ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 Remove Background
+              </Button>
+            )}
+            {bgRemoved && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={undoBackgroundRemoval}
+                disabled={isProcessing}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Undo BG Removal
               </Button>
             )}
           </div>
