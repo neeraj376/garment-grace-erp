@@ -468,6 +468,29 @@ export default function PhotoManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Photo Preview */}
+      <PhotoPreviewDialog
+        open={!!previewPhoto}
+        onOpenChange={(open) => !open && setPreviewPhoto(null)}
+        photoUrl={previewPhoto?.url || ""}
+        photoName={previewPhoto?.filename || ""}
+        onAssign={() => {
+          if (previewPhoto) {
+            const photo = previewPhoto;
+            setPreviewPhoto(null);
+            openAssignDialog(photo);
+          }
+        }}
+        onDelete={() => {
+          if (previewPhoto) {
+            const id = previewPhoto.id;
+            setPreviewPhoto(null);
+            removePhoto(id);
+          }
+        }}
+        assignLabel={previewPhoto?.assignedProductId ? "Reassign" : "Assign to Product"}
+      />
     </div>
   );
 }
