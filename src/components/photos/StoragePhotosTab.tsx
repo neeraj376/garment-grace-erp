@@ -144,7 +144,7 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
     while (true) {
       const { data } = await supabase
         .from("products")
-        .select("id, sku, name, photo_url, category, brand")
+        .select("id, sku, name, photo_url, category, brand, size, selling_price")
         .eq("store_id", storeId)
         .eq("is_active", true)
         .order("name")
