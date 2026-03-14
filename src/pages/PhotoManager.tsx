@@ -52,13 +52,25 @@ export default function PhotoManager() {
   const MAX_DIMENSION = 1600;
   const JPEG_QUALITY = 0.82;
 
+  const getMimeType = (name: string): string => {
+    const ext = name.toLowerCase().split(".").pop();
+    const mimeMap: Record<string, string> = {
+      jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+      webp: "image/webp", gif: "image/gif", bmp: "image/bmp",
+      tif: "image/tiff", tiff: "image/tiff", heic: "image/heic", heif: "image/heif",
+    };
+    return mimeMap[ext || ""] || "image/jpeg";
+  };
+
   const convertToJpg = useCallback(async (file: Blob, filename: string): Promise<Blob> => {
-    let imageBlob = file;
+    const lower = filename.toLowerCase();
+
+    // Ensure blob has correct MIME type (JSZip returns application/octet-stream)
+    let imageBlob = new Blob([file], { type: getMimeType(lower) });
 
     // Convert HEIC/HEIF to PNG first
-    const lower = filename.toLowerCase();
     if (lower.endsWith(".heic") || lower.endsWith(".heif")) {
-      const result = await heic2any({ blob: file, toType: "image/png", quality: 0.9 });
+      const result = await heic2any({ blob: imageBlob, toType: "image/png", quality: 0.9 });
       imageBlob = Array.isArray(result) ? result[0] : result;
     }
 
@@ -135,8 +147,8 @@ export default function PhotoManager() {
       for (let i = 0; i < imageFiles.length; i++) {
         const { name, file: zipEntry } = imageFiles[i];
         try {
-          const blob = await zipEntry.async("blob");
-          const jpgBlob = await convertToJpg(blob, name);
+          const rawBlob = await zipEntry.async("blob");
+          const jpgBlob = await convertToJpg(rawBlob, name);
           const baseName = name.replace(/\.[^.]+$/, "");
           const storagePath = `${storeId}/bulk-photos/${baseName}-${Date.now()}-${i}.jpg`;
 
@@ -319,6 +331,9 @@ export default function PhotoManager() {
                       alt={photo.filename}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                      }}
                     />
                   </div>
                   <div className="p-1.5 bg-background/95 backdrop-blur-sm">
