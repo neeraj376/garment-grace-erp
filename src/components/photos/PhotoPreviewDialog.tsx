@@ -38,6 +38,8 @@ export default function PhotoPreviewDialog({
   const [saving, setSaving] = useState(false);
   const [removingBg, setRemovingBg] = useState(false);
   const [currentUrl, setCurrentUrl] = useState(photoUrl);
+  const [originalUrl, setOriginalUrl] = useState(photoUrl);
+  const [bgRemoved, setBgRemoved] = useState(false);
 
   // Sync URL when dialog opens with new photo
   const [lastPhotoUrl, setLastPhotoUrl] = useState(photoUrl);
