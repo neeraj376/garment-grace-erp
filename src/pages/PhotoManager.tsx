@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Upload, ImagePlus, Trash2, Link2, Search, X, Loader2, CheckCircle2, Package } from "lucide-react";
+import { Upload, ImagePlus, Trash2, Link2, Search, X, Loader2, CheckCircle2, Package, FolderOpen } from "lucide-react";
 import { parsePhotoUrls, serializePhotoUrls, MAX_PHOTOS } from "@/lib/photoUtils";
+import StoragePhotosTab from "@/components/photos/StoragePhotosTab";
 
 interface UploadedPhoto {
   id: string;
@@ -64,11 +66,8 @@ export default function PhotoManager() {
 
   const convertToJpg = useCallback(async (file: Blob, filename: string): Promise<Blob> => {
     const lower = filename.toLowerCase();
-
-    // Ensure blob has correct MIME type (JSZip returns application/octet-stream)
     let imageBlob = new Blob([file], { type: getMimeType(lower) });
 
-    // Convert HEIC/HEIF to PNG first
     if (lower.endsWith(".heic") || lower.endsWith(".heif")) {
       const result = await heic2any({ blob: imageBlob, toType: "image/png", quality: 0.9 });
       imageBlob = Array.isArray(result) ? result[0] : result;
@@ -80,14 +79,11 @@ export default function PhotoManager() {
       img.onload = () => {
         let w = img.naturalWidth;
         let h = img.naturalHeight;
-
-        // Downscale if too large
         if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
           const ratio = Math.min(MAX_DIMENSION / w, MAX_DIMENSION / h);
           w = Math.round(w * ratio);
           h = Math.round(h * ratio);
         }
-
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
@@ -129,7 +125,6 @@ export default function PhotoManager() {
         if (zipEntry.dir) return;
         const lower = relativePath.toLowerCase();
         if (lower.match(/\.(png|jpg|jpeg|webp|bmp|gif|tiff?|heic|heif)$/)) {
-          // Skip macOS resource fork files
           if (relativePath.includes("__MACOSX")) return;
           imageFiles.push({ name: relativePath.split("/").pop() || relativePath, file: zipEntry });
         }
@@ -257,120 +252,139 @@ export default function PhotoManager() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Photo Manager</h1>
-          <p className="text-sm text-muted-foreground">Upload a ZIP of product photos, convert to JPG, and assign to inventory</p>
+          <p className="text-sm text-muted-foreground">Upload, manage, and assign product photos to inventory</p>
         </div>
       </div>
 
-      {/* Upload Section */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Upload className="h-4 w-4" /> Upload ZIP File
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              variant="outline"
-              className="gap-2"
-            >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-              {uploading ? "Processing..." : "Select ZIP File"}
-            </Button>
-            <span className="text-xs text-muted-foreground">
-              Supports PNG, JPG, WEBP, BMP, GIF, TIFF, HEIC — auto-converted to optimized JPG (max 1600px)
-            </span>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".zip"
-            className="hidden"
-            onChange={handleZipUpload}
-          />
-          {uploading && (
-            <div className="mt-4 space-y-2">
-              <Progress value={uploadProgress} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                Processing {processedFiles} of {totalFiles} images...
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="upload" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="upload" className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload ZIP
+          </TabsTrigger>
+          <TabsTrigger value="library" className="gap-2">
+            <FolderOpen className="h-4 w-4" />
+            Uploaded Photos
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Photos Grid */}
-      {photos.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+        <TabsContent value="upload" className="space-y-4">
+          {/* Upload Section */}
+          <Card>
+            <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Package className="h-4 w-4" /> Uploaded Photos ({photos.length})
+                <Upload className="h-4 w-4" /> Upload ZIP File
               </CardTitle>
-              <Badge variant="secondary">
-                {assignedCount} / {photos.length} assigned
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {photos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className={`relative group rounded-lg border overflow-hidden transition-all ${
-                    photo.assignedProductId
-                      ? "border-primary/50 ring-1 ring-primary/20"
-                      : "border-border hover:border-primary/30"
-                  }`}
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  variant="outline"
+                  className="gap-2"
                 >
-                  <div className="aspect-square">
-                    <img
-                      src={photo.url}
-                      alt={photo.filename}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                      }}
-                    />
-                  </div>
-                  <div className="p-1.5 bg-background/95 backdrop-blur-sm">
-                    <p className="text-[10px] text-muted-foreground truncate">{photo.filename}</p>
-                    {photo.assignedProductName ? (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
-                        <p className="text-[10px] font-medium text-primary truncate">{photo.assignedProductName}</p>
-                      </div>
-                    ) : null}
-                  </div>
-                  {/* Overlay actions */}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => openAssignDialog(photo)}
-                    >
-                      <Link2 className="h-3 w-3" />
-                      {photo.assignedProductId ? "Reassign" : "Assign"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="h-7 w-7 p-0"
-                      onClick={() => removePhoto(photo.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                  {uploading ? "Processing..." : "Select ZIP File"}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Supports PNG, JPG, WEBP, BMP, GIF, TIFF, HEIC — auto-converted to optimized JPG (max 1600px)
+                </span>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={handleZipUpload}
+              />
+              {uploading && (
+                <div className="mt-4 space-y-2">
+                  <Progress value={uploadProgress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Processing {processedFiles} of {totalFiles} images...
+                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Current Session Photos Grid */}
+          {photos.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Package className="h-4 w-4" /> Session Photos ({photos.length})
+                  </CardTitle>
+                  <Badge variant="secondary">
+                    {assignedCount} / {photos.length} assigned
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {photos.map((photo) => (
+                    <div
+                      key={photo.id}
+                      className={`relative group rounded-lg border overflow-hidden transition-all ${
+                        photo.assignedProductId
+                          ? "border-primary/50 ring-1 ring-primary/20"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      <div className="aspect-square">
+                        <img
+                          src={photo.url}
+                          alt={photo.filename}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/placeholder.svg";
+                          }}
+                        />
+                      </div>
+                      <div className="p-1.5 bg-background/95 backdrop-blur-sm">
+                        <p className="text-[10px] text-muted-foreground truncate">{photo.filename}</p>
+                        {photo.assignedProductName ? (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+                            <p className="text-[10px] font-medium text-primary truncate">{photo.assignedProductName}</p>
+                          </div>
+                        ) : null}
+                      </div>
+                      {/* Overlay actions */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => openAssignDialog(photo)}
+                        >
+                          <Link2 className="h-3 w-3" />
+                          {photo.assignedProductId ? "Reassign" : "Assign"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-7 w-7 p-0"
+                          onClick={() => removePhoto(photo.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="library">
+          <StoragePhotosTab storeId={storeId} />
+        </TabsContent>
+      </Tabs>
 
       {/* Assign Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
