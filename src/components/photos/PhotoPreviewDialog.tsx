@@ -136,7 +136,9 @@ export default function PhotoPreviewDialog({
       if (data?.error) throw new Error(data.error);
 
       const newUrl = data.url + "?t=" + Date.now();
+      setOriginalUrl(currentUrl); // save current as original before replacing
       setCurrentUrl(newUrl);
+      setBgRemoved(true);
       onImageUpdated?.(newUrl);
       toast({ title: "Background removed! Image is now e-commerce ready." });
     } catch (err: any) {
