@@ -104,6 +104,7 @@ function AppRoutes() {
         <Route path="reports" element={<Reports />} />
         <Route path="employees" element={<Employees />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="photos" element={<PhotoManager />} />
       </Route>
       {shopRoutes}
       <Route path="/administrator/auth" element={<Navigate to="/administrator" replace />} />
