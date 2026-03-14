@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Link2, Trash2, ZoomIn, ZoomOut, RotateCw, Save, Sparkles, Loader2 } from "lucide-react";
+import { Link2, Trash2, ZoomIn, ZoomOut, RotateCw, Save, Sparkles, Loader2, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,12 +38,16 @@ export default function PhotoPreviewDialog({
   const [saving, setSaving] = useState(false);
   const [removingBg, setRemovingBg] = useState(false);
   const [currentUrl, setCurrentUrl] = useState(photoUrl);
+  const [originalUrl, setOriginalUrl] = useState(photoUrl);
+  const [bgRemoved, setBgRemoved] = useState(false);
 
   // Sync URL when dialog opens with new photo
   const [lastPhotoUrl, setLastPhotoUrl] = useState(photoUrl);
   if (photoUrl !== lastPhotoUrl) {
     setLastPhotoUrl(photoUrl);
     setCurrentUrl(photoUrl);
+    setOriginalUrl(photoUrl);
+    setBgRemoved(false);
     setZoom(1);
     setRotation(0);
   }
@@ -132,7 +136,9 @@ export default function PhotoPreviewDialog({
       if (data?.error) throw new Error(data.error);
 
       const newUrl = data.url + "?t=" + Date.now();
+      setOriginalUrl(currentUrl); // save current as original before replacing
       setCurrentUrl(newUrl);
+      setBgRemoved(true);
       onImageUpdated?.(newUrl);
       toast({ title: "Background removed! Image is now e-commerce ready." });
     } catch (err: any) {
@@ -140,6 +146,12 @@ export default function PhotoPreviewDialog({
     } finally {
       setRemovingBg(false);
     }
+  };
+  const undoBackgroundRemoval = () => {
+    setCurrentUrl(originalUrl);
+    setBgRemoved(false);
+    onImageUpdated?.(originalUrl);
+    toast({ title: "Reverted to original image" });
   };
 
   const isProcessing = saving || removingBg;
@@ -227,7 +239,7 @@ export default function PhotoPreviewDialog({
                 Delete
               </Button>
             )}
-            {storagePath && storeId && (
+            {storagePath && storeId && !bgRemoved && (
               <Button
                 variant="outline"
                 size="sm"
@@ -237,6 +249,18 @@ export default function PhotoPreviewDialog({
               >
                 {removingBg ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 Remove Background
+              </Button>
+            )}
+            {bgRemoved && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={undoBackgroundRemoval}
+                disabled={isProcessing}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Undo BG Removal
               </Button>
             )}
           </div>
