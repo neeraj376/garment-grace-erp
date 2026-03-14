@@ -278,6 +278,10 @@ export default function PhotoManager() {
             <FolderOpen className="h-4 w-4" />
             Uploaded Photos
           </TabsTrigger>
+          <TabsTrigger value="assigned" className="gap-2">
+            <ImageIcon className="h-4 w-4" />
+            Assigned Photos
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="upload" className="space-y-4">
