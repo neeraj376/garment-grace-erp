@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, ImagePlus, Trash2, Link2, Search, X, Loader2, CheckCircle2, Package, FolderOpen } from "lucide-react";
 import { parsePhotoUrls, serializePhotoUrls, MAX_PHOTOS } from "@/lib/photoUtils";
 import StoragePhotosTab from "@/components/photos/StoragePhotosTab";
+import PhotoPreviewDialog from "@/components/photos/PhotoPreviewDialog";
 
 interface UploadedPhoto {
   id: string;
