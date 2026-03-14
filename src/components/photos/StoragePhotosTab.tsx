@@ -323,6 +323,25 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Photo Preview */}
+      <PhotoPreviewDialog
+        open={!!previewPhoto}
+        onOpenChange={(open) => !open && setPreviewPhoto(null)}
+        photoUrl={previewPhoto?.url || ""}
+        photoName={previewPhoto?.name || ""}
+        onAssign={() => {
+          if (previewPhoto) {
+            setPreviewPhoto(null);
+            openAssignDialog(previewPhoto);
+          }
+        }}
+        onDelete={previewPhoto ? () => {
+          const photo = previewPhoto;
+          setPreviewPhoto(null);
+          deletePhoto(photo);
+        } : undefined}
+      />
     </div>
   );
 }
