@@ -181,9 +181,15 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
     }
   };
 
-  const filteredPhotos = storagePhotos.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Normalize URL for comparison (strip query params)
+  const normalizeUrl = (url: string) => url.split("?")[0];
+
+  const filteredPhotos = storagePhotos.filter((p) => {
+    const normalizedPhotoUrl = normalizeUrl(p.url);
+    const isAssigned = Array.from(assignedUrls).some((u) => normalizeUrl(u) === normalizedPhotoUrl);
+    if (isAssigned) return false;
+    return p.name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const filteredProducts = products.filter((p) => {
     const q = productSearch.toLowerCase();
