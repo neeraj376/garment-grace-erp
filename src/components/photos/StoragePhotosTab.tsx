@@ -347,13 +347,17 @@ export default function StoragePhotosTab({ storeId }: StoragePhotosTabProps) {
                     disabled={assigning}
                     className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent text-left transition-colors disabled:opacity-50"
                   >
-                    {existingPhotos[0] ? (
-                      <img src={existingPhotos[0]} alt="" className="w-10 h-10 rounded border object-cover shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded border bg-muted flex items-center justify-center shrink-0">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
+                    <div className="flex gap-1 shrink-0">
+                      {existingPhotos.length > 0 ? (
+                        existingPhotos.map((url, idx) => (
+                          <img key={idx} src={url} alt="" className="w-10 h-10 rounded border object-cover" />
+                        ))
+                      ) : (
+                        <div className="w-10 h-10 rounded border bg-muted flex items-center justify-center">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
