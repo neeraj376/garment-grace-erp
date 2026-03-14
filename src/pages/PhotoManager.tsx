@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import JSZip from "jszip";
+import heic2any from "heic2any";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { useToast } from "@/hooks/use-toast";
@@ -48,17 +49,39 @@ export default function PhotoManager() {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [assigning, setAssigning] = useState(false);
 
-  const convertToJpg = useCallback((file: Blob, filename: string): Promise<Blob> => {
+  const MAX_DIMENSION = 1600;
+  const JPEG_QUALITY = 0.82;
+
+  const convertToJpg = useCallback(async (file: Blob, filename: string): Promise<Blob> => {
+    let imageBlob = file;
+
+    // Convert HEIC/HEIF to PNG first
+    const lower = filename.toLowerCase();
+    if (lower.endsWith(".heic") || lower.endsWith(".heif")) {
+      const result = await heic2any({ blob: file, toType: "image/png", quality: 0.9 });
+      imageBlob = Array.isArray(result) ? result[0] : result;
+    }
+
     return new Promise((resolve, reject) => {
       const img = new Image();
-      const url = URL.createObjectURL(file);
+      const url = URL.createObjectURL(imageBlob);
       img.onload = () => {
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+
+        // Downscale if too large
+        if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
+          const ratio = Math.min(MAX_DIMENSION / w, MAX_DIMENSION / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+
         const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d");
         if (!ctx) { reject(new Error("Canvas not supported")); return; }
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, w, h);
         canvas.toBlob(
           (blob) => {
             URL.revokeObjectURL(url);
@@ -66,7 +89,7 @@ export default function PhotoManager() {
             else reject(new Error(`Failed to convert ${filename}`));
           },
           "image/jpeg",
-          0.9
+          JPEG_QUALITY
         );
       };
       img.onerror = () => {
@@ -93,7 +116,7 @@ export default function PhotoManager() {
       zip.forEach((relativePath, zipEntry) => {
         if (zipEntry.dir) return;
         const lower = relativePath.toLowerCase();
-        if (lower.match(/\.(png|jpg|jpeg|webp|bmp|gif|tiff?)$/)) {
+        if (lower.match(/\.(png|jpg|jpeg|webp|bmp|gif|tiff?|heic|heif)$/)) {
           // Skip macOS resource fork files
           if (relativePath.includes("__MACOSX")) return;
           imageFiles.push({ name: relativePath.split("/").pop() || relativePath, file: zipEntry });
@@ -245,7 +268,7 @@ export default function PhotoManager() {
               {uploading ? "Processing..." : "Select ZIP File"}
             </Button>
             <span className="text-xs text-muted-foreground">
-              Supports PNG, JPG, WEBP, BMP, GIF, TIFF — all converted to JPG
+              Supports PNG, JPG, WEBP, BMP, GIF, TIFF, HEIC — auto-converted to optimized JPG (max 1600px)
             </span>
           </div>
           <input
