@@ -14,8 +14,19 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const startCountdown = useCallback(() => {
+    setCountdown(60);
+  }, []);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
