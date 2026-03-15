@@ -41,8 +41,6 @@ export default function SubUserManager() {
     can_customers: false,
   });
 
-  if (role !== "owner") return null;
-
   const fetchSubUsers = async () => {
     if (!storeId) return;
     setLoading(true);
