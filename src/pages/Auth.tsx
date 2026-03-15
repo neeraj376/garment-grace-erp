@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,19 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const startCountdown = useCallback(() => {
+    setCountdown(60);
+  }, []);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +54,7 @@ export default function Auth() {
         description: "A verification code has been sent to your email.",
       });
       setStep("otp");
+      startCountdown();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -87,6 +99,7 @@ export default function Auth() {
       });
       if (error) throw error;
       toast({ title: "OTP Resent", description: "Check your email for the new code." });
+      startCountdown();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -180,13 +193,19 @@ export default function Auth() {
               >
                 ← Back
               </button>
-              <button
-                onClick={handleResendOtp}
-                className="text-sm text-primary font-medium hover:underline"
-                disabled={loading}
-              >
-                Resend code
-              </button>
+              {countdown > 0 ? (
+                <span className="text-sm text-muted-foreground">
+                  Resend in {countdown}s
+                </span>
+              ) : (
+                <button
+                  onClick={handleResendOtp}
+                  className="text-sm text-primary font-medium hover:underline"
+                  disabled={loading}
+                >
+                  Resend code
+                </button>
+              )}
             </div>
           </div>
         )}
