@@ -281,6 +281,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   </TableCell>
                   <TableCell className="text-right font-medium">₹{Number(inv.total_amount).toLocaleString("en-IN")}</TableCell>
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
+                  </TableCell>
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
