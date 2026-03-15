@@ -38,6 +38,8 @@ interface Props {
 export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [creatorNames, setCreatorNames] = useState<Record<string, string>>({});
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
