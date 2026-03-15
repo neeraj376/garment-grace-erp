@@ -193,11 +193,19 @@ export default function Auth() {
               >
                 ← Back
               </button>
-              <button
-                onClick={handleResendOtp}
-                className="text-sm text-primary font-medium hover:underline"
-                disabled={loading}
-              >
+              {countdown > 0 ? (
+                <span className="text-sm text-muted-foreground">
+                  Resend in {countdown}s
+                </span>
+              ) : (
+                <button
+                  onClick={handleResendOtp}
+                  className="text-sm text-primary font-medium hover:underline"
+                  disabled={loading}
+                >
+                  Resend code
+                </button>
+              )}
                 Resend code
               </button>
             </div>
