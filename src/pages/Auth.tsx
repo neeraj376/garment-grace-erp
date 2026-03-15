@@ -54,6 +54,7 @@ export default function Auth() {
         description: "A verification code has been sent to your email.",
       });
       setStep("otp");
+      startCountdown();
     } catch (error: any) {
       toast({
         title: "Error",
