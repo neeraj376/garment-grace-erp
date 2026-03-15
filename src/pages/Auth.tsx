@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,14 +22,16 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      // Step 1: Verify password
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      // Step 1: Verify password via edge function (no client session created)
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+        "verify-password",
+        { body: { email, password } }
+      );
+      if (verifyError || !verifyData?.valid) {
+        throw new Error(verifyData?.error || verifyError?.message || "Invalid credentials");
+      }
 
-      // Step 2: Sign out immediately (we need OTP verification first)
-      await supabase.auth.signOut();
-
-      // Step 3: Send OTP to email
+      // Step 2: Send OTP to email
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false },
