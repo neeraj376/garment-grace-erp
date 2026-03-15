@@ -94,7 +94,22 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      setInvoices((data as any) ?? []);
+      const invoiceData = (data as any) ?? [];
+      setInvoices(invoiceData);
+
+      // Fetch creator names for all unique created_by ids
+      const creatorIds = [...new Set(invoiceData.map((i: Invoice) => i.created_by).filter(Boolean))] as string[];
+      if (creatorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", creatorIds);
+        if (profiles) {
+          const nameMap: Record<string, string> = {};
+          profiles.forEach((p) => { nameMap[p.user_id] = p.full_name || "Staff"; });
+          setCreatorNames(nameMap);
+        }
+      }
     }
     setSelectedIds(new Set());
     setLoading(false);
