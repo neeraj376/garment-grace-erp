@@ -99,6 +99,7 @@ export default function Auth() {
       });
       if (error) throw error;
       toast({ title: "OTP Resent", description: "Check your email for the new code." });
+      startCountdown();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
