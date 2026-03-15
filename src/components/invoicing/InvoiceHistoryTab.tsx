@@ -25,6 +25,7 @@ interface Invoice {
   status: string;
   notes: string | null;
   created_at: string;
+  created_by: string | null;
   customer_id: string | null;
   customers: { name: string | null; mobile: string } | null;
 }
