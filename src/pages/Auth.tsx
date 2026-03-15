@@ -206,8 +206,6 @@ export default function Auth() {
                   Resend code
                 </button>
               )}
-                Resend code
-              </button>
             </div>
           </div>
         )}
