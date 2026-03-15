@@ -85,8 +85,10 @@ export default function SubUserManager() {
   };
 
   useEffect(() => {
-    fetchSubUsers();
-  }, [storeId]);
+    if (role === "owner") fetchSubUsers();
+  }, [storeId, role]);
+
+  if (role !== "owner") return null;
 
   const handleCreate = async () => {
     if (!form.email || !form.password) {
