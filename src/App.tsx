@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { StoreProvider, useStore } from "@/hooks/useStore";
 import { CartProvider } from "@/hooks/useCart";
+import { PermissionsProvider } from "@/hooks/usePermissions";
 import { useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Auth from "@/pages/Auth";
@@ -123,9 +124,11 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <StoreProvider>
-            <CartProvider>
-                <AppRoutes />
-            </CartProvider>
+            <PermissionsProvider>
+              <CartProvider>
+                  <AppRoutes />
+              </CartProvider>
+            </PermissionsProvider>
           </StoreProvider>
         </AuthProvider>
       </BrowserRouter>

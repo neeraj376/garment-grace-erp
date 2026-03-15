@@ -21,3 +21,6 @@ verify_jwt = false
 
 [functions.remove-background]
 verify_jwt = false
+
+[functions.create-sub-user]
+verify_jwt = false

@@ -25,6 +25,7 @@ interface Invoice {
   status: string;
   notes: string | null;
   created_at: string;
+  created_by: string | null;
   customer_id: string | null;
   customers: { name: string | null; mobile: string } | null;
 }
@@ -37,6 +38,7 @@ interface Props {
 export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [creatorNames, setCreatorNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
@@ -91,7 +93,22 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      setInvoices((data as any) ?? []);
+      const invoiceData = (data as any) ?? [];
+      setInvoices(invoiceData);
+
+      // Fetch creator names for all unique created_by ids
+      const creatorIds = [...new Set(invoiceData.map((i: Invoice) => i.created_by).filter(Boolean))] as string[];
+      if (creatorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", creatorIds);
+        if (profiles) {
+          const nameMap: Record<string, string> = {};
+          profiles.forEach((p) => { nameMap[p.user_id] = p.full_name || "Staff"; });
+          setCreatorNames(nameMap);
+        }
+      }
     }
     setSelectedIds(new Set());
     setLoading(false);
@@ -229,6 +246,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
+                <TableHead>Created By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -236,11 +254,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
@@ -262,6 +280,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   </TableCell>
                   <TableCell className="text-right font-medium">₹{Number(inv.total_amount).toLocaleString("en-IN")}</TableCell>
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
+                  </TableCell>
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">

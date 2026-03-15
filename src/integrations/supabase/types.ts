@@ -896,6 +896,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          can_customers: boolean
+          can_inventory: boolean
+          can_invoicing: boolean
+          can_photos: boolean
+          created_at: string
+          id: string
+          store_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_customers?: boolean
+          can_inventory?: boolean
+          can_invoicing?: boolean
+          can_photos?: boolean
+          created_at?: string
+          id?: string
+          store_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_customers?: boolean
+          can_inventory?: boolean
+          can_invoicing?: boolean
+          can_photos?: boolean
+          created_at?: string
+          id?: string
+          store_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Save } from "lucide-react";
+import SubUserManager from "@/components/settings/SubUserManager";
 
 export default function SettingsPage() {
   const { storeId } = useStore();
@@ -121,6 +122,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      <SubUserManager />
     </div>
   );
 }
