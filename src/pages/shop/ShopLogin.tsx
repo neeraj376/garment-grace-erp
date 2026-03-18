@@ -1,101 +1,202 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2, Mail, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ShopLogin() {
   const navigate = useNavigate();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [step, setStep] = useState<"credentials" | "otp">("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const startCountdown = useCallback(() => {
+    setCountdown(60);
+  }, []);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    if (isSignUp) {
-      const { data, error } = await supabase.auth.signUp({
+    try {
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+        "verify-password",
+        { body: { email, password } }
+      );
+      if (verifyError || !verifyData?.valid) {
+        throw new Error(verifyData?.error || verifyError?.message || "Invalid credentials");
+      }
+
+      const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
-        password,
-        options: { data: { full_name: name } },
+        options: { shouldCreateUser: false },
       });
-      if (error) {
-        toast.error(error.message);
-        setLoading(false);
-        return;
-      }
-      // Create shop_customer profile
-      if (data.user) {
-        await supabase.from("shop_customers").insert({
-          user_id: data.user.id,
-          name,
-          email,
-          phone: phone || null,
-        });
-      }
-      toast.success("Account created! Please check your email to verify.");
-      setIsSignUp(false);
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        toast.error(error.message);
-        setLoading(false);
-        return;
-      }
+      if (otpError) throw otpError;
+
+      toast.success("OTP sent! Check your email for the verification code.");
+      setStep("otp");
+      startCountdown();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpVerify = async () => {
+    if (otp.length !== 6) return;
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: "email",
+      });
+      if (error) throw error;
       toast.success("Welcome back!");
       navigate("/");
+    } catch (error: any) {
+      toast.error(error.message);
+      setOtp("");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      if (error) throw error;
+      toast.success("OTP resent! Check your email.");
+      startCountdown();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="container mx-auto px-4 py-12 flex justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="font-display text-2xl">{isSignUp ? "Create Account" : "Login"}</CardTitle>
+          <CardTitle className="font-display text-2xl">
+            {step === "credentials" ? "Login" : "Verify OTP"}
+          </CardTitle>
           <CardDescription>
-            {isSignUp ? "Join Originee to start shopping" : "Welcome back to Originee"}
+            {step === "credentials"
+              ? "Welcome back to Originee"
+              : "Enter the verification code sent to your email"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <>
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+          {step === "credentials" ? (
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="pl-9"
+                    required
+                  />
                 </div>
-                <div>
-                  <Label htmlFor="phone">Phone (optional)</Label>
-                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="pl-9"
+                    required
+                    minLength={6}
+                  />
                 </div>
-              </>
-            )}
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                {loading ? "Verifying..." : "Continue"}
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <div className="rounded-full bg-primary/10 p-4">
+                  <ShieldCheck className="h-8 w-8 text-primary" />
+                </div>
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                We've sent a 6-digit code to{" "}
+                <span className="font-medium text-foreground">{email}</span>
+              </p>
+              <div className="flex justify-center">
+                <InputOTP maxLength={6} value={otp} onChange={setOtp} onComplete={handleOtpVerify}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <Button onClick={handleOtpVerify} className="w-full" disabled={loading || otp.length !== 6}>
+                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                {loading ? "Verifying..." : "Verify & Sign In"}
+              </Button>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => { setStep("credentials"); setOtp(""); }}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  ← Back
+                </button>
+                {countdown > 0 ? (
+                  <span className="text-sm text-muted-foreground">
+                    Resend in {countdown}s
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleResendOtp}
+                    className="text-sm text-primary font-medium hover:underline"
+                    disabled={loading}
+                  >
+                    Resend code
+                  </button>
+                )}
+              </div>
             </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Please wait..." : isSignUp ? "Create Account" : "Login"}
-            </Button>
-          </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button className="text-primary font-medium hover:underline" onClick={() => setIsSignUp(!isSignUp)}>
-              {isSignUp ? "Login" : "Sign Up"}
-            </button>
-          </p>
+          )}
         </CardContent>
       </Card>
     </div>
