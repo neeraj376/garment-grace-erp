@@ -47,6 +47,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "bulk" } | { type: "single"; invoice: Invoice } | null>(null);
+  const [restoreStock, setRestoreStock] = useState(true);
 
   const getInvoiceImageUrl = (invoiceId: string) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
@@ -140,25 +141,68 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const deleteInvoicesByIds = async (ids: string[]) => {
+  const restoreStockForInvoices = async (ids: string[]) => {
+    // Fetch invoice items for these invoices (net quantity = quantity - returned_quantity)
+    const { data: items, error } = await supabase
+      .from("invoice_items")
+      .select("product_id, quantity, returned_quantity, batch_id")
+      .in("invoice_id", ids);
+    if (error) throw error;
+    if (!items || items.length === 0) return;
+
+    // Group by product_id + batch_id and sum net qty
+    const restorations: Record<string, { product_id: string; batch_id: string | null; qty: number }> = {};
+    for (const item of items) {
+      const netQty = item.quantity - (item.returned_quantity || 0);
+      if (netQty <= 0) continue;
+      const key = `${item.product_id}_${item.batch_id || "none"}`;
+      if (!restorations[key]) restorations[key] = { product_id: item.product_id, batch_id: item.batch_id, qty: 0 };
+      restorations[key].qty += netQty;
+    }
+
+    // Restore stock to batches
+    for (const r of Object.values(restorations)) {
+      if (r.batch_id) {
+        await supabase.from("inventory_batches").update({ quantity: supabase.rpc ? undefined : undefined }).eq("id", r.batch_id);
+        // Use raw increment via RPC-less approach: fetch then update
+        const { data: batch } = await supabase.from("inventory_batches").select("quantity").eq("id", r.batch_id).single();
+        if (batch) {
+          await supabase.from("inventory_batches").update({ quantity: batch.quantity + r.qty }).eq("id", r.batch_id);
+        }
+      } else {
+        // No batch_id recorded — create a new restoration batch
+        await supabase.from("inventory_batches").insert({
+          product_id: r.product_id,
+          store_id: storeId!,
+          quantity: r.qty,
+          buying_price: 0,
+          batch_number: "restored",
+          supplier: "Invoice deletion restore",
+        });
+      }
+    }
+  };
+
+  const deleteInvoicesByIds = async (ids: string[], shouldRestoreStock: boolean) => {
+    if (shouldRestoreStock) {
+      await restoreStockForInvoices(ids);
+    }
+
     const batchSize = 100;
     for (let i = 0; i < ids.length; i += batchSize) {
       const batch = ids.slice(i, i + batchSize);
-      // 1. Delete invoice_returns first (references invoice_items)
       const { error: returnsError } = await supabase
         .from("invoice_returns")
         .delete()
         .in("invoice_id", batch);
       if (returnsError) throw returnsError;
 
-      // 2. Delete invoice_items
       const { error: itemsError } = await supabase
         .from("invoice_items")
         .delete()
         .in("invoice_id", batch);
       if (itemsError) throw itemsError;
 
-      // 3. Delete invoices
       const { error } = await supabase
         .from("invoices")
         .delete()
@@ -175,7 +219,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         ? Array.from(selectedIds)
         : [deleteConfirm.invoice.id];
 
-      await deleteInvoicesByIds(ids);
+      await deleteInvoicesByIds(ids, restoreStock);
 
       toast({
         title: "Deleted",
@@ -369,7 +413,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         />
       )}
 
-      <AlertDialog open={!!deleteConfirm} onOpenChange={open => !open && setDeleteConfirm(null)}>
+      <AlertDialog open={!!deleteConfirm} onOpenChange={open => { if (!open) { setDeleteConfirm(null); setRestoreStock(true); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to delete?</AlertDialogTitle>
@@ -379,6 +423,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 : `This will permanently delete invoice ${deleteConfirm?.type === "single" ? deleteConfirm.invoice.invoice_number : ""} along with its line items and returns. This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox
+              id="restore-stock"
+              checked={restoreStock}
+              onCheckedChange={(checked) => setRestoreStock(checked === true)}
+            />
+            <label htmlFor="restore-stock" className="text-sm font-medium leading-none cursor-pointer">
+              Return items back to inventory
+            </label>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
