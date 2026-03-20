@@ -61,12 +61,20 @@ export default function ShopLogin() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: "email",
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+        "verify-custom-otp",
+        { body: { email, code: otp } }
+      );
+      if (verifyError || !verifyData?.valid) {
+        throw new Error(verifyData?.error || verifyError?.message || "Invalid OTP");
+      }
+
+      const { error: signInError } = await supabase.auth.verifyOtp({
+        token_hash: verifyData.token_hash,
+        type: "magiclink",
       });
-      if (error) throw error;
+      if (signInError) throw signInError;
+
       toast.success("Welcome back!");
       navigate("/");
     } catch (error: any) {
@@ -80,9 +88,8 @@ export default function ShopLogin() {
   const handleResendOtp = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
+      const { error } = await supabase.functions.invoke("send-otp", {
+        body: { email },
       });
       if (error) throw error;
       toast.success("OTP resent! Check your email.");
