@@ -52,14 +52,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const cachedStoreId = getCachedStoreId(userId);
-    setStoreId(cachedStoreId);
-    setLoading(!cachedStoreId);
+    const initialCachedStoreId = getCachedStoreId(userId);
+    setStoreId(initialCachedStoreId);
+    setLoading(!initialCachedStoreId);
 
     let isActive = true;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let retryCount = 0;
     const MAX_PROFILE_RETRIES = 5;
+    const getLatestCachedStoreId = () => getCachedStoreId(userId);
 
     const scheduleRetry = () => {
       if (!isActive || retryTimer || retryCount >= MAX_PROFILE_RETRIES) return;
@@ -79,9 +80,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       if (!isActive) return;
 
+      const latestCachedStoreId = getLatestCachedStoreId();
+
       if (!session) {
-        if (cachedStoreId) {
-          setStoreId(cachedStoreId);
+        if (latestCachedStoreId) {
+          setStoreId(latestCachedStoreId);
           setLoading(false);
         } else {
           setLoading(true);
@@ -101,10 +104,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error("[Store] failed to load profile", error);
 
-        if (cachedStoreId) {
-          setStoreId(cachedStoreId);
-          setLoading(false);
+        if (retryCount < MAX_PROFILE_RETRIES) {
+          if (latestCachedStoreId) {
+            setStoreId(latestCachedStoreId);
+            setLoading(false);
+          } else {
+            setLoading(true);
+          }
           scheduleRetry();
+          return;
+        }
+
+        if (latestCachedStoreId) {
+          setStoreId(latestCachedStoreId);
+          setLoading(false);
           return;
         }
 
@@ -115,13 +128,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       const nextStoreId = data?.store_id ?? null;
 
-      if (!nextStoreId && cachedStoreId && retryCount < MAX_PROFILE_RETRIES) {
-        console.warn("[Store] profile read returned no store_id during session warm-up, keeping cached store", {
+      if (!data && retryCount < MAX_PROFILE_RETRIES) {
+        console.warn("[Store] profile row not available yet during session warm-up, retrying", {
           userId,
           retryCount,
         });
-        setStoreId(cachedStoreId);
-        setLoading(false);
+
+        if (latestCachedStoreId) {
+          setStoreId(latestCachedStoreId);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+
         scheduleRetry();
         return;
       }
