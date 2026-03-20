@@ -42,16 +42,15 @@ export default function Auth() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid credentials");
       }
 
-      // Step 2: Send OTP to email
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
+      // Step 2: Send custom OTP via Gmail
+      const { error: otpError } = await supabase.functions.invoke("send-otp", {
+        body: { email },
       });
       if (otpError) throw otpError;
 
       toast({
         title: "OTP Sent",
-        description: "A verification code has been sent to your email.",
+        description: "A 6-digit verification code has been sent to your email.",
       });
       setStep("otp");
       startCountdown();
@@ -71,12 +70,21 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: "email",
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+        "verify-custom-otp",
+        { body: { email, code: otp } }
+      );
+      if (verifyError || !verifyData?.valid) {
+        throw new Error(verifyData?.error || verifyError?.message || "Invalid OTP");
+      }
+
+      // Use the token_hash to complete sign-in
+      const { error: signInError } = await supabase.auth.verifyOtp({
+        token_hash: verifyData.token_hash,
+        type: "magiclink",
       });
-      if (error) throw error;
+      if (signInError) throw signInError;
+
       navigate("/administrator");
     } catch (error: any) {
       toast({
@@ -93,9 +101,8 @@ export default function Auth() {
   const handleResendOtp = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
+      const { error } = await supabase.functions.invoke("send-otp", {
+        body: { email },
       });
       if (error) throw error;
       toast({ title: "OTP Resent", description: "Check your email for the new code." });
