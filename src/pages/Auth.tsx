@@ -8,6 +8,22 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Store, Loader2, Mail, Lock, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const STORE_CACHE_PREFIX = "cached_store_id:";
+
+function cacheStoreId(userId: string, storeId: string | null) {
+  try {
+    const key = `${STORE_CACHE_PREFIX}${userId}`;
+
+    if (storeId) {
+      localStorage.setItem(key, storeId);
+    } else {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
 export default function Auth() {
   const [step, setStep] = useState<"credentials" | "otp">("credentials");
   const [email, setEmail] = useState("");
@@ -33,7 +49,6 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      // Step 1: Verify password via edge function (no client session created)
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
         "verify-password",
         { body: { email, password } }
@@ -42,7 +57,6 @@ export default function Auth() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid credentials");
       }
 
-      // Step 2: Send custom OTP via Gmail
       const { error: otpError } = await supabase.functions.invoke("send-otp", {
         body: { email },
       });
@@ -78,13 +92,29 @@ export default function Auth() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid OTP");
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (signInError) throw signInError;
 
-      navigate("/administrator");
+      const signedInUser = signInData.user;
+      if (!signedInUser) {
+        throw new Error("Could not restore your session");
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("store_id")
+        .eq("user_id", signedInUser.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      const nextStoreId = profile?.store_id ?? null;
+      cacheStoreId(signedInUser.id, nextStoreId);
+
+      navigate(nextStoreId ? "/administrator" : "/administrator/onboarding", { replace: true });
     } catch (error: any) {
       toast({
         title: "Invalid OTP",
