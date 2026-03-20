@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Upload, Search, Package, Download, Pencil, Trash2 } from "lucide-react";
+import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import EditProductDialog from "@/components/inventory/EditProductDialog";
@@ -42,6 +43,12 @@ export default function Inventory() {
   const isOwner = role === "owner";
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("__all__");
+  const [filterBrand, setFilterBrand] = useState("__all__");
+  const [filterSize, setFilterSize] = useState("__all__");
+  const [filterColor, setFilterColor] = useState("__all__");
+  const [filterStock, setFilterStock] = useState("__all__");
+  const [showFilters, setShowFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -327,10 +334,37 @@ export default function Inventory() {
     }
   };
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[];
+  const brands = [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[];
+  const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
+  const colors = [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[];
+
+  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__";
+
+  const clearFilters = () => {
+    setFilterCategory("__all__");
+    setFilterBrand("__all__");
+    setFilterSize("__all__");
+    setFilterColor("__all__");
+    setFilterStock("__all__");
+  };
+
+  const filtered = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.sku.toLowerCase().includes(search.toLowerCase()) ||
+      (p.brand || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.category || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.color || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.size || "").toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = filterCategory === "__all__" || p.category === filterCategory;
+    const matchesBrand = filterBrand === "__all__" || p.brand === filterBrand;
+    const matchesSize = filterSize === "__all__" || p.size === filterSize;
+    const matchesColor = filterColor === "__all__" || p.color === filterColor;
+    const matchesStock = filterStock === "__all__" ||
+      (filterStock === "in_stock" && (p.total_stock ?? 0) > 0) ||
+      (filterStock === "out_of_stock" && (p.total_stock ?? 0) <= 0);
+    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -404,15 +438,66 @@ export default function Inventory() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-        </div>
-        {isOwner && selectedIds.size > 0 && (
-          <Button variant="destructive" onClick={handleBulkDelete}>
-            <Trash2 className="h-4 w-4 mr-2" /> Delete {selectedIds.size} selected
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative max-w-sm flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search by name, SKU, brand, category..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <Button variant={showFilters ? "default" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="h-4 w-4 mr-1" /> Filters
+            {hasActiveFilters && <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">{[filterCategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "__all__").length}</Badge>}
           </Button>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-1" /> Clear
+            </Button>
+          )}
+          {isOwner && selectedIds.size > 0 && (
+            <Button variant="destructive" onClick={handleBulkDelete}>
+              <Trash2 className="h-4 w-4 mr-2" /> Delete {selectedIds.size} selected
+            </Button>
+          )}
+        </div>
+        {showFilters && (
+          <div className="flex flex-wrap gap-3 p-3 rounded-lg border bg-muted/30">
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-40 bg-background"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Categories</SelectItem>
+                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterBrand} onValueChange={setFilterBrand}>
+              <SelectTrigger className="w-40 bg-background"><SelectValue placeholder="Brand" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Brands</SelectItem>
+                {brands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterSize} onValueChange={setFilterSize}>
+              <SelectTrigger className="w-32 bg-background"><SelectValue placeholder="Size" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Sizes</SelectItem>
+                {sizes.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterColor} onValueChange={setFilterColor}>
+              <SelectTrigger className="w-32 bg-background"><SelectValue placeholder="Color" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Colors</SelectItem>
+                {colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterStock} onValueChange={setFilterStock}>
+              <SelectTrigger className="w-36 bg-background"><SelectValue placeholder="Stock" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Stock</SelectItem>
+                <SelectItem value="in_stock">In Stock</SelectItem>
+                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
 
