@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { StoreProvider, useStore } from "@/hooks/useStore";
 import { CartProvider } from "@/hooks/useCart";
 import { PermissionsProvider } from "@/hooks/usePermissions";
-import { useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
@@ -40,20 +39,15 @@ const queryClient = new QueryClient();
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { storeId, loading: storeLoading } = useStore();
-  const hasLoadedOnce = useRef(false);
 
-  const isLoading = authLoading || storeLoading;
+  const isLoading = authLoading || (Boolean(user) && storeLoading);
 
-  if (isLoading && !hasLoadedOnce.current) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     );
-  }
-
-  if (!isLoading) {
-    hasLoadedOnce.current = true;
   }
 
   // Shop routes (always accessible)
@@ -126,7 +120,7 @@ const App = () => (
           <StoreProvider>
             <PermissionsProvider>
               <CartProvider>
-                  <AppRoutes />
+                <AppRoutes />
               </CartProvider>
             </PermissionsProvider>
           </StoreProvider>

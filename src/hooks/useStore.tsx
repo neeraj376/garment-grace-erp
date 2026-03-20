@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -8,63 +8,84 @@ interface StoreContextType {
 }
 
 const StoreContext = createContext<StoreContextType>({ storeId: null, loading: true });
+const STORE_CACHE_PREFIX = "cached_store_id:";
 
-const STORE_CACHE_KEY = "cached_store_id";
+function getCachedStoreId(userId: string | null): string | null {
+  if (!userId) return null;
 
-function getCachedStoreId(): string | null {
   try {
-    return localStorage.getItem(STORE_CACHE_KEY);
-  } catch { return null; }
+    return localStorage.getItem(`${STORE_CACHE_PREFIX}${userId}`);
+  } catch {
+    return null;
+  }
+}
+
+function setCachedStoreId(userId: string, storeId: string | null) {
+  try {
+    const key = `${STORE_CACHE_PREFIX}${userId}`;
+
+    if (storeId) {
+      localStorage.setItem(key, storeId);
+    } else {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore storage access errors.
+  }
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const cachedStoreId = getCachedStoreId();
-  const [storeId, setStoreId] = useState<string | null>(user ? cachedStoreId : null);
-  const [loading, setLoading] = useState(user ? !cachedStoreId : false);
-  const fetchedForUser = useRef<string | null>(null);
+  const userId = user?.id ?? null;
+  const [storeId, setStoreId] = useState<string | null>(getCachedStoreId(userId));
+  const [loading, setLoading] = useState(Boolean(userId));
 
   useEffect(() => {
-    const userId = user?.id ?? null;
-
     if (!userId) {
-      fetchedForUser.current = null;
       setStoreId(null);
       setLoading(false);
-      localStorage.removeItem(STORE_CACHE_KEY);
       return;
     }
 
-    if (fetchedForUser.current === userId) return;
+    const cachedStoreId = getCachedStoreId(userId);
+    if (cachedStoreId) {
+      setStoreId(cachedStoreId);
+    }
+
+    setLoading(true);
+    let isActive = true;
 
     const fetchProfile = async () => {
-      console.log("[Store] fetching profile for user:", userId);
       const { data, error } = await supabase
         .from("profiles")
         .select("store_id")
         .eq("user_id", userId)
         .maybeSingle();
-      
-      console.log("[Store] profile result:", data, "error:", error);
-      const sid = data?.store_id ?? null;
-      fetchedForUser.current = userId;
-      setStoreId(sid);
-      setLoading(false);
-      if (sid) {
-        localStorage.setItem(STORE_CACHE_KEY, sid);
-      } else {
-        localStorage.removeItem(STORE_CACHE_KEY);
+
+      if (!isActive) return;
+
+      if (error) {
+        console.error("[Store] failed to load profile", error);
+        setStoreId(null);
+        setLoading(false);
+        setCachedStoreId(userId, null);
+        return;
       }
+
+      const nextStoreId = data?.store_id ?? null;
+      setStoreId(nextStoreId);
+      setLoading(false);
+      setCachedStoreId(userId, nextStoreId);
     };
 
-    fetchProfile();
-  }, [user?.id]);
+    void fetchProfile();
 
-  return (
-    <StoreContext.Provider value={{ storeId, loading }}>
-      {children}
-    </StoreContext.Provider>
-  );
+    return () => {
+      isActive = false;
+    };
+  }, [userId]);
+
+  return <StoreContext.Provider value={{ storeId, loading }}>{children}</StoreContext.Provider>;
 }
 
 export function useStore() {
