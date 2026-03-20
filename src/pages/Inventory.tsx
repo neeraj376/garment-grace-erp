@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import EditProductDialog from "@/components/inventory/EditProductDialog";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Product {
   id: string;
@@ -37,6 +38,8 @@ interface Product {
 export default function Inventory() {
   const { storeId } = useStore();
   const { toast } = useToast();
+  const { role } = usePermissions();
+  const isOwner = role === "owner";
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -136,7 +139,6 @@ export default function Inventory() {
 
   const cleanNumber = (val: string | undefined): number => {
     if (!val) return 0;
-    // Remove currency symbols, spaces, and commas
     const cleaned = val.replace(/[₹$€£,\s]/g, '');
     const num = parseFloat(cleaned);
     return isNaN(num) ? 0 : num;
@@ -341,60 +343,64 @@ export default function Inventory() {
           <Button variant="outline" onClick={handleDownloadCSV}>
             <Download className="h-4 w-4 mr-2" /> Export CSV
           </Button>
-          <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
-          <input type="file" ref={priceFileInputRef} accept=".csv" className="hidden" onChange={handleUpdatePricesCSV} />
-          <Button variant="outline" onClick={() => priceFileInputRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-2" /> Update Prices
-          </Button>
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-2" /> Import CSV
-          </Button>
-          <Button variant="link" size="sm" className="text-xs px-1" onClick={() => {
-            const sampleHeaders = ["sku","name","category","subcategory","brand","size","color","selling_price","mrp","tax_rate","buying_price","quantity","photo_url"];
-            const sampleRow = ["SKU001","Sample Product","Shirts","Casual","BrandX","M","Blue","999","1199","5","500","10","https://example.com/image.jpg"];
-            const csv = [sampleHeaders.join(","), sampleRow.join(",")].join("\n");
-            const blob = new Blob([csv], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url; a.download = "sample-inventory-template.csv"; a.click();
-            URL.revokeObjectURL(url);
-          }}>
-            <Download className="h-3 w-3 mr-1" /> Sample CSV
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddProduct} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>SKU *</Label><Input value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} required /></div>
-                  <div><Label>Name *</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
-                  <div><Label>Category</Label><Input value={form.category} onChange={e => setForm({...form, category: e.target.value})} /></div>
-                  <div><Label>Brand</Label><Input value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
-                  <div><Label>Size</Label><Input value={form.size} onChange={e => setForm({...form, size: e.target.value})} /></div>
-                  <div><Label>Color</Label><Input value={form.color} onChange={e => setForm({...form, color: e.target.value})} /></div>
-                  <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} required /></div>
-                  <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
-                  <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>
-                </div>
-                <div className="border-t pt-3 space-y-3">
-                  <PhotoUploader photos={newProductPhotos} onChange={setNewProductPhotos} storeId={storeId!} />
-                </div>
-                <div className="border-t pt-3">
-                  <p className="text-sm font-medium mb-2">Initial Stock (optional)</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({...form, buying_price: e.target.value})} /></div>
-                    <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} /></div>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full">Add Product</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          {isOwner && (
+            <>
+              <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
+              <input type="file" ref={priceFileInputRef} accept=".csv" className="hidden" onChange={handleUpdatePricesCSV} />
+              <Button variant="outline" onClick={() => priceFileInputRef.current?.click()}>
+                <Upload className="h-4 w-4 mr-2" /> Update Prices
+              </Button>
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-4 w-4 mr-2" /> Import CSV
+              </Button>
+              <Button variant="link" size="sm" className="text-xs px-1" onClick={() => {
+                const sampleHeaders = ["sku","name","category","subcategory","brand","size","color","selling_price","mrp","tax_rate","buying_price","quantity","photo_url"];
+                const sampleRow = ["SKU001","Sample Product","Shirts","Casual","BrandX","M","Blue","999","1199","5","500","10","https://example.com/image.jpg"];
+                const csv = [sampleHeaders.join(","), sampleRow.join(",")].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = "sample-inventory-template.csv"; a.click();
+                URL.revokeObjectURL(url);
+              }}>
+                <Download className="h-3 w-3 mr-1" /> Sample CSV
+              </Button>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add New Product</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleAddProduct} className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>SKU *</Label><Input value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} required /></div>
+                      <div><Label>Name *</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
+                      <div><Label>Category</Label><Input value={form.category} onChange={e => setForm({...form, category: e.target.value})} /></div>
+                      <div><Label>Brand</Label><Input value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
+                      <div><Label>Size</Label><Input value={form.size} onChange={e => setForm({...form, size: e.target.value})} /></div>
+                      <div><Label>Color</Label><Input value={form.color} onChange={e => setForm({...form, color: e.target.value})} /></div>
+                      <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} required /></div>
+                      <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
+                      <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>
+                    </div>
+                    <div className="border-t pt-3 space-y-3">
+                      <PhotoUploader photos={newProductPhotos} onChange={setNewProductPhotos} storeId={storeId!} />
+                    </div>
+                    <div className="border-t pt-3">
+                      <p className="text-sm font-medium mb-2">Initial Stock (optional)</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({...form, buying_price: e.target.value})} /></div>
+                        <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} /></div>
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full">Add Product</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
         </div>
       </div>
 
@@ -403,7 +409,7 @@ export default function Inventory() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        {selectedIds.size > 0 && (
+        {isOwner && selectedIds.size > 0 && (
           <Button variant="destructive" onClick={handleBulkDelete}>
             <Trash2 className="h-4 w-4 mr-2" /> Delete {selectedIds.size} selected
           </Button>
@@ -426,12 +432,14 @@ export default function Inventory() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                  onCheckedChange={toggleSelectAll}
-                />
-              </TableHead>
+              {isOwner && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-12"></TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Product</TableHead>
@@ -439,13 +447,13 @@ export default function Inventory() {
               <TableHead>Size / Color</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="w-12"></TableHead>
+              {isOwner && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={9} className="text-center py-12">
+              <TableCell colSpan={isOwner ? 9 : 7} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
@@ -453,12 +461,14 @@ export default function Inventory() {
             ) : (
               filtered.map((p) => (
                 <TableRow key={p.id} className={selectedIds.has(p.id) ? "bg-muted/50" : ""}>
-                  <TableCell className="p-2">
-                    <Checkbox
-                      checked={selectedIds.has(p.id)}
-                      onCheckedChange={() => toggleSelect(p.id)}
-                    />
-                  </TableCell>
+                  {isOwner && (
+                    <TableCell className="p-2">
+                      <Checkbox
+                        checked={selectedIds.has(p.id)}
+                        onCheckedChange={() => toggleSelect(p.id)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="p-1">
                     {(() => {
                       const photos = parsePhotoUrls(p.photo_url);
@@ -484,26 +494,28 @@ export default function Inventory() {
                       {p.total_stock}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => { setEditProduct(p); setEditOpen(true); }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteProduct(p.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {isOwner && (
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => { setEditProduct(p); setEditOpen(true); }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteProduct(p.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
@@ -511,7 +523,7 @@ export default function Inventory() {
         </Table>
       </Card>
 
-      {storeId && (
+      {isOwner && storeId && (
         <EditProductDialog
           product={editProduct}
           open={editOpen}
