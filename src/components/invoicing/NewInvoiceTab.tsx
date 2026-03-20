@@ -460,7 +460,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           <CardHeader><CardTitle className="section-title">Customer</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="relative">
-              <Label>Mobile Number</Label>
+              <Label>Mobile Number <span className="text-destructive">*</span></Label>
               <Input value={customerMobile} onChange={e => { setCustomerMobile(e.target.value); setShowCustomerSuggestions(true); }} placeholder="+91..." />
               {showCustomerSuggestions && customerSuggestions.length > 0 && (
                 <div className="absolute z-50 top-full left-0 right-0 mt-1 border rounded-lg bg-popover shadow-md max-h-40 overflow-y-auto">
@@ -477,9 +477,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </div>
               )}
             </div>
-            <div><Label>Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} /></div>
+            <div><Label>Name <span className="text-destructive">*</span></Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} /></div>
             <div>
-              <Label>Gender</Label>
+              <Label>Gender <span className="text-destructive">*</span></Label>
               <Select value={customerGender} onValueChange={setCustomerGender}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
@@ -489,7 +489,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Location</Label><Input value={customerLocation} onChange={e => setCustomerLocation(e.target.value)} /></div>
+            <div><Label>Location <span className="text-destructive">*</span></Label><Input value={customerLocation} onChange={e => setCustomerLocation(e.target.value)} /></div>
             <div>
               <Label>Source</Label>
               <Select value={source} onValueChange={setSource}>
