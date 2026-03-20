@@ -369,7 +369,7 @@ export default function Inventory() {
       (filterStock === "out_of_stock" && (p.total_stock ?? 0) <= 0);
     const avgBuyingPrice = p.inventory_batches && p.inventory_batches.length > 0
       ? p.inventory_batches.reduce((s, b) => s + Number(b.buying_price), 0) / p.inventory_batches.length
-      : 0;
+      : Number(p.buying_price ?? 0);
     const matchesBuyingPriceMin = filterBuyingPriceMin === "" || avgBuyingPrice >= parseFloat(filterBuyingPriceMin);
     const matchesBuyingPriceMax = filterBuyingPriceMax === "" || avgBuyingPrice <= parseFloat(filterBuyingPriceMax);
     return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax;
