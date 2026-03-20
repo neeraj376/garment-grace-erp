@@ -25,7 +25,7 @@ export default function AppSidebar() {
   const isOwner = role === "owner";
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/administrator", visible: true },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/administrator", visible: isOwner },
     { icon: Package, label: "Inventory", path: "/administrator/inventory", visible: isOwner || can_inventory },
     { icon: FileText, label: "Invoicing", path: "/administrator/invoicing", visible: isOwner || can_invoicing },
     { icon: Boxes, label: "Stock Summary", path: "/administrator/stock", visible: isOwner || can_inventory },
