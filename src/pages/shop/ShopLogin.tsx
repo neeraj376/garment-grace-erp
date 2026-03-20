@@ -41,13 +41,12 @@ export default function ShopLogin() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid credentials");
       }
 
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
+      const { error: otpError } = await supabase.functions.invoke("send-otp", {
+        body: { email },
       });
       if (otpError) throw otpError;
 
-      toast.success("OTP sent! Check your email for the verification code.");
+      toast.success("OTP sent! Check your email for the 6-digit verification code.");
       setStep("otp");
       startCountdown();
     } catch (error: any) {
