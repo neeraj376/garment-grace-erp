@@ -506,6 +506,12 @@ export default function Inventory() {
                 <SelectItem value="out_of_stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Buying ₹</span>
+              <Input type="number" placeholder="Min" value={filterBuyingPriceMin} onChange={e => setFilterBuyingPriceMin(e.target.value)} className="w-24 h-9 bg-background" />
+              <span className="text-xs text-muted-foreground">–</span>
+              <Input type="number" placeholder="Max" value={filterBuyingPriceMax} onChange={e => setFilterBuyingPriceMax(e.target.value)} className="w-24 h-9 bg-background" />
+            </div>
           </div>
         )}
       </div>
