@@ -38,12 +38,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (fetchedForUser.current === userId) return;
 
     const fetchProfile = async () => {
-      const { data } = await supabase
+      console.log("[Store] fetching profile for user:", userId);
+      const { data, error } = await supabase
         .from("profiles")
         .select("store_id")
         .eq("user_id", userId)
         .maybeSingle();
       
+      console.log("[Store] profile result:", data, "error:", error);
       const sid = data?.store_id ?? null;
       fetchedForUser.current = userId;
       setStoreId(sid);
