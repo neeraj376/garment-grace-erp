@@ -35,12 +35,17 @@ function setCachedStoreId(userId: string, storeId: string | null) {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
   const [storeId, setStoreId] = useState<string | null>(getCachedStoreId(userId));
-  const [loading, setLoading] = useState(Boolean(userId));
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!userId) {
       setStoreId(null);
       setLoading(false);
@@ -48,14 +53,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const cachedStoreId = getCachedStoreId(userId);
-    if (cachedStoreId) {
-      setStoreId(cachedStoreId);
-    }
-
+    setStoreId(cachedStoreId);
     setLoading(true);
+
     let isActive = true;
 
     const fetchProfile = async () => {
+      await supabase.auth.getSession();
+
       const { data, error } = await supabase
         .from("profiles")
         .select("store_id")
@@ -83,7 +88,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => {
       isActive = false;
     };
-  }, [userId]);
+  }, [authLoading, userId]);
 
   return <StoreContext.Provider value={{ storeId, loading }}>{children}</StoreContext.Provider>;
 }
