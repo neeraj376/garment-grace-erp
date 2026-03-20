@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export default function Inventory() {
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "",
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
+  const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
 
   const fetchProducts = async () => {
     if (!storeId) return;
@@ -150,13 +152,14 @@ export default function Inventory() {
 
     console.log("CSV headers detected:", headers);
 
+    const totalRows = lines.length - 1;
+    setCsvProgress({ current: 0, total: totalRows });
+
     let count = 0;
     for (let i = 1; i < lines.length; i++) {
       const vals = parseCSVLine(lines[i]);
       const row: any = {};
       headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
-
-      console.log(`Row ${i}:`, row);
 
       const sellingPrice = cleanNumber(row.selling_price || row.price || row.sp || row.rate);
       const mrpVal = cleanNumber(row.mrp || row.maximum_retail_price);
@@ -186,7 +189,7 @@ export default function Inventory() {
           .select()
           .single();
 
-        if (error) { console.error(`Row ${i} insert error:`, error.message); continue; }
+        if (error) { console.error(`Row ${i} insert error:`, error.message); setCsvProgress({ current: i, total: totalRows }); continue; }
 
         if (product && (buyingPrice > 0 || quantity > 0)) {
           await supabase.from("inventory_batches").insert({
@@ -198,9 +201,11 @@ export default function Inventory() {
         }
         count++;
       } catch (err: any) { console.error(`Row ${i} error:`, err.message); }
+      setCsvProgress({ current: i, total: totalRows });
     }
 
     toast({ title: `${count} products imported` });
+    setCsvProgress(null);
     fetchProducts();
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -404,6 +409,18 @@ export default function Inventory() {
           </Button>
         )}
       </div>
+
+      {csvProgress && (
+        <div className="space-y-2 rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Importing products…</span>
+            <span className="tabular-nums text-muted-foreground">
+              {csvProgress.current} / {csvProgress.total}
+            </span>
+          </div>
+          <Progress value={(csvProgress.current / csvProgress.total) * 100} className="h-2" />
+        </div>
+      )}
 
       <Card className="border rounded-xl overflow-hidden">
         <Table>
