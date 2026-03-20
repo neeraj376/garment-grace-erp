@@ -368,11 +368,14 @@ export default function Inventory() {
     const matchesStock = filterStock === "__all__" ||
       (filterStock === "in_stock" && (p.total_stock ?? 0) > 0) ||
       (filterStock === "out_of_stock" && (p.total_stock ?? 0) <= 0);
-    const avgBuyingPrice = p.inventory_batches && p.inventory_batches.length > 0
-      ? p.inventory_batches.reduce((s, b) => s + Number(b.buying_price), 0) / p.inventory_batches.length
+    const positiveBatchBuyingPrices = (p.inventory_batches ?? [])
+      .map((b) => Number(b.buying_price))
+      .filter((price) => price > 0);
+    const effectiveBuyingPrice = positiveBatchBuyingPrices.length > 0
+      ? positiveBatchBuyingPrices.reduce((sum, price) => sum + price, 0) / positiveBatchBuyingPrices.length
       : Number(p.buying_price ?? 0);
-    const matchesBuyingPriceMin = filterBuyingPriceMin === "" || avgBuyingPrice >= parseFloat(filterBuyingPriceMin);
-    const matchesBuyingPriceMax = filterBuyingPriceMax === "" || avgBuyingPrice <= parseFloat(filterBuyingPriceMax);
+    const matchesBuyingPriceMin = filterBuyingPriceMin === "" || effectiveBuyingPrice >= parseFloat(filterBuyingPriceMin);
+    const matchesBuyingPriceMax = filterBuyingPriceMax === "" || effectiveBuyingPrice <= parseFloat(filterBuyingPriceMax);
     return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax;
   });
 
