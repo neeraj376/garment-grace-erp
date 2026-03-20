@@ -54,12 +54,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     const cachedStoreId = getCachedStoreId(userId);
     setStoreId(cachedStoreId);
-    setLoading(true);
+    setLoading(!cachedStoreId);
 
     let isActive = true;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleRetry = () => {
+      if (!isActive || retryTimer) return;
+
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        if (!isActive) return;
+        void fetchProfile();
+      }, 400);
+    };
 
     const fetchProfile = async () => {
-      await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!isActive) return;
+
+      if (!session) {
+        if (cachedStoreId) {
+          setStoreId(cachedStoreId);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+        scheduleRetry();
+        return;
+      }
 
       const { data, error } = await supabase
         .from("profiles")
@@ -71,9 +97,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error("[Store] failed to load profile", error);
+
+        if (cachedStoreId) {
+          setStoreId(cachedStoreId);
+          setLoading(false);
+          scheduleRetry();
+          return;
+        }
+
         setStoreId(null);
         setLoading(false);
-        setCachedStoreId(userId, null);
         return;
       }
 
@@ -87,6 +120,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isActive = false;
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [authLoading, userId]);
 
