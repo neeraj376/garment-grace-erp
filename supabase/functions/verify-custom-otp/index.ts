@@ -44,6 +44,30 @@ Deno.serve(async (req) => {
       );
     }
 
+    const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+
+    if (usersError) throw usersError;
+
+    const authUser = usersData.users.find(
+      (user) => user.email?.toLowerCase() === String(email).toLowerCase()
+    );
+
+    let storeId: string | null = null;
+
+    if (authUser) {
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .select("store_id")
+        .eq("user_id", authUser.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      storeId = profile?.store_id ?? null;
+    }
+
     // Mark OTP as used
     await supabaseAdmin
       .from("otp_codes")
@@ -54,6 +78,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         valid: true,
         email,
+        storeId,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

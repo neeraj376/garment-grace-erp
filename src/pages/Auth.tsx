@@ -103,15 +103,9 @@ export default function Auth() {
         throw new Error("Could not restore your session");
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("store_id")
-        .eq("user_id", signedInUser.id)
-        .maybeSingle();
+      await supabase.auth.getSession();
 
-      if (profileError) throw profileError;
-
-      const nextStoreId = profile?.store_id ?? null;
+      const nextStoreId = typeof verifyData?.storeId === "string" ? verifyData.storeId : null;
       cacheStoreId(signedInUser.id, nextStoreId);
 
       navigate(nextStoreId ? "/administrator" : "/administrator/onboarding", { replace: true });
