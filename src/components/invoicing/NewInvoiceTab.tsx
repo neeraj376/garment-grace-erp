@@ -513,11 +513,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               </Select>
             </div>
             <div>
-              <Label>Sales Employee</Label>
+              <Label>Sales Employee <span className="text-destructive">*</span></Label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
                 <SelectContent className="z-[9999]">
-                  <SelectItem value="none">— No employee —</SelectItem>
                   {employees.map(emp => (
                     <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.role})</SelectItem>
                   ))}
