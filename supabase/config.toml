@@ -24,3 +24,9 @@ verify_jwt = false
 
 [functions.create-sub-user]
 verify_jwt = false
+
+[functions.send-otp]
+verify_jwt = false
+
+[functions.verify-custom-otp]
+verify_jwt = false
