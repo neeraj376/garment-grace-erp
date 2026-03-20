@@ -74,19 +74,23 @@ export default function Reports() {
 
     const { data: invData } = await supabase
       .from("invoices")
-      .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id)")
+      .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
       .eq("store_id", storeId!)
       .gte("created_at", start)
       .lte("created_at", end)
       .order("created_at", { ascending: true });
 
+    // Collect product IDs and batch IDs
     const productIds = new Set<string>();
+    const batchIds = new Set<string>();
     (invData ?? []).forEach(inv => {
       (inv.invoice_items as any[])?.forEach(item => {
         if (item.product_id) productIds.add(item.product_id);
+        if (item.batch_id) batchIds.add(item.batch_id);
       });
     });
 
+    // Fetch product-level buying prices as fallback
     const buyingPriceMap: Record<string, number> = {};
     if (productIds.size > 0) {
       const { data: productData } = await supabase
@@ -98,12 +102,28 @@ export default function Reports() {
       });
     }
 
+    // Fetch batch-level buying prices (more accurate per-purchase cost)
+    const batchBuyingPriceMap: Record<string, number> = {};
+    if (batchIds.size > 0) {
+      const { data: batchData } = await supabase
+        .from("inventory_batches")
+        .select("id, buying_price")
+        .in("id", Array.from(batchIds));
+      (batchData ?? []).forEach((b: any) => {
+        batchBuyingPriceMap[b.id] = Number(b.buying_price) || 0;
+      });
+    }
+
     let revenue = 0, cost = 0, tax = 0;
     (invData ?? []).forEach(inv => {
       revenue += Number(inv.total_amount);
       tax += Number(inv.tax_amount);
       (inv.invoice_items as any[])?.forEach(item => {
-        cost += (buyingPriceMap[item.product_id] ?? 0) * item.quantity;
+        // Prefer batch buying price, fallback to product buying price
+        const unitCost = item.batch_id && batchBuyingPriceMap[item.batch_id] > 0
+          ? batchBuyingPriceMap[item.batch_id]
+          : (buyingPriceMap[item.product_id] ?? 0);
+        cost += unitCost * item.quantity;
       });
     });
 
