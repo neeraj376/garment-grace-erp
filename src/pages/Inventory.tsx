@@ -48,6 +48,7 @@ export default function Inventory() {
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "",
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
+  const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
 
   const fetchProducts = async () => {
     if (!storeId) return;
