@@ -311,12 +311,14 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.has(inv.id)}
-                      onCheckedChange={() => toggleSelect(inv.id)}
-                    />
-                  </TableCell>
+                  {isOwner && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(inv.id)}
+                        onCheckedChange={() => toggleSelect(inv.id)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                   <TableCell>
                     <div>{inv.customers?.name || "Walk-in"}</div>
