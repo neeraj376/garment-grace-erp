@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { StoreProvider, useStore } from "@/hooks/useStore";
 import { CartProvider } from "@/hooks/useCart";
-import { PermissionsProvider } from "@/hooks/usePermissions";
+import { PermissionsProvider, usePermissions } from "@/hooks/usePermissions";
 import AppLayout from "@/components/layout/AppLayout";
 import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
@@ -39,6 +39,7 @@ const queryClient = new QueryClient();
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { storeId, loading: storeLoading } = useStore();
+  const permissions = usePermissions();
 
   const isLoading = authLoading || (Boolean(user) && storeLoading);
 
@@ -87,10 +88,21 @@ function AppRoutes() {
     );
   }
 
+  // Determine default page for staff (first allowed module)
+  const defaultStaffPage = (() => {
+    const { role: permRole, can_invoicing, can_inventory, can_photos, can_customers } = permissions;
+    if (permRole === "owner") return null; // owners get Dashboard
+    if (can_invoicing) return "invoicing";
+    if (can_inventory) return "inventory";
+    if (can_customers) return "customers";
+    if (can_photos) return "photos";
+    return "invoicing"; // fallback
+  })();
+
   return (
     <Routes>
       <Route path="/administrator" element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={defaultStaffPage ? <Navigate to={`/administrator/${defaultStaffPage}`} replace /> : <Dashboard />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="invoicing" element={<Invoicing />} />
         <Route path="stock" element={<StockSummary />} />
