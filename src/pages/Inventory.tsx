@@ -334,10 +334,37 @@ export default function Inventory() {
     }
   };
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[];
+  const brands = [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[];
+  const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
+  const colors = [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[];
+
+  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__";
+
+  const clearFilters = () => {
+    setFilterCategory("__all__");
+    setFilterBrand("__all__");
+    setFilterSize("__all__");
+    setFilterColor("__all__");
+    setFilterStock("__all__");
+  };
+
+  const filtered = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.sku.toLowerCase().includes(search.toLowerCase()) ||
+      (p.brand || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.category || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.color || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.size || "").toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = filterCategory === "__all__" || p.category === filterCategory;
+    const matchesBrand = filterBrand === "__all__" || p.brand === filterBrand;
+    const matchesSize = filterSize === "__all__" || p.size === filterSize;
+    const matchesColor = filterColor === "__all__" || p.color === filterColor;
+    const matchesStock = filterStock === "__all__" ||
+      (filterStock === "in_stock" && (p.total_stock ?? 0) > 0) ||
+      (filterStock === "out_of_stock" && (p.total_stock ?? 0) <= 0);
+    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
