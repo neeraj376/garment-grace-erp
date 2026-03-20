@@ -184,8 +184,30 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const total = cart.reduce((s, i) => s + getLineTotal(i), 0) - discount;
 
   const handleCreateInvoice = async () => {
-    if (!storeId || !userId || cart.length === 0) return;
-
+    if (!storeId || !userId || cart.length === 0) {
+      toast({ title: "Error", description: "Please add at least one product", variant: "destructive" });
+      return;
+    }
+    if (!customerMobile.trim()) {
+      toast({ title: "Error", description: "Customer mobile number is required", variant: "destructive" });
+      return;
+    }
+    if (!customerName.trim()) {
+      toast({ title: "Error", description: "Customer name is required", variant: "destructive" });
+      return;
+    }
+    if (!customerGender) {
+      toast({ title: "Error", description: "Customer gender is required", variant: "destructive" });
+      return;
+    }
+    if (!customerLocation.trim()) {
+      toast({ title: "Error", description: "Customer location is required", variant: "destructive" });
+      return;
+    }
+    if (!selectedEmployee || selectedEmployee === "none") {
+      toast({ title: "Error", description: "Please select a sales employee", variant: "destructive" });
+      return;
+    }
     try {
       let customerId: string | null = null;
       if (customerMobile) {
