@@ -347,16 +347,18 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           <TooltipContent>View invoice</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => setEditInvoice(inv)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit invoice</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      {isOwner && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => setEditInvoice(inv)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit invoice</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {inv.customers?.mobile && (
                         <TooltipProvider>
                           <Tooltip>
