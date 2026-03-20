@@ -972,6 +972,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_store_id: { Args: never; Returns: string }
       get_in_stock_product_ids: {
         Args: { p_store_id: string }
         Returns: string[]
