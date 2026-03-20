@@ -256,7 +256,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="section-title">Invoice History</CardTitle>
-            {selectedIds.size > 0 && (
+            {isOwner && selectedIds.size > 0 && (
               <Button
                 variant="destructive"
                 size="sm"
