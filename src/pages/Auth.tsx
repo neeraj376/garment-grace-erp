@@ -42,16 +42,15 @@ export default function Auth() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid credentials");
       }
 
-      // Step 2: Send OTP to email
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
+      // Step 2: Send custom OTP via Gmail
+      const { error: otpError } = await supabase.functions.invoke("send-otp", {
+        body: { email },
       });
       if (otpError) throw otpError;
 
       toast({
         title: "OTP Sent",
-        description: "A verification code has been sent to your email.",
+        description: "A 6-digit verification code has been sent to your email.",
       });
       setStep("otp");
       startCountdown();
