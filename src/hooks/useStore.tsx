@@ -58,12 +58,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     let isActive = true;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const MAX_PROFILE_RETRIES = 5;
 
     const scheduleRetry = () => {
-      if (!isActive || retryTimer) return;
+      if (!isActive || retryTimer || retryCount >= MAX_PROFILE_RETRIES) return;
 
       retryTimer = setTimeout(() => {
         retryTimer = null;
+        retryCount += 1;
         if (!isActive) return;
         void fetchProfile();
       }, 400);
@@ -111,6 +114,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
 
       const nextStoreId = data?.store_id ?? null;
+
+      if (!nextStoreId && cachedStoreId && retryCount < MAX_PROFILE_RETRIES) {
+        console.warn("[Store] profile read returned no store_id during session warm-up, keeping cached store", {
+          userId,
+          retryCount,
+        });
+        setStoreId(cachedStoreId);
+        setLoading(false);
+        scheduleRetry();
+        return;
+      }
+
       setStoreId(nextStoreId);
       setLoading(false);
       setCachedStoreId(userId, nextStoreId);
