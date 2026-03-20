@@ -69,9 +69,9 @@ export default function ShopLogin() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid OTP");
       }
 
-      const { error: signInError } = await supabase.auth.verifyOtp({
-        token_hash: verifyData.token_hash,
-        type: "magiclink",
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
       if (signInError) throw signInError;
 

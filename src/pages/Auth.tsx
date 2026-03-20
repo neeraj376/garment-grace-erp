@@ -78,10 +78,9 @@ export default function Auth() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid OTP");
       }
 
-      // Use the token_hash to complete sign-in
-      const { error: signInError } = await supabase.auth.verifyOtp({
-        token_hash: verifyData.token_hash,
-        type: "magiclink",
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
       if (signInError) throw signInError;
 
