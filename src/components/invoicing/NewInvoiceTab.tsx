@@ -75,22 +75,27 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   useEffect(() => {
     if (!storeId) return;
-    // Fetch all products (paginated to avoid 1000-row limit)
+    // Fetch only in-stock products (paginated to avoid 1000-row limit)
     const fetchAllProducts = async () => {
+      // First get IDs of products that have stock > 0
+      const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: storeId });
+      if (!inStockIds || inStockIds.length === 0) {
+        setProducts([]);
+        return;
+      }
+
       let allProducts: any[] = [];
-      let from = 0;
-      const pageSize = 1000;
-      while (true) {
+      // Fetch in batches of 200 IDs to avoid URL length limits
+      const batchSize = 200;
+      for (let i = 0; i < inStockIds.length; i += batchSize) {
+        const idBatch = inStockIds.slice(i, i + batchSize);
         const { data } = await supabase
           .from("products")
           .select("id, sku, name, selling_price, tax_rate, category")
           .eq("store_id", storeId)
           .eq("is_active", true)
-          .range(from, from + pageSize - 1);
-        if (!data || data.length === 0) break;
-        allProducts = allProducts.concat(data);
-        if (data.length < pageSize) break;
-        from += pageSize;
+          .in("id", idBatch);
+        if (data) allProducts = allProducts.concat(data);
       }
       setProducts(allProducts);
     };
