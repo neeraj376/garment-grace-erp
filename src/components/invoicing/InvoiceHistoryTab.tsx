@@ -413,7 +413,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         />
       )}
 
-      <AlertDialog open={!!deleteConfirm} onOpenChange={open => !open && setDeleteConfirm(null)}>
+      <AlertDialog open={!!deleteConfirm} onOpenChange={open => { if (!open) { setDeleteConfirm(null); setRestoreStock(true); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to delete?</AlertDialogTitle>
@@ -423,6 +423,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 : `This will permanently delete invoice ${deleteConfirm?.type === "single" ? deleteConfirm.invoice.invoice_number : ""} along with its line items and returns. This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox
+              id="restore-stock"
+              checked={restoreStock}
+              onCheckedChange={(checked) => setRestoreStock(checked === true)}
+            />
+            <label htmlFor="restore-stock" className="text-sm font-medium leading-none cursor-pointer">
+              Return items back to inventory
+            </label>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
