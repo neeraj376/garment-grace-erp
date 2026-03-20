@@ -16,7 +16,7 @@ async function sendEmailViaSMTP(to: string, code: string): Promise<void> {
   if (!rawPassword) throw new Error("GMAIL_APP_PASSWORD not configured");
   const password = rawPassword.replace(/\s/g, "");
 
-  const from = "originee-store@gmail.com";
+  const from = "originee.store@gmail.com";
   const subject = "Your Originee Login OTP";
   const body = `Your one-time verification code is: ${code}\n\nThis code expires in 5 minutes. Do not share it with anyone.`;
 
