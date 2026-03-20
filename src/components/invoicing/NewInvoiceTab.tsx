@@ -85,7 +85,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       }
 
       let allProducts: any[] = [];
-      // Fetch in batches of 200 IDs to avoid URL length limits
       const batchSize = 200;
       for (let i = 0; i < inStockIds.length; i += batchSize) {
         const idBatch = inStockIds.slice(i, i + batchSize);
@@ -97,7 +96,16 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           .in("id", idBatch);
         if (data) allProducts = allProducts.concat(data);
       }
-      setProducts(allProducts);
+
+      // Fetch stock for each product
+      const stockMap: Record<string, number> = {};
+      await Promise.all(
+        allProducts.map(async (p) => {
+          const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
+          stockMap[p.id] = typeof stock === "number" ? stock : 0;
+        })
+      );
+      setProducts(allProducts.map(p => ({ ...p, _stock: stockMap[p.id] ?? 0 })));
     };
     fetchAllProducts();
     supabase
