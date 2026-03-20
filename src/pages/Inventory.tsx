@@ -410,6 +410,18 @@ export default function Inventory() {
         )}
       </div>
 
+      {csvProgress && (
+        <div className="space-y-2 rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Importing products…</span>
+            <span className="tabular-nums text-muted-foreground">
+              {csvProgress.current} / {csvProgress.total}
+            </span>
+          </div>
+          <Progress value={(csvProgress.current / csvProgress.total) * 100} className="h-2" />
+        </div>
+      )}
+
       <Card className="border rounded-xl overflow-hidden">
         <Table>
           <TableHeader>
