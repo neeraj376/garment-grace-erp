@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { Button } from "@/components/ui/button";
