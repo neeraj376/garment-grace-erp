@@ -37,6 +37,8 @@ interface Props {
 }
 
 export default function InvoiceHistoryTab({ storeId, userId }: Props) {
+  const { role } = usePermissions();
+  const isOwner = role === "owner";
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [creatorNames, setCreatorNames] = useState<Record<string, string>>({});
