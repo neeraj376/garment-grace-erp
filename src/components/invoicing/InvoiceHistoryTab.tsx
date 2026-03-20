@@ -219,7 +219,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         ? Array.from(selectedIds)
         : [deleteConfirm.invoice.id];
 
-      await deleteInvoicesByIds(ids);
+      await deleteInvoicesByIds(ids, restoreStock);
 
       toast({
         title: "Deleted",
