@@ -12,8 +12,9 @@ function generateOtp(): string {
 }
 
 async function sendEmailViaSMTP(to: string, code: string): Promise<void> {
-  const password = Deno.env.get("GMAIL_APP_PASSWORD");
-  if (!password) throw new Error("GMAIL_APP_PASSWORD not configured");
+  const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+  if (!rawPassword) throw new Error("GMAIL_APP_PASSWORD not configured");
+  const password = rawPassword.replace(/\s/g, "");
 
   const from = "originee-store@gmail.com";
   const subject = "Your Originee Login OTP";
