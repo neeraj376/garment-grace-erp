@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,6 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   const startCountdown = useCallback(() => {
@@ -108,7 +106,8 @@ export default function Auth() {
       const nextStoreId = typeof verifyData?.storeId === "string" ? verifyData.storeId : null;
       cacheStoreId(signedInUser.id, nextStoreId);
 
-      navigate(nextStoreId ? "/administrator" : "/administrator/onboarding", { replace: true });
+      window.location.replace(nextStoreId ? "/administrator" : "/administrator/onboarding");
+      return;
     } catch (error: any) {
       toast({
         title: "Invalid OTP",
@@ -218,15 +217,16 @@ export default function Auth() {
             </Button>
             <div className="flex items-center justify-between">
               <button
-                onClick={() => { setStep("credentials"); setOtp(""); }}
+                onClick={() => {
+                  setStep("credentials");
+                  setOtp("");
+                }}
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
                 ← Back
               </button>
               {countdown > 0 ? (
-                <span className="text-sm text-muted-foreground">
-                  Resend in {countdown}s
-                </span>
+                <span className="text-sm text-muted-foreground">Resend in {countdown}s</span>
               ) : (
                 <button
                   onClick={handleResendOtp}
