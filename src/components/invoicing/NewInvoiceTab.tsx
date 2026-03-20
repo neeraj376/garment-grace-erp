@@ -326,6 +326,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <span>{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
                     <span className="flex items-center gap-2">
                       {p.category && <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.category}</span>}
+                      <span className="text-xs font-medium text-muted-foreground">Stock: {p._stock}</span>
                       <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
                     </span>
                   </button>
