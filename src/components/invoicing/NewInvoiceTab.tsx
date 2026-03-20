@@ -64,6 +64,36 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+
+  // Search existing customers as mobile number is typed
+  useEffect(() => {
+    if (!storeId || customerMobile.length < 3) {
+      setCustomerSuggestions([]);
+      setShowCustomerSuggestions(false);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("customers")
+        .select("id, mobile, name, gender, location")
+        .eq("store_id", storeId)
+        .ilike("mobile", `%${customerMobile}%`)
+        .limit(5);
+      setCustomerSuggestions(data ?? []);
+      setShowCustomerSuggestions((data ?? []).length > 0);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [customerMobile, storeId]);
+
+  const selectCustomerSuggestion = (cust: any) => {
+    setCustomerMobile(cust.mobile);
+    setCustomerName(cust.name || "");
+    setCustomerGender(cust.gender || "");
+    setCustomerLocation(cust.location || "");
+    setShowCustomerSuggestions(false);
+  };
 
   // Persist draft to localStorage
   useEffect(() => {
