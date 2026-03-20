@@ -367,7 +367,12 @@ export default function Inventory() {
     const matchesStock = filterStock === "__all__" ||
       (filterStock === "in_stock" && (p.total_stock ?? 0) > 0) ||
       (filterStock === "out_of_stock" && (p.total_stock ?? 0) <= 0);
-    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock;
+    const avgBuyingPrice = p.inventory_batches && p.inventory_batches.length > 0
+      ? p.inventory_batches.reduce((s, b) => s + Number(b.buying_price), 0) / p.inventory_batches.length
+      : 0;
+    const matchesBuyingPriceMin = filterBuyingPriceMin === "" || avgBuyingPrice >= parseFloat(filterBuyingPriceMin);
+    const matchesBuyingPriceMax = filterBuyingPriceMax === "" || avgBuyingPrice <= parseFloat(filterBuyingPriceMax);
+    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax;
   });
 
   return (
