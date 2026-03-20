@@ -43,6 +43,12 @@ export default function Inventory() {
   const isOwner = role === "owner";
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("__all__");
+  const [filterBrand, setFilterBrand] = useState("__all__");
+  const [filterSize, setFilterSize] = useState("__all__");
+  const [filterColor, setFilterColor] = useState("__all__");
+  const [filterStock, setFilterStock] = useState("__all__");
+  const [showFilters, setShowFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editOpen, setEditOpen] = useState(false);
