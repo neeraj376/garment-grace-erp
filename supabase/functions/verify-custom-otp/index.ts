@@ -50,34 +50,9 @@ Deno.serve(async (req) => {
       .update({ used: true })
       .eq("id", otpRecords[0].id);
 
-    // Generate a session for the user using admin API
-    // First get user by email
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    if (userError) throw userError;
-
-    const user = userData.users.find((u) => u.email === email);
-    if (!user) {
-      return new Response(
-        JSON.stringify({ valid: false, error: "User not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Generate a magic link token that auto-signs in
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-
-    if (linkError) throw linkError;
-
-    // Extract the token from the link properties
-    const token = linkData.properties?.hashed_token;
-
     return new Response(
       JSON.stringify({
         valid: true,
-        token_hash: token,
         email,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
