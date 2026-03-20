@@ -437,7 +437,24 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         <Card>
           <CardHeader><CardTitle className="section-title">Customer</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <div><Label>Mobile Number</Label><Input value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} placeholder="+91..." /></div>
+            <div className="relative">
+              <Label>Mobile Number</Label>
+              <Input value={customerMobile} onChange={e => { setCustomerMobile(e.target.value); setShowCustomerSuggestions(true); }} placeholder="+91..." />
+              {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 border rounded-lg bg-popover shadow-md max-h-40 overflow-y-auto">
+                  {customerSuggestions.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => selectCustomerSuggestion(c)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between items-center"
+                    >
+                      <span className="font-medium">{c.mobile}</span>
+                      <span className="text-muted-foreground text-xs">{c.name || "—"} {c.location ? `· ${c.location}` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div><Label>Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} /></div>
             <div>
               <Label>Gender</Label>
