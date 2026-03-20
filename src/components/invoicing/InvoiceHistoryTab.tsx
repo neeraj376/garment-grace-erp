@@ -307,7 +307,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={isOwner ? 9 : 8} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
