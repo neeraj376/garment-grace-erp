@@ -64,6 +64,36 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+
+  // Search existing customers as mobile number is typed
+  useEffect(() => {
+    if (!storeId || customerMobile.length < 3) {
+      setCustomerSuggestions([]);
+      setShowCustomerSuggestions(false);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("customers")
+        .select("id, mobile, name, gender, location")
+        .eq("store_id", storeId)
+        .ilike("mobile", `%${customerMobile}%`)
+        .limit(5);
+      setCustomerSuggestions(data ?? []);
+      setShowCustomerSuggestions((data ?? []).length > 0);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [customerMobile, storeId]);
+
+  const selectCustomerSuggestion = (cust: any) => {
+    setCustomerMobile(cust.mobile);
+    setCustomerName(cust.name || "");
+    setCustomerGender(cust.gender || "");
+    setCustomerLocation(cust.location || "");
+    setShowCustomerSuggestions(false);
+  };
 
   // Persist draft to localStorage
   useEffect(() => {
@@ -407,7 +437,24 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         <Card>
           <CardHeader><CardTitle className="section-title">Customer</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <div><Label>Mobile Number</Label><Input value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} placeholder="+91..." /></div>
+            <div className="relative">
+              <Label>Mobile Number</Label>
+              <Input value={customerMobile} onChange={e => { setCustomerMobile(e.target.value); setShowCustomerSuggestions(true); }} placeholder="+91..." />
+              {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 border rounded-lg bg-popover shadow-md max-h-40 overflow-y-auto">
+                  {customerSuggestions.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => selectCustomerSuggestion(c)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between items-center"
+                    >
+                      <span className="font-medium">{c.mobile}</span>
+                      <span className="text-muted-foreground text-xs">{c.name || "—"} {c.location ? `· ${c.location}` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div><Label>Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} /></div>
             <div>
               <Label>Gender</Label>
