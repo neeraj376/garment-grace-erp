@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePermissions } from "@/hooks/usePermissions";
 import ReturnDialog from "./ReturnDialog";
 import EditInvoiceDialog from "./EditInvoiceDialog";
 
@@ -36,6 +37,8 @@ interface Props {
 }
 
 export default function InvoiceHistoryTab({ storeId, userId }: Props) {
+  const { role } = usePermissions();
+  const isOwner = role === "owner";
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [creatorNames, setCreatorNames] = useState<Record<string, string>>({});
@@ -253,7 +256,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="section-title">Invoice History</CardTitle>
-            {selectedIds.size > 0 && (
+            {isOwner && selectedIds.size > 0 && (
               <Button
                 variant="destructive"
                 size="sm"
@@ -279,12 +282,14 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </TableHead>
+                {isOwner && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
+                )}
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Date</TableHead>
@@ -298,20 +303,22 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={isOwner ? 9 : 8} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={isOwner ? 9 : 8} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.has(inv.id)}
-                      onCheckedChange={() => toggleSelect(inv.id)}
-                    />
-                  </TableCell>
+                  {isOwner && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(inv.id)}
+                        onCheckedChange={() => toggleSelect(inv.id)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                   <TableCell>
                     <div>{inv.customers?.name || "Walk-in"}</div>
@@ -340,16 +347,18 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           <TooltipContent>View invoice</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => setEditInvoice(inv)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit invoice</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      {isOwner && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => setEditInvoice(inv)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit invoice</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {inv.customers?.mobile && (
                         <TooltipProvider>
                           <Tooltip>
@@ -374,16 +383,18 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => setDeleteConfirm({ type: "single", invoice: inv })}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete invoice</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      {isOwner && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => setDeleteConfirm({ type: "single", invoice: inv })}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete invoice</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
