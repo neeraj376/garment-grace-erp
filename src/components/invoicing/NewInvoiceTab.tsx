@@ -487,19 +487,24 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               className="mb-3"
             />
             {searchProduct && (
-              <div className="border rounded-lg max-h-40 overflow-y-auto mb-3">
+              <div className="border rounded-lg max-h-60 overflow-y-auto mb-3">
                 {filteredProducts.map(p => (
                   <button
                     key={p.id}
                     onClick={() => addToCart(p)}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b last:border-b-0"
                   >
-                    <span>{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
-                    <span className="flex items-center gap-2">
-                      {p.category && <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.category}</span>}
-                      <span className="text-xs font-medium text-muted-foreground">Stock: {p._stock}</span>
-                      <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
-                    </span>
+                    <div className="flex justify-between items-start">
+                      <span className="font-medium">{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
+                      <span className="font-semibold whitespace-nowrap ml-2">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      {p.category && <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.category}</span>}
+                      {p.subcategory && <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.subcategory}</span>}
+                      {p.color && <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.color}</span>}
+                      {p.size && <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.size}</span>}
+                      <span className="text-[11px] font-medium text-muted-foreground ml-auto">Qty: {p._stock}</span>
+                    </div>
                   </button>
                 ))}
               </div>
