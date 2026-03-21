@@ -448,7 +448,34 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="space-y-4">
+      {/* Held Invoices Bar */}
+      {heldInvoices.length > 0 && (
+        <Card className="border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center gap-2 mb-2">
+              <PauseCircle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800 dark:text-amber-300">Held Invoices ({heldInvoices.length})</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {heldInvoices.map(h => (
+                <div key={h.id} className="flex items-center gap-1 bg-background border rounded-md px-2 py-1 text-xs shadow-sm">
+                  <button onClick={() => handleResumeHeld(h)} className="flex items-center gap-1 hover:text-primary">
+                    <PlayCircle className="h-3.5 w-3.5" />
+                    <span className="font-medium">{h.customerName || h.customerMobile || "Draft"}</span>
+                    <span className="text-muted-foreground">({h.cart.length} items · ₹{h.cart.reduce((s, i) => s + (i.unit_price * i.quantity - i.item_discount), 0).toLocaleString("en-IN")})</span>
+                  </button>
+                  <button onClick={() => handleDeleteHeld(h.id)} className="ml-1 text-muted-foreground hover:text-destructive">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
         <Card>
           <CardHeader><CardTitle className="section-title">Products</CardTitle></CardHeader>
