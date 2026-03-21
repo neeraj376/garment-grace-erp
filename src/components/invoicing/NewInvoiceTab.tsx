@@ -66,6 +66,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Search existing customers as mobile number is typed
   useEffect(() => {
