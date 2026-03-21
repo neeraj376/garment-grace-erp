@@ -33,6 +33,21 @@ interface Props {
 }
 
 const DRAFT_KEY = "invoice_draft";
+const HELD_INVOICES_KEY = "held_invoices";
+
+interface HeldInvoice {
+  id: string;
+  heldAt: string;
+  customerMobile: string;
+  customerName: string;
+  customerGender: string;
+  customerLocation: string;
+  cart: CartItem[];
+  source: string;
+  paymentMethod: string;
+  selectedEmployee: string;
+  discount: number;
+}
 
 function loadDraft() {
   try {
@@ -47,6 +62,17 @@ function saveDraft(data: any) {
 
 function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
+function loadHeldInvoices(): HeldInvoice[] {
+  try {
+    const raw = localStorage.getItem(HELD_INVOICES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveHeldInvoices(invoices: HeldInvoice[]) {
+  try { localStorage.setItem(HELD_INVOICES_KEY, JSON.stringify(invoices)); } catch {}
 }
 
 export default function NewInvoiceTab({ storeId, userId }: Props) {
