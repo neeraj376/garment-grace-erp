@@ -164,6 +164,38 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
     setItems(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const addProductToInvoice = (product: any) => {
+    const existing = items.find(i => i.product_id === product.id);
+    if (existing) {
+      const idx = items.indexOf(existing);
+      updateItem(idx, "quantity", existing.quantity + 1);
+    } else {
+      const price = Number(product.selling_price);
+      const taxRate = Number(product.tax_rate) || 5;
+      const priceExclTax = price / (1 + taxRate / 100);
+      const taxAmount = price - priceExclTax;
+      setItems(prev => [...prev, {
+        id: `new_${Date.now()}`,
+        product_id: product.id,
+        quantity: 1,
+        unit_price: price,
+        discount: 0,
+        tax_amount: parseFloat(taxAmount.toFixed(2)),
+        total: price,
+        product_name: product.name,
+        product_sku: product.sku,
+        tax_rate: taxRate,
+        isNew: true,
+      }]);
+    }
+    setSearchProduct("");
+  };
+
+  const filteredProducts = availableProducts.filter(p =>
+    p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
+    p.sku.toLowerCase().includes(searchProduct.toLowerCase())
+  );
+
   const itemsSubtotal = items.reduce((s, i) => {
     const priceExclTax = i.total / (1 + (i.tax_rate || 5) / 100);
     return s + priceExclTax;
