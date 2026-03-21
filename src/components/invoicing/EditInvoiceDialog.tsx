@@ -393,7 +393,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                     <TableRow key={item.id}>
                       <TableCell>
                         <div className="text-sm font-medium">{item.product_name}</div>
-                        <div className="text-xs text-muted-foreground">{item.product_sku}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.product_sku}
+                          {item.isNew && <span className="ml-1 text-primary font-medium">(new)</span>}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input
