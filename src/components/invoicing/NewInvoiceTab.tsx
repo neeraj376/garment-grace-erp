@@ -94,6 +94,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => loadHeldInvoices());
 
   // Search existing customers as mobile number is typed
   useEffect(() => {
