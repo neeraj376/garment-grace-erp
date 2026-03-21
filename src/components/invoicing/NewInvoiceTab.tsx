@@ -149,7 +149,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         const idBatch = inStockIds.slice(i, i + batchSize);
         const { data } = await supabase
           .from("products")
-          .select("id, sku, name, selling_price, tax_rate, category")
+          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size")
           .eq("store_id", storeId)
           .eq("is_active", true)
           .in("id", idBatch);
