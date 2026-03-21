@@ -37,6 +37,7 @@ interface InvoiceItem {
   product_name?: string;
   product_sku?: string;
   tax_rate?: number;
+  isNew?: boolean;
 }
 
 interface Props {
