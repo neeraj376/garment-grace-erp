@@ -68,6 +68,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [employees, setEmployees] = useState<{ id: string; name: string; role: string }[]>([]);
 
+  // Product search for adding new items
+  const [searchProduct, setSearchProduct] = useState("");
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+
   useEffect(() => {
     if (!open) return;
     const fetchData = async () => {
