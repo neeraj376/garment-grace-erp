@@ -307,6 +307,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       clearDraft();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setCreatingInvoice(false);
     }
   };
 
