@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Plus } from "lucide-react";
 
 interface Invoice {
   id: string;
@@ -37,6 +37,7 @@ interface InvoiceItem {
   product_name?: string;
   product_sku?: string;
   tax_rate?: number;
+  isNew?: boolean;
 }
 
 interface Props {
@@ -66,6 +67,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   // Items
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [employees, setEmployees] = useState<{ id: string; name: string; role: string }[]>([]);
+
+  // Product search for adding new items
+  const [searchProduct, setSearchProduct] = useState("");
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -111,6 +116,24 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           .eq("store_id", inv.store_id)
           .eq("is_active", true);
         setEmployees(emps || []);
+
+        // Fetch in-stock products for adding new items
+        const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: inv.store_id });
+        if (inStockIds && inStockIds.length > 0) {
+          let allProds: any[] = [];
+          const batchSize = 200;
+          for (let i = 0; i < inStockIds.length; i += batchSize) {
+            const idBatch = inStockIds.slice(i, i + batchSize);
+            const { data } = await supabase
+              .from("products")
+              .select("id, sku, name, selling_price, tax_rate, category")
+              .eq("store_id", inv.store_id)
+              .eq("is_active", true)
+              .in("id", idBatch);
+            if (data) allProds = allProds.concat(data);
+          }
+          setAvailableProducts(allProds);
+        }
       }
       setSelectedEmployee(inv?.employee_id || "none");
 
@@ -140,6 +163,38 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const removeItem = (idx: number) => {
     setItems(prev => prev.filter((_, i) => i !== idx));
   };
+
+  const addProductToInvoice = (product: any) => {
+    const existing = items.find(i => i.product_id === product.id);
+    if (existing) {
+      const idx = items.indexOf(existing);
+      updateItem(idx, "quantity", existing.quantity + 1);
+    } else {
+      const price = Number(product.selling_price);
+      const taxRate = Number(product.tax_rate) || 5;
+      const priceExclTax = price / (1 + taxRate / 100);
+      const taxAmount = price - priceExclTax;
+      setItems(prev => [...prev, {
+        id: `new_${Date.now()}`,
+        product_id: product.id,
+        quantity: 1,
+        unit_price: price,
+        discount: 0,
+        tax_amount: parseFloat(taxAmount.toFixed(2)),
+        total: price,
+        product_name: product.name,
+        product_sku: product.sku,
+        tax_rate: taxRate,
+        isNew: true,
+      }]);
+    }
+    setSearchProduct("");
+  };
+
+  const filteredProducts = availableProducts.filter(p =>
+    p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
+    p.sku.toLowerCase().includes(searchProduct.toLowerCase())
+  );
 
   const itemsSubtotal = items.reduce((s, i) => {
     const priceExclTax = i.total / (1 + (i.tax_rate || 5) / 100);
@@ -190,18 +245,32 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
 
       if (error) throw error;
 
-      // Update each item
+      // Update existing items and insert new ones
       for (const item of items) {
-        await supabase
-          .from("invoice_items")
-          .update({
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            discount: item.discount,
-            tax_amount: item.tax_amount,
-            total: item.total,
-          })
-          .eq("id", item.id);
+        if (item.isNew) {
+          await supabase
+            .from("invoice_items")
+            .insert({
+              invoice_id: invoice.id,
+              product_id: item.product_id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              discount: item.discount,
+              tax_amount: item.tax_amount,
+              total: item.total,
+            });
+        } else {
+          await supabase
+            .from("invoice_items")
+            .update({
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              discount: item.discount,
+              tax_amount: item.tax_amount,
+              total: item.total,
+            })
+            .eq("id", item.id);
+        }
       }
 
       toast({ title: "Invoice updated successfully" });
@@ -288,6 +357,37 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
               </div>
             </div>
 
+            {/* Add Product Search */}
+            <div>
+              <Label className="mb-2 block">Add Product</Label>
+              <div className="relative">
+                <Input
+                  placeholder="Search products by name or SKU to add..."
+                  value={searchProduct}
+                  onChange={e => setSearchProduct(e.target.value)}
+                  className="mb-1"
+                />
+                <Plus className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+              {searchProduct && filteredProducts.length > 0 && (
+                <div className="border rounded-lg max-h-40 overflow-y-auto mb-2 bg-background shadow-md">
+                  {filteredProducts.slice(0, 20).map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => addProductToInvoice(p)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between"
+                    >
+                      <span>{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
+                      <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchProduct && filteredProducts.length === 0 && (
+                <p className="text-xs text-muted-foreground mb-2">No matching products found</p>
+              )}
+            </div>
+
             {/* Items Table */}
             <div>
               <Label className="mb-2 block">Invoice Items</Label>
@@ -307,7 +407,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                     <TableRow key={item.id}>
                       <TableCell>
                         <div className="text-sm font-medium">{item.product_name}</div>
-                        <div className="text-xs text-muted-foreground">{item.product_sku}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.product_sku}
+                          {item.isNew && <span className="ml-1 text-primary font-medium">(new)</span>}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input
