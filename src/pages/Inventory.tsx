@@ -385,7 +385,7 @@ export default function Inventory() {
         <div>
           <h1 className="page-header">Inventory</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {filtered.length} products · <span className="font-semibold text-foreground">{filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0).toLocaleString("en-IN")}</span> total units in stock
+            <span className="font-semibold text-foreground">{filtered.length}</span> products · <span className="font-semibold text-foreground">{filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0).toLocaleString("en-IN")}</span> pieces in stock
           </p>
         </div>
         <div className="flex gap-2">
