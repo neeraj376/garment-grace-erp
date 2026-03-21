@@ -544,8 +544,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <span>Total</span>
               <span>₹{total.toLocaleString("en-IN")}</span>
             </div>
-            <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0}>
-              Create Invoice
+            <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0 || creatingInvoice}>
+              {creatingInvoice ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</> : "Create Invoice"}
             </Button>
 
             {lastInvoice && (
