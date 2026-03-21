@@ -66,6 +66,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Search existing customers as mobile number is typed
   useEffect(() => {
@@ -208,6 +209,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a sales employee", variant: "destructive" });
       return;
     }
+    setCreatingInvoice(true);
     try {
       let customerId: string | null = null;
       if (customerMobile) {
@@ -305,6 +307,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       clearDraft();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setCreatingInvoice(false);
     }
   };
 
@@ -540,8 +544,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <span>Total</span>
               <span>₹{total.toLocaleString("en-IN")}</span>
             </div>
-            <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0}>
-              Create Invoice
+            <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0 || creatingInvoice}>
+              {creatingInvoice ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</> : "Create Invoice"}
             </Button>
 
             {lastInvoice && (
