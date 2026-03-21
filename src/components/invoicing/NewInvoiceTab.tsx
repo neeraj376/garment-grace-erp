@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 interface CartItem {
   product_id: string;
@@ -32,6 +33,21 @@ interface Props {
 }
 
 const DRAFT_KEY = "invoice_draft";
+const HELD_INVOICES_KEY = "held_invoices";
+
+interface HeldInvoice {
+  id: string;
+  heldAt: string;
+  customerMobile: string;
+  customerName: string;
+  customerGender: string;
+  customerLocation: string;
+  cart: CartItem[];
+  source: string;
+  paymentMethod: string;
+  selectedEmployee: string;
+  discount: number;
+}
 
 function loadDraft() {
   try {
@@ -46,6 +62,17 @@ function saveDraft(data: any) {
 
 function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
+function loadHeldInvoices(): HeldInvoice[] {
+  try {
+    const raw = localStorage.getItem(HELD_INVOICES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveHeldInvoices(invoices: HeldInvoice[]) {
+  try { localStorage.setItem(HELD_INVOICES_KEY, JSON.stringify(invoices)); } catch {}
 }
 
 export default function NewInvoiceTab({ storeId, userId }: Props) {
@@ -67,6 +94,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => loadHeldInvoices());
 
   // Search existing customers as mobile number is typed
   useEffect(() => {
@@ -354,13 +382,100 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
   };
 
+  const handleHoldInvoice = () => {
+    if (cart.length === 0) {
+      toast({ title: "Nothing to hold", description: "Add products before holding", variant: "destructive" });
+      return;
+    }
+    const held: HeldInvoice = {
+      id: `hold_${Date.now()}`,
+      heldAt: new Date().toISOString(),
+      customerMobile, customerName, customerGender, customerLocation,
+      cart, source, paymentMethod, selectedEmployee, discount,
+    };
+    const updated = [...heldInvoices, held];
+    setHeldInvoices(updated);
+    saveHeldInvoices(updated);
+    // Clear current form
+    setCart([]); setDiscount(0); setCustomerMobile(""); setCustomerName("");
+    setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
+    clearDraft();
+    toast({ title: "Invoice held", description: `${customerName || "Invoice"} parked — ${cart.length} item(s)` });
+  };
+
+  const handleResumeHeld = (held: HeldInvoice) => {
+    // If current form has items, hold them first
+    if (cart.length > 0) {
+      const currentHeld: HeldInvoice = {
+        id: `hold_${Date.now()}`,
+        heldAt: new Date().toISOString(),
+        customerMobile, customerName, customerGender, customerLocation,
+        cart, source, paymentMethod, selectedEmployee, discount,
+      };
+      const withCurrent = [...heldInvoices, currentHeld];
+      // Remove the one being resumed and add current
+      const updated = withCurrent.filter(h => h.id !== held.id);
+      setHeldInvoices(updated);
+      saveHeldInvoices(updated);
+    } else {
+      const updated = heldInvoices.filter(h => h.id !== held.id);
+      setHeldInvoices(updated);
+      saveHeldInvoices(updated);
+    }
+    // Restore held invoice
+    setCart(held.cart);
+    setCustomerMobile(held.customerMobile);
+    setCustomerName(held.customerName);
+    setCustomerGender(held.customerGender);
+    setCustomerLocation(held.customerLocation);
+    setSource(held.source);
+    setPaymentMethod(held.paymentMethod);
+    setSelectedEmployee(held.selectedEmployee);
+    setDiscount(held.discount);
+    toast({ title: "Invoice resumed", description: `${held.customerName || "Invoice"} restored` });
+  };
+
+  const handleDeleteHeld = (id: string) => {
+    const updated = heldInvoices.filter(h => h.id !== id);
+    setHeldInvoices(updated);
+    saveHeldInvoices(updated);
+    toast({ title: "Held invoice removed" });
+  };
+
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
     p.sku.toLowerCase().includes(searchProduct.toLowerCase())
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="space-y-4">
+      {/* Held Invoices Bar */}
+      {heldInvoices.length > 0 && (
+        <Card className="border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center gap-2 mb-2">
+              <PauseCircle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800 dark:text-amber-300">Held Invoices ({heldInvoices.length})</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {heldInvoices.map(h => (
+                <div key={h.id} className="flex items-center gap-1 bg-background border rounded-md px-2 py-1 text-xs shadow-sm">
+                  <button onClick={() => handleResumeHeld(h)} className="flex items-center gap-1 hover:text-primary">
+                    <PlayCircle className="h-3.5 w-3.5" />
+                    <span className="font-medium">{h.customerName || h.customerMobile || "Draft"}</span>
+                    <span className="text-muted-foreground">({h.cart.length} items · ₹{h.cart.reduce((s, i) => s + (i.unit_price * i.quantity - i.item_discount), 0).toLocaleString("en-IN")})</span>
+                  </button>
+                  <button onClick={() => handleDeleteHeld(h.id)} className="ml-1 text-muted-foreground hover:text-destructive">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
         <Card>
           <CardHeader><CardTitle className="section-title">Products</CardTitle></CardHeader>
@@ -547,6 +662,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0 || creatingInvoice}>
               {creatingInvoice ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</> : "Create Invoice"}
             </Button>
+            <Button variant="outline" className="w-full" onClick={handleHoldInvoice} disabled={cart.length === 0 || creatingInvoice}>
+              <PauseCircle className="h-4 w-4 mr-2" /> Hold Invoice
+            </Button>
 
             {lastInvoice && (
               <div className="mt-3 p-3 rounded-lg border border-green-200 bg-green-50 space-y-2">
@@ -584,6 +702,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   );
 }
