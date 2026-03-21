@@ -343,6 +343,37 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
               </div>
             </div>
 
+            {/* Add Product Search */}
+            <div>
+              <Label className="mb-2 block">Add Product</Label>
+              <div className="relative">
+                <Input
+                  placeholder="Search products by name or SKU to add..."
+                  value={searchProduct}
+                  onChange={e => setSearchProduct(e.target.value)}
+                  className="mb-1"
+                />
+                <Plus className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+              {searchProduct && filteredProducts.length > 0 && (
+                <div className="border rounded-lg max-h-40 overflow-y-auto mb-2 bg-background shadow-md">
+                  {filteredProducts.slice(0, 20).map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => addProductToInvoice(p)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between"
+                    >
+                      <span>{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
+                      <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchProduct && filteredProducts.length === 0 && (
+                <p className="text-xs text-muted-foreground mb-2">No matching products found</p>
+              )}
+            </div>
+
             {/* Items Table */}
             <div>
               <Label className="mb-2 block">Invoice Items</Label>
