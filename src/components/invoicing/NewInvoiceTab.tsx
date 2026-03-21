@@ -662,6 +662,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0 || creatingInvoice}>
               {creatingInvoice ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</> : "Create Invoice"}
             </Button>
+            <Button variant="outline" className="w-full" onClick={handleHoldInvoice} disabled={cart.length === 0 || creatingInvoice}>
+              <PauseCircle className="h-4 w-4 mr-2" /> Hold Invoice
+            </Button>
 
             {lastInvoice && (
               <div className="mt-3 p-3 rounded-lg border border-green-200 bg-green-50 space-y-2">
