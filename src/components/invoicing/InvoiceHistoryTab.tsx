@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -44,6 +46,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [creatorNames, setCreatorNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterNotes, setFilterNotes] = useState(false);
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
@@ -51,6 +54,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "bulk" } | { type: "single"; invoice: Invoice } | null>(null);
   const [restoreStock, setRestoreStock] = useState(true);
+  const [noteDialog, setNoteDialog] = useState<Invoice | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
 
   const getInvoiceImageUrl = (invoiceId: string) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
@@ -100,7 +106,6 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       const invoiceData = (data as any) ?? [];
       setInvoices(invoiceData);
 
-      // Fetch creator names for all unique created_by ids
       const creatorIds = [...new Set(invoiceData.map((i: Invoice) => i.created_by).filter(Boolean))] as string[];
       if (creatorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -122,11 +127,14 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     fetchInvoices();
   }, [storeId]);
 
-  const filtered = invoices.filter(inv =>
-    inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-    inv.customers?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    inv.customers?.mobile?.includes(search)
-  );
+  const filtered = invoices.filter(inv => {
+    const matchesSearch =
+      inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
+      inv.customers?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      inv.customers?.mobile?.includes(search);
+    const matchesNoteFilter = !filterNotes || (inv.notes && inv.notes.trim().length > 0);
+    return matchesSearch && matchesNoteFilter;
+  });
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -144,8 +152,51 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
+  const handleOpenNoteDialog = (inv: Invoice) => {
+    setNoteDialog(inv);
+    setNoteText(inv.notes || "");
+  };
+
+  const handleSaveNote = async () => {
+    if (!noteDialog) return;
+    setSavingNote(true);
+    try {
+      const trimmed = noteText.trim();
+      const { error } = await supabase
+        .from("invoices")
+        .update({ notes: trimmed || null })
+        .eq("id", noteDialog.id);
+      if (error) throw error;
+      setInvoices(prev => prev.map(inv => inv.id === noteDialog.id ? { ...inv, notes: trimmed || null } : inv));
+      toast({ title: "Note saved" });
+      setNoteDialog(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleRemoveNote = async () => {
+    if (!noteDialog) return;
+    setSavingNote(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ notes: null })
+        .eq("id", noteDialog.id);
+      if (error) throw error;
+      setInvoices(prev => prev.map(inv => inv.id === noteDialog.id ? { ...inv, notes: null } : inv));
+      toast({ title: "Note removed" });
+      setNoteDialog(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
   const restoreStockForInvoices = async (ids: string[]) => {
-    // Fetch invoice items for these invoices (net quantity = quantity - returned_quantity)
     const { data: items, error } = await supabase
       .from("invoice_items")
       .select("product_id, quantity, returned_quantity, batch_id")
@@ -153,7 +204,6 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     if (error) throw error;
     if (!items || items.length === 0) return;
 
-    // Group by product_id + batch_id and sum net qty
     const restorations: Record<string, { product_id: string; batch_id: string | null; qty: number }> = {};
     for (const item of items) {
       const netQty = item.quantity - (item.returned_quantity || 0);
@@ -163,17 +213,13 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       restorations[key].qty += netQty;
     }
 
-    // Restore stock to batches
     for (const r of Object.values(restorations)) {
       if (r.batch_id) {
-        await supabase.from("inventory_batches").update({ quantity: supabase.rpc ? undefined : undefined }).eq("id", r.batch_id);
-        // Use raw increment via RPC-less approach: fetch then update
         const { data: batch } = await supabase.from("inventory_batches").select("quantity").eq("id", r.batch_id).single();
         if (batch) {
           await supabase.from("inventory_batches").update({ quantity: batch.quantity + r.qty }).eq("id", r.batch_id);
         }
       } else {
-        // No batch_id recorded — create a new restoration batch
         await supabase.from("inventory_batches").insert({
           product_id: r.product_id,
           store_id: storeId!,
@@ -268,14 +314,30 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               </Button>
             )}
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by invoice #, customer name or mobile..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by invoice #, customer name or mobile..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={filterNotes ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setFilterNotes(!filterNotes)}
+                  >
+                    <Star className={`h-4 w-4 ${filterNotes ? "fill-current" : ""}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{filterNotes ? "Show all invoices" : "Show only invoices with notes"}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardHeader>
         <CardContent>
@@ -290,6 +352,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                     />
                   </TableHead>
                 )}
+                <TableHead className="w-8"></TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Date</TableHead>
@@ -303,11 +366,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={isOwner ? 9 : 8} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={isOwner ? 10 : 9} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isOwner ? 9 : 8} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={isOwner ? 10 : 9} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
@@ -319,6 +382,18 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                       />
                     </TableCell>
                   )}
+                  <TableCell className="px-1">
+                    {inv.notes && inv.notes.trim() ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Star className="h-4 w-4 text-red-500 fill-red-500 cursor-pointer" onClick={() => handleOpenNoteDialog(inv)} />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">{inv.notes}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : null}
+                  </TableCell>
                   <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                   <TableCell>
                     <div>{inv.customers?.name || "Walk-in"}</div>
@@ -337,6 +412,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenNoteDialog(inv)}>
+                              <StickyNote className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{inv.notes ? "Edit note" : "Add note"}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -423,6 +508,32 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           onSuccess={() => { setEditInvoice(null); fetchInvoices(); }}
         />
       )}
+
+      {/* Note Dialog */}
+      <Dialog open={!!noteDialog} onOpenChange={open => { if (!open) setNoteDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invoice Note — {noteDialog?.invoice_number}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            placeholder="Add a note for this invoice..."
+            value={noteText}
+            onChange={e => setNoteText(e.target.value)}
+            rows={4}
+          />
+          <DialogFooter className="flex gap-2 sm:justify-between">
+            {noteDialog?.notes && (
+              <Button variant="destructive" size="sm" onClick={handleRemoveNote} disabled={savingNote}>
+                <Trash2 className="h-4 w-4 mr-1" /> Remove Note
+              </Button>
+            )}
+            <Button onClick={handleSaveNote} disabled={savingNote}>
+              {savingNote ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={open => { if (!open) { setDeleteConfirm(null); setRestoreStock(true); } }}>
         <AlertDialogContent>
