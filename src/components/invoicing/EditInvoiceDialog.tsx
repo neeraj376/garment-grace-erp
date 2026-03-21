@@ -116,6 +116,24 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           .eq("store_id", inv.store_id)
           .eq("is_active", true);
         setEmployees(emps || []);
+
+        // Fetch in-stock products for adding new items
+        const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: inv.store_id });
+        if (inStockIds && inStockIds.length > 0) {
+          let allProds: any[] = [];
+          const batchSize = 200;
+          for (let i = 0; i < inStockIds.length; i += batchSize) {
+            const idBatch = inStockIds.slice(i, i + batchSize);
+            const { data } = await supabase
+              .from("products")
+              .select("id, sku, name, selling_price, tax_rate, category")
+              .eq("store_id", inv.store_id)
+              .eq("is_active", true)
+              .in("id", idBatch);
+            if (data) allProds = allProds.concat(data);
+          }
+          setAvailableProducts(allProds);
+        }
       }
       setSelectedEmployee(inv?.employee_id || "none");
 
