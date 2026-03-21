@@ -699,7 +699,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           </CardContent>
         </Card>
       </div>
-      </div>
     </div>
     </div>
   );
