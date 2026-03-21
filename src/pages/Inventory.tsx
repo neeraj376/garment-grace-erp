@@ -384,7 +384,9 @@ export default function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-header">Inventory</h1>
-          <p className="text-sm text-muted-foreground mt-1">{products.length} products</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {filtered.length} products · <span className="font-semibold text-foreground">{filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0).toLocaleString("en-IN")}</span> total units in stock
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleDownloadCSV}>
