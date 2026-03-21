@@ -209,6 +209,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a sales employee", variant: "destructive" });
       return;
     }
+    setCreatingInvoice(true);
     try {
       let customerId: string | null = null;
       if (customerMobile) {
