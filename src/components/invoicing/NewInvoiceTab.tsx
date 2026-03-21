@@ -382,6 +382,66 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
   };
 
+  const handleHoldInvoice = () => {
+    if (cart.length === 0) {
+      toast({ title: "Nothing to hold", description: "Add products before holding", variant: "destructive" });
+      return;
+    }
+    const held: HeldInvoice = {
+      id: `hold_${Date.now()}`,
+      heldAt: new Date().toISOString(),
+      customerMobile, customerName, customerGender, customerLocation,
+      cart, source, paymentMethod, selectedEmployee, discount,
+    };
+    const updated = [...heldInvoices, held];
+    setHeldInvoices(updated);
+    saveHeldInvoices(updated);
+    // Clear current form
+    setCart([]); setDiscount(0); setCustomerMobile(""); setCustomerName("");
+    setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
+    clearDraft();
+    toast({ title: "Invoice held", description: `${customerName || "Invoice"} parked — ${cart.length} item(s)` });
+  };
+
+  const handleResumeHeld = (held: HeldInvoice) => {
+    // If current form has items, hold them first
+    if (cart.length > 0) {
+      const currentHeld: HeldInvoice = {
+        id: `hold_${Date.now()}`,
+        heldAt: new Date().toISOString(),
+        customerMobile, customerName, customerGender, customerLocation,
+        cart, source, paymentMethod, selectedEmployee, discount,
+      };
+      const withCurrent = [...heldInvoices, currentHeld];
+      // Remove the one being resumed and add current
+      const updated = withCurrent.filter(h => h.id !== held.id);
+      setHeldInvoices(updated);
+      saveHeldInvoices(updated);
+    } else {
+      const updated = heldInvoices.filter(h => h.id !== held.id);
+      setHeldInvoices(updated);
+      saveHeldInvoices(updated);
+    }
+    // Restore held invoice
+    setCart(held.cart);
+    setCustomerMobile(held.customerMobile);
+    setCustomerName(held.customerName);
+    setCustomerGender(held.customerGender);
+    setCustomerLocation(held.customerLocation);
+    setSource(held.source);
+    setPaymentMethod(held.paymentMethod);
+    setSelectedEmployee(held.selectedEmployee);
+    setDiscount(held.discount);
+    toast({ title: "Invoice resumed", description: `${held.customerName || "Invoice"} restored` });
+  };
+
+  const handleDeleteHeld = (id: string) => {
+    const updated = heldInvoices.filter(h => h.id !== id);
+    setHeldInvoices(updated);
+    saveHeldInvoices(updated);
+    toast({ title: "Held invoice removed" });
+  };
+
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
     p.sku.toLowerCase().includes(searchProduct.toLowerCase())
