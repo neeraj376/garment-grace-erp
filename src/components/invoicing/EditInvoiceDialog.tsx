@@ -245,18 +245,32 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
 
       if (error) throw error;
 
-      // Update each item
+      // Update existing items and insert new ones
       for (const item of items) {
-        await supabase
-          .from("invoice_items")
-          .update({
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            discount: item.discount,
-            tax_amount: item.tax_amount,
-            total: item.total,
-          })
-          .eq("id", item.id);
+        if (item.isNew) {
+          await supabase
+            .from("invoice_items")
+            .insert({
+              invoice_id: invoice.id,
+              product_id: item.product_id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              discount: item.discount,
+              tax_amount: item.tax_amount,
+              total: item.total,
+            });
+        } else {
+          await supabase
+            .from("invoice_items")
+            .update({
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              discount: item.discount,
+              tax_amount: item.tax_amount,
+              total: item.total,
+            })
+            .eq("id", item.id);
+        }
       }
 
       toast({ title: "Invoice updated successfully" });
