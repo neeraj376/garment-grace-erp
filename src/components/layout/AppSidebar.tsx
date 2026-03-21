@@ -1,4 +1,3 @@
-import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -14,12 +13,26 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
+import { NavLink } from "@/components/NavLink";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+  SidebarHeader,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 export default function AppSidebar() {
-  const location = useLocation();
   const navigate = useNavigate();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
   const { role, can_invoicing, can_inventory, can_photos, can_customers } = usePermissions();
 
   const isOwner = role === "owner";
@@ -43,40 +56,52 @@ export default function AppSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-60 flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sidebar-border">
-        <Store className="h-7 w-7 text-sidebar-primary" />
-        <span className="text-lg font-bold text-sidebar-primary-foreground font-display">
-          RetailERP
-        </span>
-      </div>
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
+        <div className="flex items-center gap-2.5">
+          <Store className="h-7 w-7 shrink-0 text-sidebar-primary" />
+          {!collapsed && (
+            <span className="text-lg font-bold text-sidebar-primary-foreground font-display">
+              RetailERP
+            </span>
+          )}
+        </div>
+      </SidebarHeader>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems.filter(item => item.visible).map(({ icon: Icon, label, path }) => {
-          const isActive = location.pathname === path || 
-            (path !== "/administrator" && location.pathname.startsWith(path));
-          return (
-            <Link
-              key={path}
-              to={path}
-              className={`sidebar-link ${isActive ? "sidebar-link-active" : "sidebar-link-inactive"}`}
-            >
-              <Icon className="h-4.5 w-4.5 shrink-0" />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.filter(item => item.visible).map(({ icon: Icon, label, path }) => (
+                <SidebarMenuItem key={path}>
+                  <SidebarMenuButton asChild tooltip={label}>
+                    <NavLink
+                      to={path}
+                      end={path === "/administrator"}
+                      className="hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary-foreground"
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{label}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-      <div className="px-3 py-4 border-t border-sidebar-border">
-        <button
-          onClick={handleLogout}
-          className="sidebar-link sidebar-link-inactive w-full"
-        >
-          <LogOut className="h-4.5 w-4.5 shrink-0" />
-          Logout
-        </button>
-      </div>
-    </aside>
+      <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   );
 }
