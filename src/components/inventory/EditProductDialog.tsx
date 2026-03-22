@@ -226,12 +226,33 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                 <Label className="text-xs text-muted-foreground">
                   {stockMode === "add" ? "Add/Remove Quantity" : "Set Stock To"}
                 </Label>
-                <Input
-                  type="number"
-                  value={stockAdjustment}
-                  onChange={e => setStockAdjustment(e.target.value)}
-                  placeholder={stockMode === "add" ? "e.g. 10 or -5" : "e.g. 50"}
-                />
+                <div className="flex gap-1 items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={() => setStockAdjustment(prev => String((parseInt(prev) || 0) - 1))}
+                  >
+                    −
+                  </Button>
+                  <Input
+                    type="number"
+                    value={stockAdjustment}
+                    onChange={e => setStockAdjustment(e.target.value)}
+                    placeholder={stockMode === "add" ? "e.g. 10 or -5" : "e.g. 50"}
+                    className="text-center"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={() => setStockAdjustment(prev => String((parseInt(prev) || 0) + 1))}
+                  >
+                    +
+                  </Button>
+                </div>
               </div>
               <Button
                 type="button"
