@@ -126,7 +126,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
             const idBatch = inStockIds.slice(i, i + batchSize);
             const { data } = await supabase
               .from("products")
-              .select("id, sku, name, selling_price, tax_rate, category")
+              .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size")
               .eq("store_id", inv.store_id)
               .eq("is_active", true)
               .in("id", idBatch);
