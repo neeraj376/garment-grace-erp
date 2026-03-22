@@ -375,10 +375,18 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                     <button
                       key={p.id}
                       onClick={() => addProductToInvoice(p)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b last:border-b-0"
                     >
-                      <span>{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
-                      <span className="font-medium">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                      <div className="flex justify-between items-start">
+                        <span className="font-medium">{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
+                        <span className="font-semibold">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        {p.category && <span className="text-[11px] bg-muted px-1.5 py-0.5 rounded">{p.category}</span>}
+                        {p.subcategory && <span className="text-[11px] bg-muted px-1.5 py-0.5 rounded">{p.subcategory}</span>}
+                        {p.color && <span className="text-[11px] bg-muted px-1.5 py-0.5 rounded">{p.color}</span>}
+                        {p.size && <span className="text-[11px] bg-muted px-1.5 py-0.5 rounded">{p.size}</span>}
+                      </div>
                     </button>
                   ))}
                 </div>
