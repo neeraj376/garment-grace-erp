@@ -1,4 +1,4 @@
-import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone } from "lucide-react";
+import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
@@ -21,6 +21,11 @@ export default function Dashboard() {
     monthlySales: 0,
     uniqueCustomers: 0,
     totalProducts: 0,
+    todayOnline: 0,
+    todayOffline: 0,
+    monthlyOnline: 0,
+    monthlyOffline: 0,
+    dailyAverage: 0,
   });
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
@@ -36,20 +41,28 @@ export default function Dashboard() {
       // Today's sales
       const { data: todayInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, payment_method, customer_id")
+        .select("total_amount, payment_method, customer_id, source")
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
       const todaySales = todayInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const todayOnline = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const todayOffline = todaySales - todayOnline;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
         .from("invoices")
-        .select("total_amount")
+        .select("total_amount, source")
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
       const monthlySales = monthInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const monthlyOnline = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const monthlyOffline = monthlySales - monthlyOnline;
+
+      // Daily average this month
+      const dayOfMonth = today.getDate();
+      const dailyAverage = dayOfMonth > 0 ? monthlySales / dayOfMonth : 0;
 
       // Unique customers this month
       const { data: monthlyCustomerInvoices } = await supabase
@@ -73,6 +86,11 @@ export default function Dashboard() {
         monthlySales,
         uniqueCustomers: uniqueCustomerIds.size,
         totalProducts: productCount ?? 0,
+        todayOnline,
+        todayOffline,
+        monthlyOnline,
+        monthlyOffline,
+        dailyAverage,
       });
 
       // Payment breakdown
@@ -135,6 +153,39 @@ export default function Dashboard() {
         <StatCard title="Monthly Sales" value={formatCurrency(stats.monthlySales)} icon={TrendingUp} />
         <StatCard title="Unique Customers" value={stats.uniqueCustomers.toString()} icon={Users} />
         <StatCard title="Active Products" value={stats.totalProducts.toString()} icon={ShoppingBag} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Store className="h-4 w-4" /> Today Offline
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOffline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Today Online
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOnline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Store className="h-4 w-4" /> Monthly Offline
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOffline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Monthly Online
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOnline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Calculator className="h-4 w-4" /> Daily Avg (This Month)
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(Math.round(stats.dailyAverage))}</p>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
