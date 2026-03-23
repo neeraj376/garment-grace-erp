@@ -50,6 +50,11 @@ export default function SubUserManager() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pwDialogOpen, setPwDialogOpen] = useState(false);
+  const [pwUserId, setPwUserId] = useState("");
+  const [pwUserName, setPwUserName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [resettingPw, setResettingPw] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
