@@ -90,12 +90,18 @@ function AppRoutes() {
 
   // Determine default page for staff (first allowed module)
   const defaultStaffPage = (() => {
-    const { role: permRole, can_invoicing, can_inventory, can_photos, can_customers } = permissions;
-    if (permRole === "owner") return null; // owners get Dashboard
-    if (can_invoicing) return "invoicing";
-    if (can_inventory) return "inventory";
-    if (can_customers) return "customers";
-    if (can_photos) return "photos";
+    const p = permissions;
+    if (p.role === "owner") return null; // owners get Dashboard
+    if (p.can_dashboard) return null; // staff with dashboard access
+    if (p.can_invoicing) return "invoicing";
+    if (p.can_inventory) return "inventory";
+    if (p.can_customers) return "customers";
+    if (p.can_photos) return "photos";
+    if (p.can_stock_summary) return "stock";
+    if (p.can_loyalty) return "loyalty";
+    if (p.can_reports) return "reports";
+    if (p.can_employees) return "employees";
+    if (p.can_settings) return "settings";
     return "invoicing"; // fallback
   })();
 
