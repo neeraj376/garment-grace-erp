@@ -926,9 +926,15 @@ export type Database = {
       user_permissions: {
         Row: {
           can_customers: boolean
+          can_dashboard: boolean
+          can_employees: boolean
           can_inventory: boolean
           can_invoicing: boolean
+          can_loyalty: boolean
           can_photos: boolean
+          can_reports: boolean
+          can_settings: boolean
+          can_stock_summary: boolean
           created_at: string
           id: string
           store_id: string
@@ -937,9 +943,15 @@ export type Database = {
         }
         Insert: {
           can_customers?: boolean
+          can_dashboard?: boolean
+          can_employees?: boolean
           can_inventory?: boolean
           can_invoicing?: boolean
+          can_loyalty?: boolean
           can_photos?: boolean
+          can_reports?: boolean
+          can_settings?: boolean
+          can_stock_summary?: boolean
           created_at?: string
           id?: string
           store_id: string
@@ -948,9 +960,15 @@ export type Database = {
         }
         Update: {
           can_customers?: boolean
+          can_dashboard?: boolean
+          can_employees?: boolean
           can_inventory?: boolean
           can_invoicing?: boolean
+          can_loyalty?: boolean
           can_photos?: boolean
+          can_reports?: boolean
+          can_settings?: boolean
+          can_stock_summary?: boolean
           created_at?: string
           id?: string
           store_id?: string
