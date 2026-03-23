@@ -208,12 +208,7 @@ export default function SubUserManager() {
                 </div>
                 <div className="space-y-3 pt-2">
                   <p className="text-sm font-medium">Module Permissions</p>
-                  {[
-                    { key: "can_invoicing", label: "Invoicing" },
-                    { key: "can_inventory", label: "Inventory & Stock" },
-                    { key: "can_photos", label: "Photo Manager" },
-                    { key: "can_customers", label: "Customers" },
-                  ].map(({ key, label }) => (
+                  {PERMISSION_MODULES.map(({ key, label }) => (
                     <div key={key} className="flex items-center justify-between">
                       <span className="text-sm">{label}</span>
                       <Switch
