@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Loader2, Trash2 } from "lucide-react";
+import { UserPlus, Loader2, Trash2, KeyRound } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface SubUser {
@@ -50,6 +50,11 @@ export default function SubUserManager() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pwDialogOpen, setPwDialogOpen] = useState(false);
+  const [pwUserId, setPwUserId] = useState("");
+  const [pwUserName, setPwUserName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [resettingPw, setResettingPw] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -178,6 +183,28 @@ export default function SubUserManager() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    setResettingPw(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-sub-user-password", {
+        body: { userId: pwUserId, newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "Password updated", description: `Password changed for ${pwUserName || "staff member"}.` });
+      setPwDialogOpen(false);
+      setNewPassword("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setResettingPw(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -241,6 +268,18 @@ export default function SubUserManager() {
                     <p className="font-medium text-sm">{u.full_name || "Staff"}</p>
                     <Badge variant="outline" className="text-xs mt-1">Staff</Badge>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPwUserId(u.user_id);
+                      setPwUserName(u.full_name || "Staff");
+                      setNewPassword("");
+                      setPwDialogOpen(true);
+                    }}
+                  >
+                    <KeyRound className="h-4 w-4 mr-1" /> Change Password
+                  </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {PERMISSION_MODULES.map(({ key, label }) => (
@@ -258,6 +297,30 @@ export default function SubUserManager() {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={pwDialogOpen} onOpenChange={setPwDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Password — {pwUserName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>New Password</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Min 6 characters"
+                minLength={6}
+              />
+            </div>
+            <Button onClick={handleResetPassword} className="w-full" disabled={resettingPw}>
+              {resettingPw ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <KeyRound className="h-4 w-4 mr-2" />}
+              Update Password
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
