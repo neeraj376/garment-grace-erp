@@ -550,6 +550,7 @@ export default function Inventory() {
               <TableHead>SKU</TableHead>
               <TableHead>Product</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Sub Category</TableHead>
               <TableHead>Size / Color</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
@@ -559,7 +560,7 @@ export default function Inventory() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={isOwner ? 9 : 7} className="text-center py-12">
+              <TableCell colSpan={isOwner ? 10 : 8} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
@@ -590,6 +591,7 @@ export default function Inventory() {
                   <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell className="text-muted-foreground">{p.category || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{p.subcategory || "—"}</TableCell>
                   <TableCell>
                     {p.size && <Badge variant="secondary" className="mr-1">{p.size}</Badge>}
                     {p.color && <Badge variant="outline">{p.color}</Badge>}
