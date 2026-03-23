@@ -138,6 +138,12 @@ export default function SubUserManager() {
             can_inventory: form.can_inventory,
             can_photos: form.can_photos,
             can_customers: form.can_customers,
+            can_dashboard: form.can_dashboard,
+            can_reports: form.can_reports,
+            can_loyalty: form.can_loyalty,
+            can_employees: form.can_employees,
+            can_stock_summary: form.can_stock_summary,
+            can_settings: form.can_settings,
           },
         },
       });
@@ -146,7 +152,7 @@ export default function SubUserManager() {
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "Sub-user created", description: `${form.email} can now log in.` });
-      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false });
+      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false });
       setDialogOpen(false);
       fetchSubUsers();
     } catch (err: any) {
