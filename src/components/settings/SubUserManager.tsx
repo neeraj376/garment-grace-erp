@@ -96,11 +96,17 @@ export default function SubUserManager() {
       return {
         user_id: p.user_id,
         full_name: p.full_name,
-        email: "", // we'll show name instead
+        email: "",
         can_invoicing: perm?.can_invoicing ?? false,
         can_inventory: perm?.can_inventory ?? false,
         can_photos: perm?.can_photos ?? false,
         can_customers: perm?.can_customers ?? false,
+        can_dashboard: perm?.can_dashboard ?? false,
+        can_reports: perm?.can_reports ?? false,
+        can_loyalty: perm?.can_loyalty ?? false,
+        can_employees: perm?.can_employees ?? false,
+        can_stock_summary: perm?.can_stock_summary ?? false,
+        can_settings: perm?.can_settings ?? false,
         permission_id: perm?.id ?? "",
       };
     });
