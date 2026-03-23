@@ -591,6 +591,7 @@ export default function Inventory() {
                   <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell className="text-muted-foreground">{p.category || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{p.subcategory || "—"}</TableCell>
                   <TableCell>
                     {p.size && <Badge variant="secondary" className="mr-1">{p.size}</Badge>}
                     {p.color && <Badge variant="outline">{p.color}</Badge>}
