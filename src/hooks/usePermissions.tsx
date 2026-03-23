@@ -9,6 +9,12 @@ interface Permissions {
   can_inventory: boolean;
   can_photos: boolean;
   can_customers: boolean;
+  can_dashboard: boolean;
+  can_reports: boolean;
+  can_loyalty: boolean;
+  can_employees: boolean;
+  can_stock_summary: boolean;
+  can_settings: boolean;
 }
 
 const defaultOwner: Permissions = {
@@ -17,6 +23,26 @@ const defaultOwner: Permissions = {
   can_inventory: true,
   can_photos: true,
   can_customers: true,
+  can_dashboard: true,
+  can_reports: true,
+  can_loyalty: true,
+  can_employees: true,
+  can_stock_summary: true,
+  can_settings: true,
+};
+
+const defaultStaff: Permissions = {
+  role: "staff",
+  can_invoicing: false,
+  can_inventory: false,
+  can_photos: false,
+  can_customers: false,
+  can_dashboard: false,
+  can_reports: false,
+  can_loyalty: false,
+  can_employees: false,
+  can_stock_summary: false,
+  can_settings: false,
 };
 
 const PermissionsContext = createContext<Permissions & { loading: boolean }>({
@@ -37,7 +63,6 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     }
 
     const fetch = async () => {
-      // Check profile role first
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
@@ -50,7 +75,6 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Staff - get permissions
       const { data: perms } = await supabase
         .from("user_permissions")
         .select("*")
@@ -65,16 +89,15 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           can_inventory: perms.can_inventory,
           can_photos: perms.can_photos,
           can_customers: perms.can_customers,
+          can_dashboard: perms.can_dashboard,
+          can_reports: perms.can_reports,
+          can_loyalty: perms.can_loyalty,
+          can_employees: perms.can_employees,
+          can_stock_summary: perms.can_stock_summary,
+          can_settings: perms.can_settings,
         });
       } else {
-        // Staff with no permissions record - deny all
-        setPermissions({
-          role: "staff",
-          can_invoicing: false,
-          can_inventory: false,
-          can_photos: false,
-          can_customers: false,
-        });
+        setPermissions(defaultStaff);
       }
       setLoading(false);
     };

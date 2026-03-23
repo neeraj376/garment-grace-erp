@@ -13,7 +13,7 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -33,21 +33,24 @@ export default function AppSidebar() {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { role, can_invoicing, can_inventory, can_photos, can_customers } = usePermissions();
+  const {
+    role, can_invoicing, can_inventory, can_photos, can_customers,
+    can_dashboard, can_reports, can_loyalty, can_employees, can_stock_summary, can_settings,
+  } = usePermissions();
 
   const isOwner = role === "owner";
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/administrator", visible: isOwner },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/administrator", visible: isOwner || can_dashboard },
     { icon: Package, label: "Inventory", path: "/administrator/inventory", visible: isOwner || can_inventory },
     { icon: FileText, label: "Invoicing", path: "/administrator/invoicing", visible: isOwner || can_invoicing },
-    { icon: Boxes, label: "Stock Summary", path: "/administrator/stock", visible: isOwner || can_inventory },
+    { icon: Boxes, label: "Stock Summary", path: "/administrator/stock", visible: isOwner || can_stock_summary },
     { icon: Users, label: "Customers", path: "/administrator/customers", visible: isOwner || can_customers },
-    { icon: Award, label: "Loyalty", path: "/administrator/loyalty", visible: isOwner },
-    { icon: BarChart3, label: "Reports", path: "/administrator/reports", visible: isOwner },
-    { icon: UserCog, label: "Employees", path: "/administrator/employees", visible: isOwner },
+    { icon: Award, label: "Loyalty", path: "/administrator/loyalty", visible: isOwner || can_loyalty },
+    { icon: BarChart3, label: "Reports", path: "/administrator/reports", visible: isOwner || can_reports },
+    { icon: UserCog, label: "Employees", path: "/administrator/employees", visible: isOwner || can_employees },
     { icon: ImagePlus, label: "Photo Manager", path: "/administrator/photos", visible: isOwner || can_photos },
-    { icon: Settings, label: "Settings", path: "/administrator/settings", visible: isOwner },
+    { icon: Settings, label: "Settings", path: "/administrator/settings", visible: isOwner || can_settings },
   ];
 
   const handleLogout = async () => {

@@ -20,8 +20,27 @@ interface SubUser {
   can_inventory: boolean;
   can_photos: boolean;
   can_customers: boolean;
+  can_dashboard: boolean;
+  can_reports: boolean;
+  can_loyalty: boolean;
+  can_employees: boolean;
+  can_stock_summary: boolean;
+  can_settings: boolean;
   permission_id: string;
 }
+
+const PERMISSION_MODULES = [
+  { key: "can_dashboard", label: "Dashboard" },
+  { key: "can_invoicing", label: "Invoicing" },
+  { key: "can_inventory", label: "Inventory & Stock" },
+  { key: "can_stock_summary", label: "Stock Summary" },
+  { key: "can_customers", label: "Customers" },
+  { key: "can_loyalty", label: "Loyalty" },
+  { key: "can_reports", label: "Reports" },
+  { key: "can_employees", label: "Employees" },
+  { key: "can_photos", label: "Photo Manager" },
+  { key: "can_settings", label: "Settings" },
+];
 
 export default function SubUserManager() {
   const { storeId } = useStore();
@@ -39,6 +58,12 @@ export default function SubUserManager() {
     can_inventory: false,
     can_photos: false,
     can_customers: false,
+    can_dashboard: false,
+    can_reports: false,
+    can_loyalty: false,
+    can_employees: false,
+    can_stock_summary: false,
+    can_settings: false,
   });
 
   const fetchSubUsers = async () => {
@@ -71,11 +96,17 @@ export default function SubUserManager() {
       return {
         user_id: p.user_id,
         full_name: p.full_name,
-        email: "", // we'll show name instead
+        email: "",
         can_invoicing: perm?.can_invoicing ?? false,
         can_inventory: perm?.can_inventory ?? false,
         can_photos: perm?.can_photos ?? false,
         can_customers: perm?.can_customers ?? false,
+        can_dashboard: perm?.can_dashboard ?? false,
+        can_reports: perm?.can_reports ?? false,
+        can_loyalty: perm?.can_loyalty ?? false,
+        can_employees: perm?.can_employees ?? false,
+        can_stock_summary: perm?.can_stock_summary ?? false,
+        can_settings: perm?.can_settings ?? false,
         permission_id: perm?.id ?? "",
       };
     });
@@ -107,6 +138,12 @@ export default function SubUserManager() {
             can_inventory: form.can_inventory,
             can_photos: form.can_photos,
             can_customers: form.can_customers,
+            can_dashboard: form.can_dashboard,
+            can_reports: form.can_reports,
+            can_loyalty: form.can_loyalty,
+            can_employees: form.can_employees,
+            can_stock_summary: form.can_stock_summary,
+            can_settings: form.can_settings,
           },
         },
       });
@@ -115,7 +152,7 @@ export default function SubUserManager() {
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "Sub-user created", description: `${form.email} can now log in.` });
-      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false });
+      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false });
       setDialogOpen(false);
       fetchSubUsers();
     } catch (err: any) {
@@ -171,12 +208,7 @@ export default function SubUserManager() {
                 </div>
                 <div className="space-y-3 pt-2">
                   <p className="text-sm font-medium">Module Permissions</p>
-                  {[
-                    { key: "can_invoicing", label: "Invoicing" },
-                    { key: "can_inventory", label: "Inventory & Stock" },
-                    { key: "can_photos", label: "Photo Manager" },
-                    { key: "can_customers", label: "Customers" },
-                  ].map(({ key, label }) => (
+                  {PERMISSION_MODULES.map(({ key, label }) => (
                     <div key={key} className="flex items-center justify-between">
                       <span className="text-sm">{label}</span>
                       <Switch
@@ -211,12 +243,7 @@ export default function SubUserManager() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { key: "can_invoicing", label: "Invoicing" },
-                    { key: "can_inventory", label: "Inventory" },
-                    { key: "can_photos", label: "Photos" },
-                    { key: "can_customers", label: "Customers" },
-                  ].map(({ key, label }) => (
+                  {PERMISSION_MODULES.map(({ key, label }) => (
                     <div key={key} className="flex items-center justify-between text-sm">
                       <span>{label}</span>
                       <Switch
