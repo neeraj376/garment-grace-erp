@@ -155,6 +155,39 @@ export default function Dashboard() {
         <StatCard title="Active Products" value={stats.totalProducts.toString()} icon={ShoppingBag} />
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Store className="h-4 w-4" /> Today Offline
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOffline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Today Online
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOnline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Store className="h-4 w-4" /> Monthly Offline
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOffline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Monthly Online
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOnline)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Calculator className="h-4 w-4" /> Daily Avg (This Month)
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(Math.round(stats.dailyAverage))}</p>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
