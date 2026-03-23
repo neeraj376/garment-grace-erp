@@ -268,6 +268,18 @@ export default function SubUserManager() {
                     <p className="font-medium text-sm">{u.full_name || "Staff"}</p>
                     <Badge variant="outline" className="text-xs mt-1">Staff</Badge>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPwUserId(u.user_id);
+                      setPwUserName(u.full_name || "Staff");
+                      setNewPassword("");
+                      setPwDialogOpen(true);
+                    }}
+                  >
+                    <KeyRound className="h-4 w-4 mr-1" /> Change Password
+                  </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {PERMISSION_MODULES.map(({ key, label }) => (
