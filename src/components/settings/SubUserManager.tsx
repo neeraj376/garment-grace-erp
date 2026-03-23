@@ -183,6 +183,28 @@ export default function SubUserManager() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    setResettingPw(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-sub-user-password", {
+        body: { userId: pwUserId, newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "Password updated", description: `Password changed for ${pwUserName || "staff member"}.` });
+      setPwDialogOpen(false);
+      setNewPassword("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setResettingPw(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
