@@ -550,6 +550,7 @@ export default function Inventory() {
               <TableHead>SKU</TableHead>
               <TableHead>Product</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Sub Category</TableHead>
               <TableHead>Size / Color</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
