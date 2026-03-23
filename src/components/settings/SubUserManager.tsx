@@ -20,8 +20,27 @@ interface SubUser {
   can_inventory: boolean;
   can_photos: boolean;
   can_customers: boolean;
+  can_dashboard: boolean;
+  can_reports: boolean;
+  can_loyalty: boolean;
+  can_employees: boolean;
+  can_stock_summary: boolean;
+  can_settings: boolean;
   permission_id: string;
 }
+
+const PERMISSION_MODULES = [
+  { key: "can_dashboard", label: "Dashboard" },
+  { key: "can_invoicing", label: "Invoicing" },
+  { key: "can_inventory", label: "Inventory & Stock" },
+  { key: "can_stock_summary", label: "Stock Summary" },
+  { key: "can_customers", label: "Customers" },
+  { key: "can_loyalty", label: "Loyalty" },
+  { key: "can_reports", label: "Reports" },
+  { key: "can_employees", label: "Employees" },
+  { key: "can_photos", label: "Photo Manager" },
+  { key: "can_settings", label: "Settings" },
+];
 
 export default function SubUserManager() {
   const { storeId } = useStore();
