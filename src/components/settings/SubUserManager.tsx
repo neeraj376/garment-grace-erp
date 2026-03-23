@@ -58,6 +58,12 @@ export default function SubUserManager() {
     can_inventory: false,
     can_photos: false,
     can_customers: false,
+    can_dashboard: false,
+    can_reports: false,
+    can_loyalty: false,
+    can_employees: false,
+    can_stock_summary: false,
+    can_settings: false,
   });
 
   const fetchSubUsers = async () => {
