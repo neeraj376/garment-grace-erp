@@ -243,12 +243,7 @@ export default function SubUserManager() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { key: "can_invoicing", label: "Invoicing" },
-                    { key: "can_inventory", label: "Inventory" },
-                    { key: "can_photos", label: "Photos" },
-                    { key: "can_customers", label: "Customers" },
-                  ].map(({ key, label }) => (
+                  {PERMISSION_MODULES.map(({ key, label }) => (
                     <div key={key} className="flex items-center justify-between text-sm">
                       <span>{label}</span>
                       <Switch
