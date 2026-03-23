@@ -41,20 +41,28 @@ export default function Dashboard() {
       // Today's sales
       const { data: todayInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, payment_method, customer_id")
+        .select("total_amount, payment_method, customer_id, source")
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
       const todaySales = todayInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const todayOnline = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const todayOffline = todaySales - todayOnline;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
         .from("invoices")
-        .select("total_amount")
+        .select("total_amount, source")
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
       const monthlySales = monthInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const monthlyOnline = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const monthlyOffline = monthlySales - monthlyOnline;
+
+      // Daily average this month
+      const dayOfMonth = today.getDate();
+      const dailyAverage = dayOfMonth > 0 ? monthlySales / dayOfMonth : 0;
 
       // Unique customers this month
       const { data: monthlyCustomerInvoices } = await supabase
@@ -78,6 +86,11 @@ export default function Dashboard() {
         monthlySales,
         uniqueCustomers: uniqueCustomerIds.size,
         totalProducts: productCount ?? 0,
+        todayOnline,
+        todayOffline,
+        monthlyOnline,
+        monthlyOffline,
+        dailyAverage,
       });
 
       // Payment breakdown
