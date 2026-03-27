@@ -97,6 +97,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<any[]>([]);
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => loadHeldInvoices());
 
