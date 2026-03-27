@@ -97,6 +97,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<any[]>([]);
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => loadHeldInvoices());
 
@@ -120,12 +122,33 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     return () => clearTimeout(timeout);
   }, [customerMobile, storeId]);
 
+  // Search existing customers by name
+  useEffect(() => {
+    if (!storeId || customerName.length < 2) {
+      setNameSuggestions([]);
+      setShowNameSuggestions(false);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("customers")
+        .select("id, mobile, name, gender, location")
+        .eq("store_id", storeId)
+        .ilike("name", `%${customerName}%`)
+        .limit(5);
+      setNameSuggestions(data ?? []);
+      setShowNameSuggestions((data ?? []).length > 0);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [customerName, storeId]);
+
   const selectCustomerSuggestion = (cust: any) => {
     setCustomerMobile(cust.mobile);
     setCustomerName(cust.name || "");
     setCustomerGender(cust.gender || "");
     setCustomerLocation(cust.location || "");
     setShowCustomerSuggestions(false);
+    setShowNameSuggestions(false);
   };
 
   // Persist draft to localStorage
@@ -617,7 +640,24 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </div>
               )}
             </div>
-            <div><Label>Name <span className="text-destructive">*</span></Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} /></div>
+            <div className="relative">
+              <Label>Name <span className="text-destructive">*</span></Label>
+              <Input value={customerName} onChange={e => { setCustomerName(e.target.value); setShowNameSuggestions(true); }} placeholder="Customer name" />
+              {showNameSuggestions && nameSuggestions.length > 0 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 border rounded-lg bg-popover shadow-md max-h-40 overflow-y-auto">
+                  {nameSuggestions.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => selectCustomerSuggestion(c)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between items-center"
+                    >
+                      <span className="font-medium">{c.name || "—"}</span>
+                      <span className="text-muted-foreground text-xs">{c.mobile} {c.location ? `· ${c.location}` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div>
               <Label>Gender <span className="text-destructive">*</span></Label>
               <Select value={customerGender} onValueChange={setCustomerGender}>
