@@ -134,6 +134,8 @@ Deno.serve(async (req) => {
 
       for (const emp of employees) {
         if (!emp.email) continue;
+        // If testEmail is specified, only send to that email
+        if (testEmail && emp.email !== testEmail) continue;
 
         const empInvoices = invoices.filter((inv: any) => inv.employee_id === emp.id);
         const totalSales = empInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total_amount), 0);
