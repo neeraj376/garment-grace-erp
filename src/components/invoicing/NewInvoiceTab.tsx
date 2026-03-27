@@ -194,6 +194,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         original_price: price,
         tax_rate: Number(product.tax_rate),
         item_discount: 0,
+        category: product.category || undefined,
+        subcategory: product.subcategory || undefined,
+        color: product.color || undefined,
+        size: product.size || undefined,
       }]);
     }
     setSearchProduct("");
