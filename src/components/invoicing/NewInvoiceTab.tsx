@@ -640,7 +640,24 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </div>
               )}
             </div>
-            <div><Label>Name <span className="text-destructive">*</span></Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} /></div>
+            <div className="relative">
+              <Label>Name <span className="text-destructive">*</span></Label>
+              <Input value={customerName} onChange={e => { setCustomerName(e.target.value); setShowNameSuggestions(true); }} placeholder="Customer name" />
+              {showNameSuggestions && nameSuggestions.length > 0 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 border rounded-lg bg-popover shadow-md max-h-40 overflow-y-auto">
+                  {nameSuggestions.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => selectCustomerSuggestion(c)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex justify-between items-center"
+                    >
+                      <span className="font-medium">{c.name || "—"}</span>
+                      <span className="text-muted-foreground text-xs">{c.mobile} {c.location ? `· ${c.location}` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div>
               <Label>Gender <span className="text-destructive">*</span></Label>
               <Select value={customerGender} onValueChange={setCustomerGender}>
