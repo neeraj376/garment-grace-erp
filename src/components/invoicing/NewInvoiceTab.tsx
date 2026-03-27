@@ -542,6 +542,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <TableCell>
                       <div className="font-medium">{item.name}</div>
                       <div className="text-xs text-muted-foreground">{item.sku}</div>
+                      {(item.category || item.subcategory || item.color || item.size) && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.category && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{item.category}</Badge>}
+                          {item.subcategory && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{item.subcategory}</Badge>}
+                          {item.color && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{item.color}</Badge>}
+                          {item.size && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{item.size}</Badge>}
+                        </div>
+                      )}
                       {item.unit_price !== item.original_price && (
                         <div className="text-xs text-muted-foreground line-through">₹{item.original_price.toLocaleString("en-IN")}</div>
                       )}
