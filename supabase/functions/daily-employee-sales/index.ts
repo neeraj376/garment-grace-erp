@@ -73,15 +73,25 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
+    const testEmail = body.testEmail as string | undefined;
+    const testPreviousDay = body.testPreviousDay as boolean | undefined;
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get today's date range in IST
+    // Get date range in IST
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istNow = new Date(now.getTime() + istOffset);
+    
+    // If testPreviousDay, go back 1 day
+    if (testPreviousDay) {
+      istNow.setDate(istNow.getDate() - 1);
+    }
+    
     const todayStart = new Date(istNow);
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date(istNow);
@@ -124,6 +134,8 @@ Deno.serve(async (req) => {
 
       for (const emp of employees) {
         if (!emp.email) continue;
+        // If testEmail is specified, only send to that email
+        if (testEmail && emp.email !== testEmail) continue;
 
         const empInvoices = invoices.filter((inv: any) => inv.employee_id === emp.id);
         const totalSales = empInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total_amount), 0);
