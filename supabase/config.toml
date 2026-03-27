@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.verify-custom-otp]
 verify_jwt = false
+
+[functions.daily-employee-sales]
+verify_jwt = false
