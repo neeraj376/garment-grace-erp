@@ -19,6 +19,10 @@ interface CartItem {
   original_price: number;
   tax_rate: number;
   item_discount: number;
+  category?: string;
+  subcategory?: string;
+  color?: string;
+  size?: string;
 }
 
 interface Employee {
