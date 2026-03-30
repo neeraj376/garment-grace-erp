@@ -98,7 +98,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       .select("*, customers(name, mobile)")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
-      .limit(100);
+      .range(0, 9999);
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
