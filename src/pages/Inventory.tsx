@@ -91,7 +91,7 @@ export default function Inventory() {
           .from("products")
           .insert({
             store_id: storeId,
-            sku: form.sku,
+            sku: form.sku || `SKU-${Date.now()}`,
             name: form.name,
             category: form.category || null,
             brand: form.brand || null,
