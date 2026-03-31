@@ -24,7 +24,12 @@ serve(async (req) => {
 
     const WHATSAPP_TEMPLATE_NAME = Deno.env.get("WHATSAPP_TEMPLATE_NAME") || "originee_invoice_new";
 
-    const { phone, invoiceUrl, invoiceImageUrl, customerName, invoiceNumber, totalAmount } = await req.json();
+    const raw = await req.json();
+    const sanitize = (v: string) => (v || "").replace(/[\t\n\r]+/g, " ").replace(/\s{2,}/g, " ").trim();
+    const { phone, invoiceUrl, invoiceImageUrl } = raw;
+    const customerName = sanitize(raw.customerName);
+    const invoiceNumber = sanitize(raw.invoiceNumber);
+    const totalAmount = sanitize(String(raw.totalAmount || "0"));
 
     if (!phone || !invoiceUrl) {
       throw new Error("Missing required fields: phone, invoiceUrl");
