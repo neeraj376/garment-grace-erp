@@ -106,7 +106,7 @@ export default function Inventory() {
             store_id: storeId,
             sku: form.sku || `SKU-${Date.now()}`,
             name: form.name,
-            category: form.category || null,
+            category: normalizeCategory(form.category),
             brand: form.brand || null,
             size: form.size || null,
             color: form.color || null,
