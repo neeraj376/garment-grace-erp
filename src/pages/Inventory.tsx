@@ -91,7 +91,7 @@ export default function Inventory() {
           .from("products")
           .insert({
             store_id: storeId,
-            sku: form.sku,
+            sku: form.sku || `SKU-${Date.now()}`,
             name: form.name,
             category: form.category || null,
             brand: form.brand || null,
@@ -424,7 +424,7 @@ export default function Inventory() {
                   </DialogHeader>
                   <form onSubmit={handleAddProduct} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div><Label>SKU *</Label><Input value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} required /></div>
+                      <div><Label>SKU</Label><Input value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} placeholder="Auto-generated if empty" /></div>
                       <div><Label>Name *</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
                       <div><Label>Category</Label><Input value={form.category} onChange={e => setForm({...form, category: e.target.value})} /></div>
                       <div><Label>Brand</Label><Input value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
