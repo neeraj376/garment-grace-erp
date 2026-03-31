@@ -473,10 +473,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title: "Held invoice removed" });
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
-    p.sku.toLowerCase().includes(searchProduct.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const q = searchProduct.toLowerCase();
+    const words = q.split(/\s+/).filter(Boolean);
+    const searchableText = [
+      p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
+    ].filter(Boolean).join(' ').toLowerCase();
+    return words.every(word => searchableText.includes(word));
+  });
 
   return (
     <div className="space-y-4">
