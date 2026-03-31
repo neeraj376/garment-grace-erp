@@ -13,6 +13,7 @@ import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X } fr
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import EditProductDialog from "@/components/inventory/EditProductDialog";
+import { normalizeCategory } from "@/lib/categoryUtils";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 import { usePermissions } from "@/hooks/usePermissions";
