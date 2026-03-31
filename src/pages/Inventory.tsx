@@ -66,12 +66,24 @@ export default function Inventory() {
 
   const fetchProducts = async () => {
     if (!storeId) return;
-    const { data } = await supabase
-      .from("products")
-      .select("*, inventory_batches(quantity, buying_price)")
-      .eq("store_id", storeId)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
+    // Fetch all products in batches to avoid Supabase 1000-row default limit
+    let allData: any[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page } = await supabase
+        .from("products")
+        .select("*, inventory_batches(quantity, buying_price)")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (!page || page.length === 0) break;
+      allData = allData.concat(page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+    const data = allData;
 
     const mapped = data?.map((p: any) => ({
       ...p,
