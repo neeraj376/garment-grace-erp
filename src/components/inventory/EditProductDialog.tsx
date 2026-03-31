@@ -101,8 +101,8 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
         .update({
           sku: form.sku,
           name: form.name,
-          category: form.category || null,
-          subcategory: form.subcategory || null,
+          category: normalizeCategory(form.category),
+          subcategory: normalizeCategory(form.subcategory),
           brand: form.brand || null,
           size: form.size || null,
           color: form.color || null,
