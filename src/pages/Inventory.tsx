@@ -13,6 +13,7 @@ import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X } fr
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import EditProductDialog from "@/components/inventory/EditProductDialog";
+import { normalizeCategory } from "@/lib/categoryUtils";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -105,7 +106,7 @@ export default function Inventory() {
             store_id: storeId,
             sku: form.sku || `SKU-${Date.now()}`,
             name: form.name,
-            category: form.category || null,
+            category: normalizeCategory(form.category),
             brand: form.brand || null,
             size: form.size || null,
             color: form.color || null,
@@ -199,8 +200,8 @@ export default function Inventory() {
             store_id: storeId,
             sku: row.sku || row.sku_code || row.barcode || `SKU-${Date.now()}-${i}`,
             name: row.name || row.product_name || row.product || row.item || row.item_name || "Unnamed",
-            category: row.category || null,
-            subcategory: row.subcategory || row.sub_category || null,
+            category: normalizeCategory(row.category) || null,
+            subcategory: normalizeCategory(row.subcategory || row.sub_category) || null,
             brand: row.brand || null,
             size: row.size || null,
             color: row.color || row.colour || null,

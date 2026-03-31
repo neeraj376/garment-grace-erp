@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Video, X, Loader2 } from "lucide-react";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
+import { normalizeCategory } from "@/lib/categoryUtils";
 
 interface Product {
   id: string;
@@ -100,8 +101,8 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
         .update({
           sku: form.sku,
           name: form.name,
-          category: form.category || null,
-          subcategory: form.subcategory || null,
+          category: normalizeCategory(form.category),
+          subcategory: normalizeCategory(form.subcategory),
           brand: form.brand || null,
           size: form.size || null,
           color: form.color || null,
