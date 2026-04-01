@@ -167,7 +167,7 @@ export default function SubUserManager() {
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "Sub-user created", description: `${form.email} can now log in.` });
-      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false });
+      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false, can_edit_invoices: false, can_upload_inventory: false });
       setDialogOpen(false);
       fetchSubUsers();
     } catch (err: any) {
