@@ -34,7 +34,9 @@ interface SubUser {
 const PERMISSION_MODULES = [
   { key: "can_dashboard", label: "Dashboard" },
   { key: "can_invoicing", label: "Invoicing" },
+  { key: "can_edit_invoices", label: "Edit Invoices" },
   { key: "can_inventory", label: "Inventory & Stock" },
+  { key: "can_upload_inventory", label: "Upload New Inventory" },
   { key: "can_stock_summary", label: "Stock Summary" },
   { key: "can_customers", label: "Customers" },
   { key: "can_loyalty", label: "Loyalty" },
