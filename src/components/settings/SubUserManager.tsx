@@ -157,6 +157,8 @@ export default function SubUserManager() {
             can_employees: form.can_employees,
             can_stock_summary: form.can_stock_summary,
             can_settings: form.can_settings,
+            can_edit_invoices: form.can_edit_invoices,
+            can_upload_inventory: form.can_upload_inventory,
           },
         },
       });
