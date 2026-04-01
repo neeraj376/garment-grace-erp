@@ -76,6 +76,8 @@ Deno.serve(async (req) => {
         can_employees: permissions?.can_employees ?? false,
         can_stock_summary: permissions?.can_stock_summary ?? false,
         can_settings: permissions?.can_settings ?? false,
+        can_edit_invoices: permissions?.can_edit_invoices ?? false,
+        can_upload_inventory: permissions?.can_upload_inventory ?? false,
       });
 
     if (permError) throw permError;

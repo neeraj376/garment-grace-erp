@@ -927,6 +927,7 @@ export type Database = {
         Row: {
           can_customers: boolean
           can_dashboard: boolean
+          can_edit_invoices: boolean
           can_employees: boolean
           can_inventory: boolean
           can_invoicing: boolean
@@ -935,6 +936,7 @@ export type Database = {
           can_reports: boolean
           can_settings: boolean
           can_stock_summary: boolean
+          can_upload_inventory: boolean
           created_at: string
           id: string
           store_id: string
@@ -944,6 +946,7 @@ export type Database = {
         Insert: {
           can_customers?: boolean
           can_dashboard?: boolean
+          can_edit_invoices?: boolean
           can_employees?: boolean
           can_inventory?: boolean
           can_invoicing?: boolean
@@ -952,6 +955,7 @@ export type Database = {
           can_reports?: boolean
           can_settings?: boolean
           can_stock_summary?: boolean
+          can_upload_inventory?: boolean
           created_at?: string
           id?: string
           store_id: string
@@ -961,6 +965,7 @@ export type Database = {
         Update: {
           can_customers?: boolean
           can_dashboard?: boolean
+          can_edit_invoices?: boolean
           can_employees?: boolean
           can_inventory?: boolean
           can_invoicing?: boolean
@@ -969,6 +974,7 @@ export type Database = {
           can_reports?: boolean
           can_settings?: boolean
           can_stock_summary?: boolean
+          can_upload_inventory?: boolean
           created_at?: string
           id?: string
           store_id?: string

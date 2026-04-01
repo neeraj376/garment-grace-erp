@@ -26,13 +26,17 @@ interface SubUser {
   can_employees: boolean;
   can_stock_summary: boolean;
   can_settings: boolean;
+  can_edit_invoices: boolean;
+  can_upload_inventory: boolean;
   permission_id: string;
 }
 
 const PERMISSION_MODULES = [
   { key: "can_dashboard", label: "Dashboard" },
   { key: "can_invoicing", label: "Invoicing" },
+  { key: "can_edit_invoices", label: "Edit Invoices" },
   { key: "can_inventory", label: "Inventory & Stock" },
+  { key: "can_upload_inventory", label: "Upload New Inventory" },
   { key: "can_stock_summary", label: "Stock Summary" },
   { key: "can_customers", label: "Customers" },
   { key: "can_loyalty", label: "Loyalty" },
@@ -69,6 +73,8 @@ export default function SubUserManager() {
     can_employees: false,
     can_stock_summary: false,
     can_settings: false,
+    can_edit_invoices: false,
+    can_upload_inventory: false,
   });
 
   const fetchSubUsers = async () => {
@@ -112,6 +118,8 @@ export default function SubUserManager() {
         can_employees: perm?.can_employees ?? false,
         can_stock_summary: perm?.can_stock_summary ?? false,
         can_settings: perm?.can_settings ?? false,
+        can_edit_invoices: (perm as any)?.can_edit_invoices ?? false,
+        can_upload_inventory: (perm as any)?.can_upload_inventory ?? false,
         permission_id: perm?.id ?? "",
       };
     });
@@ -149,6 +157,8 @@ export default function SubUserManager() {
             can_employees: form.can_employees,
             can_stock_summary: form.can_stock_summary,
             can_settings: form.can_settings,
+            can_edit_invoices: form.can_edit_invoices,
+            can_upload_inventory: form.can_upload_inventory,
           },
         },
       });
@@ -157,7 +167,7 @@ export default function SubUserManager() {
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "Sub-user created", description: `${form.email} can now log in.` });
-      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false });
+      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false, can_edit_invoices: false, can_upload_inventory: false });
       setDialogOpen(false);
       fetchSubUsers();
     } catch (err: any) {

@@ -15,6 +15,8 @@ interface Permissions {
   can_employees: boolean;
   can_stock_summary: boolean;
   can_settings: boolean;
+  can_edit_invoices: boolean;
+  can_upload_inventory: boolean;
 }
 
 const defaultOwner: Permissions = {
@@ -29,6 +31,8 @@ const defaultOwner: Permissions = {
   can_employees: true,
   can_stock_summary: true,
   can_settings: true,
+  can_edit_invoices: true,
+  can_upload_inventory: true,
 };
 
 const defaultStaff: Permissions = {
@@ -43,6 +47,8 @@ const defaultStaff: Permissions = {
   can_employees: false,
   can_stock_summary: false,
   can_settings: false,
+  can_edit_invoices: false,
+  can_upload_inventory: false,
 };
 
 const PermissionsContext = createContext<Permissions & { loading: boolean }>({
@@ -95,6 +101,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           can_employees: perms.can_employees,
           can_stock_summary: perms.can_stock_summary,
           can_settings: perms.can_settings,
+          can_edit_invoices: (perms as any).can_edit_invoices ?? false,
+          can_upload_inventory: (perms as any).can_upload_inventory ?? false,
         });
       } else {
         setPermissions(defaultStaff);
