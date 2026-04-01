@@ -73,6 +73,8 @@ export default function SubUserManager() {
     can_employees: false,
     can_stock_summary: false,
     can_settings: false,
+    can_edit_invoices: false,
+    can_upload_inventory: false,
   });
 
   const fetchSubUsers = async () => {
