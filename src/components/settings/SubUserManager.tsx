@@ -26,6 +26,8 @@ interface SubUser {
   can_employees: boolean;
   can_stock_summary: boolean;
   can_settings: boolean;
+  can_edit_invoices: boolean;
+  can_upload_inventory: boolean;
   permission_id: string;
 }
 
