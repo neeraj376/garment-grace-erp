@@ -101,6 +101,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           can_employees: perms.can_employees,
           can_stock_summary: perms.can_stock_summary,
           can_settings: perms.can_settings,
+          can_edit_invoices: (perms as any).can_edit_invoices ?? false,
+          can_upload_inventory: (perms as any).can_upload_inventory ?? false,
         });
       } else {
         setPermissions(defaultStaff);
