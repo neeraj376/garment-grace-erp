@@ -47,6 +47,8 @@ const defaultStaff: Permissions = {
   can_employees: false,
   can_stock_summary: false,
   can_settings: false,
+  can_edit_invoices: false,
+  can_upload_inventory: false,
 };
 
 const PermissionsContext = createContext<Permissions & { loading: boolean }>({
