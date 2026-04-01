@@ -31,6 +31,8 @@ const defaultOwner: Permissions = {
   can_employees: true,
   can_stock_summary: true,
   can_settings: true,
+  can_edit_invoices: true,
+  can_upload_inventory: true,
 };
 
 const defaultStaff: Permissions = {
