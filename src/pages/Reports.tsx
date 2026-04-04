@@ -226,6 +226,7 @@ export default function Reports() {
       <Tabs defaultValue="sales" className="space-y-4">
         <TabsList>
           <TabsTrigger value="sales">Sales & P&L</TabsTrigger>
+          <TabsTrigger value="category">Category & Size</TabsTrigger>
           <TabsTrigger value="aging">Inventory Aging</TabsTrigger>
         </TabsList>
 
