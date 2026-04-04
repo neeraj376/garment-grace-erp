@@ -1,0 +1,33 @@
+
+UPDATE products SET category = 'T-Shirt' WHERE lower(trim(category)) IN ('t-shirt', 't-shirts', 'tshirt', 'tshirts', 't shirt', 't shirts', 'tee', 'tees');
+UPDATE products SET category = 'Pant' WHERE lower(trim(category)) IN ('pant', 'pants');
+UPDATE products SET category = 'Trouser' WHERE lower(trim(category)) IN ('trouser', 'trousers');
+UPDATE products SET category = 'Jean' WHERE lower(trim(category)) IN ('jean', 'jeans', 'denim', 'denims');
+UPDATE products SET category = 'Short' WHERE lower(trim(category)) IN ('short', 'shorts');
+UPDATE products SET category = 'Shirt' WHERE lower(trim(category)) IN ('shirt', 'shirts');
+UPDATE products SET category = 'Jacket' WHERE lower(trim(category)) IN ('jacket', 'jackets');
+UPDATE products SET category = 'Blazer' WHERE lower(trim(category)) IN ('blazer', 'blazers');
+UPDATE products SET category = 'Hoodie' WHERE lower(trim(category)) IN ('hoodie', 'hoodies');
+UPDATE products SET category = 'Sweater' WHERE lower(trim(category)) IN ('sweater', 'sweaters');
+UPDATE products SET category = 'Kurta' WHERE lower(trim(category)) IN ('kurta', 'kurtas');
+UPDATE products SET category = 'Kurti' WHERE lower(trim(category)) IN ('kurti', 'kurtis');
+UPDATE products SET category = 'Saree' WHERE lower(trim(category)) IN ('saree', 'sarees', 'sari', 'saris');
+UPDATE products SET category = 'Dress' WHERE lower(trim(category)) IN ('dress', 'dresses');
+UPDATE products SET category = 'Suit' WHERE lower(trim(category)) IN ('suit', 'suits', 'suit set');
+UPDATE products SET category = 'Jogger' WHERE lower(trim(category)) IN ('jogger', 'joggers');
+UPDATE products SET category = 'Track Pant' WHERE lower(trim(category)) IN ('track pant', 'track pants', 'trackpant', 'trackpants');
+UPDATE products SET category = 'Legging' WHERE lower(trim(category)) IN ('legging', 'leggings');
+UPDATE products SET category = 'Cargo' WHERE lower(trim(category)) IN ('cargo', 'cargos');
+
+UPDATE products SET subcategory = 'T-Shirt' WHERE lower(trim(subcategory)) IN ('t-shirt', 't-shirts', 'tshirt', 'tshirts', 't shirt', 't shirts', 'tee', 'tees');
+UPDATE products SET subcategory = 'Pant' WHERE lower(trim(subcategory)) IN ('pant', 'pants');
+UPDATE products SET subcategory = 'Trouser' WHERE lower(trim(subcategory)) IN ('trouser', 'trousers');
+UPDATE products SET subcategory = 'Jean' WHERE lower(trim(subcategory)) IN ('jean', 'jeans', 'denim', 'denims');
+UPDATE products SET subcategory = 'Short' WHERE lower(trim(subcategory)) IN ('short', 'shorts');
+UPDATE products SET subcategory = 'Shirt' WHERE lower(trim(subcategory)) IN ('shirt', 'shirts');
+UPDATE products SET subcategory = 'Jacket' WHERE lower(trim(subcategory)) IN ('jacket', 'jackets');
+UPDATE products SET subcategory = 'Hoodie' WHERE lower(trim(subcategory)) IN ('hoodie', 'hoodies');
+UPDATE products SET subcategory = 'Kurta' WHERE lower(trim(subcategory)) IN ('kurta', 'kurtas');
+UPDATE products SET subcategory = 'Jogger' WHERE lower(trim(subcategory)) IN ('jogger', 'joggers');
+UPDATE products SET subcategory = 'Track Pant' WHERE lower(trim(subcategory)) IN ('track pant', 'track pants', 'trackpant', 'trackpants');
+UPDATE products SET subcategory = 'Cargo' WHERE lower(trim(subcategory)) IN ('cargo', 'cargos');
