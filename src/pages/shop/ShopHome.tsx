@@ -26,7 +26,7 @@ export default function ShopHome() {
         p_store_id: STORE_ID,
         p_limit: 50,
       });
-      const allProducts = featuredData ?? [];
+      const allProducts = (featuredData ?? []).filter((p: any) => p.photo_url || p.video_url);
       setFeatured(allProducts.filter((p: any) => p.photo_url).slice(0, 8));
       setNewArrivals(allProducts.slice(0, 8));
     };

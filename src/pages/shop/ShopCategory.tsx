@@ -29,7 +29,7 @@ export default function ShopCategory() {
         p_category: selectedCategory === "all" ? null : selectedCategory,
         p_limit: 5000,
       });
-      setProducts(data ?? []);
+      setProducts((data ?? []).filter((p: any) => p.photo_url || p.video_url));
       setLoading(false);
 
       // Fetch categories from all in-stock products
