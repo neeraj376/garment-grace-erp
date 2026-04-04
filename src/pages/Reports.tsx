@@ -10,6 +10,7 @@ import { CalendarDays, Users, Download, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InventoryAgingReport from "@/components/reports/InventoryAgingReport";
+import CategorySizeReport from "@/components/reports/CategorySizeReport";
 
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
