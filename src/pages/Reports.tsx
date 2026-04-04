@@ -395,6 +395,10 @@ export default function Reports() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="category">
+          <CategorySizeReport />
+        </TabsContent>
+
         <TabsContent value="aging">
           <InventoryAgingReport />
         </TabsContent>
