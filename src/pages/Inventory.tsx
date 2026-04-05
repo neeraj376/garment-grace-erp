@@ -41,8 +41,9 @@ interface Product {
 export default function Inventory() {
   const { storeId } = useStore();
   const { toast } = useToast();
-  const { role } = usePermissions();
+  const { role, can_upload_inventory, can_edit_invoices } = usePermissions();
   const isOwner = role === "owner";
+  const canUpload = isOwner || can_upload_inventory;
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("__all__");
@@ -405,7 +406,7 @@ export default function Inventory() {
           <Button variant="outline" onClick={handleDownloadCSV}>
             <Download className="h-4 w-4 mr-2" /> Export CSV
           </Button>
-          {isOwner && (
+          {canUpload && (
             <>
               <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
               <input type="file" ref={priceFileInputRef} accept=".csv" className="hidden" onChange={handleUpdatePricesCSV} />
@@ -481,7 +482,7 @@ export default function Inventory() {
               <X className="h-4 w-4 mr-1" /> Clear
             </Button>
           )}
-          {isOwner && selectedIds.size > 0 && (
+          {canUpload && selectedIds.size > 0 && (
             <Button variant="destructive" onClick={handleBulkDelete}>
               <Trash2 className="h-4 w-4 mr-2" /> Delete {selectedIds.size} selected
             </Button>
@@ -551,7 +552,7 @@ export default function Inventory() {
         <Table>
           <TableHeader>
             <TableRow>
-              {isOwner && (
+              {canUpload && (
                 <TableHead className="w-10">
                   <Checkbox
                     checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -567,13 +568,13 @@ export default function Inventory() {
               <TableHead>Size / Color</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
-              {isOwner && <TableHead className="w-12"></TableHead>}
+              {canUpload && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={isOwner ? 10 : 8} className="text-center py-12">
+              <TableCell colSpan={canUpload ? 10 : 8} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
@@ -581,7 +582,7 @@ export default function Inventory() {
             ) : (
               filtered.map((p) => (
                 <TableRow key={p.id} className={selectedIds.has(p.id) ? "bg-muted/50" : ""}>
-                  {isOwner && (
+                  {canUpload && (
                     <TableCell className="p-2">
                       <Checkbox
                         checked={selectedIds.has(p.id)}
@@ -615,7 +616,7 @@ export default function Inventory() {
                       {p.total_stock}
                     </Badge>
                   </TableCell>
-                  {isOwner && (
+                  {canUpload && (
                     <TableCell>
                       <div className="flex gap-1">
                         <Button
@@ -644,7 +645,7 @@ export default function Inventory() {
         </Table>
       </Card>
 
-      {isOwner && storeId && (
+      {canUpload && storeId && (
         <EditProductDialog
           product={editProduct}
           open={editOpen}
