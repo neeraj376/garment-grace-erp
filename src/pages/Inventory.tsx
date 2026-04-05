@@ -41,8 +41,9 @@ interface Product {
 export default function Inventory() {
   const { storeId } = useStore();
   const { toast } = useToast();
-  const { role } = usePermissions();
+  const { role, can_upload_inventory, can_edit_invoices } = usePermissions();
   const isOwner = role === "owner";
+  const canUpload = isOwner || can_upload_inventory;
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("__all__");
