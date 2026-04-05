@@ -302,7 +302,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="section-title">Invoice History</CardTitle>
-            {isOwner && selectedIds.size > 0 && (
+            {canEdit && selectedIds.size > 0 && (
               <Button
                 variant="destructive"
                 size="sm"
@@ -344,7 +344,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                {isOwner && (
+                {canEdit && (
                   <TableHead className="w-10">
                     <Checkbox
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -366,15 +366,15 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={isOwner ? 10 : 9} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={canEdit ? 10 : 9} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isOwner ? 10 : 9} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={canEdit ? 10 : 9} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
-                  {isOwner && (
+                  {canEdit && (
                     <TableCell>
                       <Checkbox
                         checked={selectedIds.has(inv.id)}
@@ -432,7 +432,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           <TooltipContent>View invoice</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      {isOwner && (
+                      {canEdit && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -468,7 +468,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      {isOwner && (
+                      {canEdit && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
