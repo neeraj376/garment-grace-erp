@@ -376,8 +376,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   };
 
   const getInvoiceShareUrl = (invoiceId: string) => {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    return `https://${projectId}.supabase.co/functions/v1/invoice-og/${invoiceId}`;
+    return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}`;
   };
 
   const handleSendWhatsApp = async () => {
