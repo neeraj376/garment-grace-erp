@@ -645,6 +645,35 @@ export default function Inventory() {
         </Table>
       </Card>
 
+      {/* Inventory Summary */}
+      {(() => {
+        const totalProducts = filtered.length;
+        const inStockProducts = filtered.filter(p => (p.total_stock ?? 0) > 0).length;
+        const outOfStockProducts = totalProducts - inStockProducts;
+        const totalPieces = filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0);
+        const inStockPieces = totalPieces; // all pieces are from in-stock items
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="rounded-lg border bg-card p-4 text-center">
+              <p className="text-sm text-muted-foreground">Total Products</p>
+              <p className="text-2xl font-bold">{totalProducts.toLocaleString("en-IN")}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-4 text-center">
+              <p className="text-sm text-muted-foreground">Total Pieces in Stock</p>
+              <p className="text-2xl font-bold text-green-600">{totalPieces.toLocaleString("en-IN")}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-4 text-center">
+              <p className="text-sm text-muted-foreground">In Stock Products</p>
+              <p className="text-2xl font-bold text-green-600">{inStockProducts.toLocaleString("en-IN")}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-4 text-center">
+              <p className="text-sm text-muted-foreground">Out of Stock Products</p>
+              <p className="text-2xl font-bold text-red-600">{outOfStockProducts.toLocaleString("en-IN")}</p>
+            </div>
+          </div>
+        );
+      })()}
+
       {canUpload && storeId && (
         <EditProductDialog
           product={editProduct}
