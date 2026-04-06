@@ -771,6 +771,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           </CardContent>
         </Card>
       </div>
+    </div>
     <InvoicePreviewDialog
       open={showPreview}
       onClose={() => setShowPreview(false)}
