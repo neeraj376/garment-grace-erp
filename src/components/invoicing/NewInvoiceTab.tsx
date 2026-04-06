@@ -771,7 +771,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           </CardContent>
         </Card>
       </div>
-    </div>
+    <InvoicePreviewDialog
+      open={showPreview}
+      onClose={() => setShowPreview(false)}
+      storeId={storeId}
+      cart={cart}
+      customerName={customerName}
+      customerMobile={customerMobile}
+      paymentMethod={paymentMethod}
+      subtotal={subtotal}
+      taxAmount={taxAmount}
+      discount={discount}
+      total={total}
+    />
     </div>
   );
 }
