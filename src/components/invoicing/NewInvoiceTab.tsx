@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye } from "lucide-react";
+import InvoicePreviewDialog from "./InvoicePreviewDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -101,6 +102,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => loadHeldInvoices());
+  const [showPreview, setShowPreview] = useState(false);
 
   // Search existing customers as mobile number is typed
   useEffect(() => {
@@ -723,7 +725,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <span>Total</span>
               <span>₹{total.toLocaleString("en-IN")}</span>
             </div>
-            <Button className="w-full mt-3" onClick={handleCreateInvoice} disabled={cart.length === 0 || creatingInvoice}>
+            <Button variant="secondary" className="w-full mt-3" onClick={() => setShowPreview(true)} disabled={cart.length === 0}>
+              <Eye className="h-4 w-4 mr-2" /> Preview Invoice
+            </Button>
+            <Button className="w-full" onClick={handleCreateInvoice} disabled={cart.length === 0 || creatingInvoice}>
               {creatingInvoice ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</> : "Create Invoice"}
             </Button>
             <Button variant="outline" className="w-full" onClick={handleHoldInvoice} disabled={cart.length === 0 || creatingInvoice}>
