@@ -147,7 +147,7 @@ export default function Reports() {
     const sourceMap: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const src = (inv.source || "offline").toLowerCase();
-      const label = src === "online" ? "Online" : "Offline";
+      const label = src === "online" ? "Online" : src === "wholesale" ? "Wholesale" : "Offline";
       sourceMap[label] = (sourceMap[label] || 0) + Number(inv.total_amount);
     });
     setSourceSplit(
@@ -347,8 +347,14 @@ export default function Reports() {
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         labelLine={{ stroke: "hsl(220, 9%, 46%)" }}
                       >
-                        <Cell fill="hsl(221, 83%, 53%)" />
-                        <Cell fill="hsl(24, 95%, 53%)" />
+                        {sourceSplit.map((entry, idx) => {
+                          const colors: Record<string, string> = {
+                            "Online": "hsl(221, 83%, 53%)",
+                            "Offline": "hsl(24, 95%, 53%)",
+                            "Wholesale": "hsl(142, 71%, 45%)",
+                          };
+                          return <Cell key={entry.name} fill={colors[entry.name] || `hsl(${idx * 90}, 60%, 50%)`} />;
+                        })}
                       </Pie>
                       <Tooltip formatter={(v: number) => formatCurrency(v)} />
                       <Legend />
