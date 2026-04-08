@@ -45,6 +45,7 @@ export default function Reports() {
   const [summary, setSummary] = useState({ revenue: 0, cost: 0, tax: 0, profit: 0 });
   const [employeeSales, setEmployeeSales] = useState<EmployeeSales[]>([]);
   const [paymentSplit, setPaymentSplit] = useState<PaymentSplit[]>([]);
+  const [sourceSplit, setSourceSplit] = useState<PaymentSplit[]>([]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -139,6 +140,19 @@ export default function Reports() {
     setPaymentSplit(
       Object.entries(paymentMap)
         .map(([name, value]) => ({ name: name.toUpperCase(), value }))
+        .sort((a, b) => b.value - a.value)
+    );
+
+    // Online vs Offline split
+    const sourceMap: Record<string, number> = {};
+    (invData ?? []).forEach(inv => {
+      const src = (inv.source || "offline").toLowerCase();
+      const label = src === "online" ? "Online" : "Offline";
+      sourceMap[label] = (sourceMap[label] || 0) + Number(inv.total_amount);
+    });
+    setSourceSplit(
+      Object.entries(sourceMap)
+        .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
     );
 
@@ -309,6 +323,41 @@ export default function Reports() {
             </CardContent>
           </Card>
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader><CardTitle className="section-title">Online vs Offline Sales</CardTitle></CardHeader>
+            <CardContent>
+              {sourceSplit.length > 0 ? (
+                <div className="h-72 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={sourceSplit}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        innerRadius={50}
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={{ stroke: "hsl(220, 9%, 46%)" }}
+                      >
+                        <Cell fill="hsl(221, 83%, 53%)" />
+                        <Cell fill="hsl(24, 95%, 53%)" />
+                      </Pie>
+                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-32 flex items-center justify-center text-muted-foreground">
+                  No sales data for this period
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader><CardTitle className="section-title">Payment Source Split</CardTitle></CardHeader>
             <CardContent>
@@ -346,6 +395,7 @@ export default function Reports() {
               )}
             </CardContent>
           </Card>
+          </div>
 
           <Card>
             <CardHeader><CardTitle className="section-title">Employee Sales Performance</CardTitle></CardHeader>
