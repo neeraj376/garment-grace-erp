@@ -682,6 +682,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 <SelectContent>
                   <SelectItem value="offline">Offline (Walk-in)</SelectItem>
                   <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
                 </SelectContent>
               </Select>
             </div>
