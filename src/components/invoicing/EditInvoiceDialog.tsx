@@ -329,6 +329,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   <SelectContent>
                     <SelectItem value="offline">Offline (Walk-in)</SelectItem>
                     <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="wholesale">Wholesale</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
