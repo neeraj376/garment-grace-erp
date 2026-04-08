@@ -212,6 +212,11 @@ export default function Reports() {
       csv += toCsvString(["Date", "Amount"], salesData.map(d => [d.date, d.amount]));
     }
 
+    if (sourceSplit.length > 0) {
+      csv += "\n\n=== Online vs Offline Sales ===\n";
+      csv += toCsvString(["Source", "Amount"], sourceSplit.map(s => [s.name, s.value]));
+    }
+
     if (paymentSplit.length > 0) {
       csv += "\n\n=== Payment Source Split ===\n";
       csv += toCsvString(["Payment Method", "Amount"], paymentSplit.map(p => [p.name, p.value]));
