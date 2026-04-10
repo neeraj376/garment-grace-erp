@@ -156,6 +156,38 @@ export type Database = {
           },
         ]
       }
+      held_invoices: {
+        Row: {
+          created_at: string
+          data: Json
+          held_by: string | null
+          id: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          held_by?: string | null
+          id?: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          held_by?: string | null
+          id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "held_invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_batches: {
         Row: {
           batch_number: string | null
