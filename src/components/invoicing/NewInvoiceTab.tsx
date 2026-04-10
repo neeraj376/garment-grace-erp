@@ -89,7 +89,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [nameSuggestions, setNameSuggestions] = useState<any[]>([]);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
-  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => loadHeldInvoices());
+  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
   // Search existing customers as mobile number is typed
