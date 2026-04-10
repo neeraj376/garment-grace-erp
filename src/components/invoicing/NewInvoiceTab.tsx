@@ -38,7 +38,6 @@ interface Props {
 }
 
 const DRAFT_KEY = "invoice_draft";
-const HELD_INVOICES_KEY = "held_invoices";
 
 interface HeldInvoice {
   id: string;
@@ -67,17 +66,6 @@ function saveDraft(data: any) {
 
 function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
-}
-
-function loadHeldInvoices(): HeldInvoice[] {
-  try {
-    const raw = localStorage.getItem(HELD_INVOICES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function saveHeldInvoices(invoices: HeldInvoice[]) {
-  try { localStorage.setItem(HELD_INVOICES_KEY, JSON.stringify(invoices)); } catch {}
 }
 
 export default function NewInvoiceTab({ storeId, userId }: Props) {
