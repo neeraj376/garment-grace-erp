@@ -322,7 +322,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           tax_amount: taxAmount,
           discount_amount: discount,
           total_amount: total,
-          created_by: userId,
+          created_by: userId ?? null,
         })
         .select()
         .single();
