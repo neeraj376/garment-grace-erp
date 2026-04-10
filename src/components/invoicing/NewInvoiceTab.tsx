@@ -426,7 +426,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
   };
 
-  const handleHoldInvoice = () => {
+  const handleHoldInvoice = async () => {
     if (cart.length === 0) {
       toast({ title: "Nothing to hold", description: "Add products before holding", variant: "destructive" });
       return;
