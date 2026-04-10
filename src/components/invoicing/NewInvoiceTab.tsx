@@ -38,7 +38,6 @@ interface Props {
 }
 
 const DRAFT_KEY = "invoice_draft";
-const HELD_INVOICES_KEY = "held_invoices";
 
 interface HeldInvoice {
   id: string;
@@ -69,17 +68,6 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
-function loadHeldInvoices(): HeldInvoice[] {
-  try {
-    const raw = localStorage.getItem(HELD_INVOICES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function saveHeldInvoices(invoices: HeldInvoice[]) {
-  try { localStorage.setItem(HELD_INVOICES_KEY, JSON.stringify(invoices)); } catch {}
-}
-
 export default function NewInvoiceTab({ storeId, userId }: Props) {
   const { toast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
@@ -101,8 +89,23 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [nameSuggestions, setNameSuggestions] = useState<any[]>([]);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
-  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => loadHeldInvoices());
+  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Load held invoices from database
+  const fetchHeldInvoices = useCallback(async () => {
+    if (!storeId) return;
+    const { data } = await supabase
+      .from("held_invoices")
+      .select("id, data, created_at")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: true });
+    if (data) {
+      setHeldInvoices(data.map((row: any) => ({ ...row.data, id: row.id, heldAt: row.created_at })));
+    }
+  }, [storeId]);
+
+  useEffect(() => { fetchHeldInvoices(); }, [fetchHeldInvoices]);
 
   // Search existing customers as mobile number is typed
   useEffect(() => {
@@ -423,46 +426,50 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
   };
 
-  const handleHoldInvoice = () => {
+  const handleHoldInvoice = async () => {
     if (cart.length === 0) {
       toast({ title: "Nothing to hold", description: "Add products before holding", variant: "destructive" });
       return;
     }
-    const held: HeldInvoice = {
-      id: `hold_${Date.now()}`,
-      heldAt: new Date().toISOString(),
+    if (!storeId) return;
+    const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
       cart, source, paymentMethod, selectedEmployee, discount,
     };
-    const updated = [...heldInvoices, held];
-    setHeldInvoices(updated);
-    saveHeldInvoices(updated);
+    const { error } = await supabase.from("held_invoices").insert({
+      store_id: storeId,
+      held_by: userId ?? null,
+      data: heldData,
+    } as any);
+    if (error) {
+      toast({ title: "Error holding invoice", description: error.message, variant: "destructive" });
+      return;
+    }
     // Clear current form
     setCart([]); setDiscount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
     clearDraft();
+    fetchHeldInvoices();
     toast({ title: "Invoice held", description: `${customerName || "Invoice"} parked — ${cart.length} item(s)` });
   };
 
-  const handleResumeHeld = (held: HeldInvoice) => {
+  const handleResumeHeld = async (held: HeldInvoice) => {
+    if (!storeId) return;
     // If current form has items, hold them first
     if (cart.length > 0) {
-      const currentHeld: HeldInvoice = {
-        id: `hold_${Date.now()}`,
-        heldAt: new Date().toISOString(),
+      const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
         cart, source, paymentMethod, selectedEmployee, discount,
       };
-      const withCurrent = [...heldInvoices, currentHeld];
-      // Remove the one being resumed and add current
-      const updated = withCurrent.filter(h => h.id !== held.id);
-      setHeldInvoices(updated);
-      saveHeldInvoices(updated);
-    } else {
-      const updated = heldInvoices.filter(h => h.id !== held.id);
-      setHeldInvoices(updated);
-      saveHeldInvoices(updated);
+      await supabase.from("held_invoices").insert({
+        store_id: storeId,
+        held_by: userId ?? null,
+        data: currentData,
+      } as any);
     }
+    // Delete the resumed one from DB
+    await supabase.from("held_invoices").delete().eq("id", held.id);
+    fetchHeldInvoices();
     // Restore held invoice
     setCart(held.cart);
     setCustomerMobile(held.customerMobile);
@@ -476,10 +483,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title: "Invoice resumed", description: `${held.customerName || "Invoice"} restored` });
   };
 
-  const handleDeleteHeld = (id: string) => {
-    const updated = heldInvoices.filter(h => h.id !== id);
-    setHeldInvoices(updated);
-    saveHeldInvoices(updated);
+  const handleDeleteHeld = async (id: string) => {
+    await supabase.from("held_invoices").delete().eq("id", id);
+    fetchHeldInvoices();
     toast({ title: "Held invoice removed" });
   };
 
