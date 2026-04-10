@@ -92,6 +92,21 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Load held invoices from database
+  const fetchHeldInvoices = useCallback(async () => {
+    if (!storeId) return;
+    const { data } = await supabase
+      .from("held_invoices")
+      .select("id, data, created_at")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: true });
+    if (data) {
+      setHeldInvoices(data.map((row: any) => ({ ...row.data, id: row.id, heldAt: row.created_at })));
+    }
+  }, [storeId]);
+
+  useEffect(() => { fetchHeldInvoices(); }, [fetchHeldInvoices]);
+
   // Search existing customers as mobile number is typed
   useEffect(() => {
     if (!storeId || customerMobile.length < 3) {
