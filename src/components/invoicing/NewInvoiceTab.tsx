@@ -246,7 +246,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const total = cart.reduce((s, i) => s + getLineTotal(i), 0) - discount;
 
   const handleCreateInvoice = async () => {
-    if (!storeId || !userId || cart.length === 0) {
+    if (!storeId) {
+      toast({ title: "Error", description: "Store not loaded. Please refresh the page.", variant: "destructive" });
+      return;
+    }
+    if (!userId) {
+      toast({ title: "Error", description: "Session expired. Please log in again.", variant: "destructive" });
+      return;
+    }
+    if (cart.length === 0) {
       toast({ title: "Error", description: "Please add at least one product", variant: "destructive" });
       return;
     }
@@ -314,7 +322,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           tax_amount: taxAmount,
           discount_amount: discount,
           total_amount: total,
-          created_by: userId,
+          created_by: userId ?? null,
         })
         .select()
         .single();
@@ -336,7 +344,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         };
       });
 
-      await supabase.from("invoice_items").insert(items);
+      const { error: itemsError } = await supabase.from("invoice_items").insert(items);
+      if (itemsError) throw itemsError;
 
       if (customerId) {
         const { data: cust } = await supabase
