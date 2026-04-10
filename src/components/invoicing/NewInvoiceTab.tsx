@@ -344,7 +344,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         };
       });
 
-      await supabase.from("invoice_items").insert(items);
+      const { error: itemsError } = await supabase.from("invoice_items").insert(items);
+      if (itemsError) throw itemsError;
 
       if (customerId) {
         const { data: cust } = await supabase
