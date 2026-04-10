@@ -246,7 +246,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const total = cart.reduce((s, i) => s + getLineTotal(i), 0) - discount;
 
   const handleCreateInvoice = async () => {
-    if (!storeId || !userId || cart.length === 0) {
+    if (!storeId) {
+      toast({ title: "Error", description: "Store not loaded. Please refresh the page.", variant: "destructive" });
+      return;
+    }
+    if (!userId) {
+      toast({ title: "Error", description: "Session expired. Please log in again.", variant: "destructive" });
+      return;
+    }
+    if (cart.length === 0) {
       toast({ title: "Error", description: "Please add at least one product", variant: "destructive" });
       return;
     }
