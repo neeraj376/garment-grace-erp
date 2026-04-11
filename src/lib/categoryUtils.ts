@@ -83,7 +83,7 @@ export async function loadCategoryMappings(storeId: string): Promise<void> {
     .from("category_mappings")
     .select("type, variation, canonical")
     .eq("store_id", storeId);
-  const map: Record<string, Record<string, string>> = { category: {}, subcategory: {} };
+  const map: Record<string, Record<string, string>> = { category: {}, subcategory: {}, size: {}, color: {} };
   (data ?? []).forEach((r: any) => {
     map[r.type][normalizeKey(r.variation)] = r.canonical;
   });
@@ -102,7 +102,7 @@ export function invalidateMappingCache() {
  */
 export function normalizeCategoryWithMappings(
   value: string | null | undefined,
-  type: "category" | "subcategory" = "category"
+  type: "category" | "subcategory" | "size" | "color" = "category"
 ): string | null {
   if (!value || !value.trim()) return null;
   const key = normalizeKey(value);
