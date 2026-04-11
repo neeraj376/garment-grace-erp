@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Save } from "lucide-react";
 import SubUserManager from "@/components/settings/SubUserManager";
+import CategoryMappingManager from "@/components/settings/CategoryMappingManager";
 
 export default function SettingsPage() {
   const { storeId } = useStore();
@@ -121,6 +122,8 @@ export default function SettingsPage() {
           <Button onClick={saveSettings}><Save className="h-4 w-4 mr-2" /> Save Settings</Button>
         </CardContent>
       </Card>
+
+      <CategoryMappingManager />
 
       <SubUserManager />
     </div>
