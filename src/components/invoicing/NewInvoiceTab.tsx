@@ -432,6 +432,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       return;
     }
     if (!storeId) return;
+    // Refresh session before DB write to prevent JWT expired errors
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      toast({ title: "Session expired", description: "Please log in again", variant: "destructive" });
+      return;
+    }
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
       cart, source, paymentMethod, selectedEmployee, discount,
