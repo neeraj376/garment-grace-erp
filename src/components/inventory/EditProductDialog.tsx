@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Video, X, Loader2 } from "lucide-react";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
-import { normalizeCategory } from "@/lib/categoryUtils";
+import { normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
 
 interface Product {
   id: string;
