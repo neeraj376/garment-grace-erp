@@ -101,6 +101,25 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title, description: message, variant: "destructive" });
   };
 
+  // Proactively refresh session before any DB write to avoid JWT expired errors
+  const ensureFreshSession = async (): Promise<boolean> => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        // Try refreshing
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+          return false;
+        }
+      }
+      return true;
+    } catch {
+      toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+      return false;
+    }
+  };
+
   // Load held invoices from database
   const fetchHeldInvoices = useCallback(async () => {
     if (!storeId) return;
@@ -292,6 +311,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
     setCreatingInvoice(true);
     try {
+      const sessionOk = await ensureFreshSession();
+      if (!sessionOk) { setCreatingInvoice(false); return; }
+
       let customerId: string | null = null;
       if (customerMobile) {
         const { data: existing } = await supabase
@@ -445,6 +467,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
       return;
     }
+    const sessionOk = await ensureFreshSession();
+    if (!sessionOk) return;
+
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
       cart, source, paymentMethod, selectedEmployee, discount,
