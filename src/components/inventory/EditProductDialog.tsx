@@ -96,13 +96,14 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
     if (!product) return;
 
     try {
+      await loadCategoryMappings(storeId);
       const { error } = await supabase
         .from("products")
         .update({
           sku: form.sku,
           name: form.name,
-          category: normalizeCategory(form.category),
-          subcategory: normalizeCategory(form.subcategory),
+          category: normalizeCategoryWithMappings(form.category, "category"),
+          subcategory: normalizeCategoryWithMappings(form.subcategory, "subcategory"),
           brand: form.brand || null,
           size: form.size || null,
           color: form.color || null,

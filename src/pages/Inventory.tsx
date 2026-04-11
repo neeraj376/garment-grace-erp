@@ -96,6 +96,9 @@ export default function Inventory() {
 
   useEffect(() => { fetchProducts(); }, [storeId]);
 
+  // Load DB mappings on mount
+  useEffect(() => { if (storeId) loadCategoryMappings(storeId); }, [storeId]);
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!storeId) return;
@@ -107,7 +110,7 @@ export default function Inventory() {
             store_id: storeId,
             sku: form.sku || `SKU-${Date.now()}`,
             name: form.name,
-            category: normalizeCategory(form.category),
+            category: normalizeCategoryWithMappings(form.category, "category"),
             brand: form.brand || null,
             size: form.size || null,
             color: form.color || null,
@@ -201,8 +204,8 @@ export default function Inventory() {
             store_id: storeId,
             sku: row.sku || row.sku_code || row.barcode || `SKU-${Date.now()}-${i}`,
             name: row.name || row.product_name || row.product || row.item || row.item_name || "Unnamed",
-            category: normalizeCategory(row.category) || null,
-            subcategory: normalizeCategory(row.subcategory || row.sub_category) || null,
+            category: normalizeCategoryWithMappings(row.category, "category") || null,
+            subcategory: normalizeCategoryWithMappings(row.subcategory || row.sub_category, "subcategory") || null,
             brand: row.brand || null,
             size: row.size || null,
             color: row.color || row.colour || null,
