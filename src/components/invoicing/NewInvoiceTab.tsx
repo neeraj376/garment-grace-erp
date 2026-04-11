@@ -311,6 +311,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
     setCreatingInvoice(true);
     try {
+      const sessionOk = await ensureFreshSession();
+      if (!sessionOk) { setCreatingInvoice(false); return; }
+
       let customerId: string | null = null;
       if (customerMobile) {
         const { data: existing } = await supabase
@@ -464,6 +467,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
       return;
     }
+    const sessionOk = await ensureFreshSession();
+    if (!sessionOk) return;
+
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
       cart, source, paymentMethod, selectedEmployee, discount,
