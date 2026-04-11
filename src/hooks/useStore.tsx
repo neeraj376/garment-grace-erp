@@ -74,34 +74,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
 
     const fetchProfile = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!isActive) return;
-
       const latestCachedStoreId = getLatestCachedStoreId();
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("store_id")
+          .eq("user_id", userId)
+          .maybeSingle();
 
-      if (!session) {
-        if (latestCachedStoreId) {
-          setStoreId(latestCachedStoreId);
-          setLoading(false);
-        } else {
-          setLoading(true);
+        if (!isActive) return;
+
+        if (error) throw error;
+
+        const nextStoreId = data?.store_id ?? null;
+
+        if (!data && retryCount < MAX_PROFILE_RETRIES) {
+          console.warn("[Store] profile row not available yet during session warm-up, retrying", {
+            userId,
+            retryCount,
+          });
+
+          if (latestCachedStoreId) {
+            setStoreId(latestCachedStoreId);
+            setLoading(false);
+          } else {
+            setLoading(true);
+          }
+          scheduleRetry();
+          return;
         }
-        scheduleRetry();
-        return;
-      }
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("store_id")
-        .eq("user_id", userId)
-        .maybeSingle();
+        setStoreId(nextStoreId);
+        setLoading(false);
+        setCachedStoreId(userId, nextStoreId);
+      } catch (error) {
+        if (!isActive) return;
 
-      if (!isActive) return;
-
-      if (error) {
         console.error("[Store] failed to load profile", error);
 
         if (retryCount < MAX_PROFILE_RETRIES) {
@@ -123,31 +131,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
         setStoreId(null);
         setLoading(false);
-        return;
       }
-
-      const nextStoreId = data?.store_id ?? null;
-
-      if (!data && retryCount < MAX_PROFILE_RETRIES) {
-        console.warn("[Store] profile row not available yet during session warm-up, retrying", {
-          userId,
-          retryCount,
-        });
-
-        if (latestCachedStoreId) {
-          setStoreId(latestCachedStoreId);
-          setLoading(false);
-        } else {
-          setLoading(true);
-        }
-
-        scheduleRetry();
-        return;
-      }
-
-      setStoreId(nextStoreId);
-      setLoading(false);
-      setCachedStoreId(userId, nextStoreId);
     };
 
     void fetchProfile();
