@@ -53,6 +53,41 @@ export type Database = {
           },
         ]
       }
+      category_mappings: {
+        Row: {
+          canonical: string
+          created_at: string
+          id: string
+          store_id: string
+          type: string
+          variation: string
+        }
+        Insert: {
+          canonical: string
+          created_at?: string
+          id?: string
+          store_id: string
+          type?: string
+          variation: string
+        }
+        Update: {
+          canonical?: string
+          created_at?: string
+          id?: string
+          store_id?: string
+          type?: string
+          variation?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_mappings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string
