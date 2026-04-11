@@ -90,10 +90,10 @@ export default function CategoryMappingManager() {
     <Card>
       <CardHeader>
         <CardTitle className="section-title flex items-center gap-2">
-          <Tags className="h-5 w-5" /> Category & Subcategory Mappings
+          <Tags className="h-5 w-5" /> Field Mappings
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Define spelling variations that auto-correct to a canonical name. E.g. "tshirt", "t shirt" → "T-Shirt"
+          Define spelling variations for Category, Subcategory, Size & Color that auto-correct to a canonical name.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -106,6 +106,8 @@ export default function CategoryMappingManager() {
               <SelectContent>
                 <SelectItem value="category">Category</SelectItem>
                 <SelectItem value="subcategory">Subcategory</SelectItem>
+                <SelectItem value="size">Size</SelectItem>
+                <SelectItem value="color">Color</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -140,6 +142,8 @@ export default function CategoryMappingManager() {
               <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="category">Category</SelectItem>
               <SelectItem value="subcategory">Subcategory</SelectItem>
+              <SelectItem value="size">Size</SelectItem>
+              <SelectItem value="color">Color</SelectItem>
             </SelectContent>
           </Select>
           <Input
@@ -170,7 +174,7 @@ export default function CategoryMappingManager() {
                 {Object.values(grouped).flat().map(m => (
                   <TableRow key={m.id}>
                     <TableCell>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.type === "category" ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.type === "category" ? "bg-primary/10 text-primary" : m.type === "size" ? "bg-blue-100 text-blue-700" : m.type === "color" ? "bg-pink-100 text-pink-700" : "bg-accent text-accent-foreground"}`}>
                         {m.type}
                       </span>
                     </TableCell>
