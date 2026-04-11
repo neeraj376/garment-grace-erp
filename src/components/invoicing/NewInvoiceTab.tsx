@@ -92,6 +92,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
+  const showMutationError = (title: string, message: string) => {
+    if (/jwt|token|session/i.test(message)) {
+      toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+      return;
+    }
+
+    toast({ title, description: message, variant: "destructive" });
+  };
+
   // Load held invoices from database
   const fetchHeldInvoices = useCallback(async () => {
     if (!storeId) return;
@@ -379,7 +388,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSelectedEmployee("");
       clearDraft();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      showMutationError("Error", err?.message ?? "Could not create invoice");
     } finally {
       setCreatingInvoice(false);
     }
@@ -432,10 +441,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       return;
     }
     if (!storeId) return;
-    // Refresh session before DB write to prevent JWT expired errors
-    const { error: refreshError } = await supabase.auth.refreshSession();
-    if (refreshError) {
-      toast({ title: "Session expired", description: "Please log in again", variant: "destructive" });
+    if (!userId) {
+      toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
       return;
     }
     const heldData = {
@@ -448,7 +455,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       data: heldData,
     } as any);
     if (error) {
-      toast({ title: "Error holding invoice", description: error.message, variant: "destructive" });
+      showMutationError("Error holding invoice", error.message);
       return;
     }
     // Clear current form
@@ -461,20 +468,33 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   const handleResumeHeld = async (held: HeldInvoice) => {
     if (!storeId) return;
+    if (!userId) {
+      toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+      return;
+    }
     // If current form has items, hold them first
     if (cart.length > 0) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
         cart, source, paymentMethod, selectedEmployee, discount,
       };
-      await supabase.from("held_invoices").insert({
+      const { error } = await supabase.from("held_invoices").insert({
         store_id: storeId,
         held_by: userId ?? null,
         data: currentData,
       } as any);
+
+      if (error) {
+        showMutationError("Error holding current invoice", error.message);
+        return;
+      }
     }
     // Delete the resumed one from DB
-    await supabase.from("held_invoices").delete().eq("id", held.id);
+    const { error } = await supabase.from("held_invoices").delete().eq("id", held.id);
+    if (error) {
+      showMutationError("Error resuming invoice", error.message);
+      return;
+    }
     fetchHeldInvoices();
     // Restore held invoice
     setCart(held.cart);
@@ -490,7 +510,11 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   };
 
   const handleDeleteHeld = async (id: string) => {
-    await supabase.from("held_invoices").delete().eq("id", id);
+    const { error } = await supabase.from("held_invoices").delete().eq("id", id);
+    if (error) {
+      showMutationError("Error removing held invoice", error.message);
+      return;
+    }
     fetchHeldInvoices();
     toast({ title: "Held invoice removed" });
   };

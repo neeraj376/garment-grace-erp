@@ -101,8 +101,6 @@ export default function Auth() {
         throw new Error("Could not restore your session");
       }
 
-      await supabase.auth.getSession();
-
       const nextStoreId = typeof verifyData?.storeId === "string" ? verifyData.storeId : null;
       cacheStoreId(signedInUser.id, nextStoreId);
 

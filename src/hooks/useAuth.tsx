@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -9,24 +9,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
-function getCachedUser(): User | null {
-  try {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const raw = localStorage.getItem(`sb-${projectId}-auth-token`);
-
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw);
-    return parsed?.user ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(getCachedUser());
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const initializedRef = useRef(false);
 
   useEffect(() => {
     let isActive = true;
@@ -39,25 +24,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isActive) return;
-
-      if (!initializedRef.current && event === "SIGNED_OUT" && !session) {
-        return;
-      }
 
       applySession(session?.user ?? null);
     });
 
     const syncSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
-      if (!isActive) return;
+        if (error) throw error;
+        if (!isActive) return;
 
-      initializedRef.current = true;
-      applySession(session?.user ?? null);
+        applySession(session?.user ?? null);
+      } catch (error) {
+        console.error("[Auth] failed to restore session", error);
+        if (!isActive) return;
+        applySession(null);
+      }
     };
 
     void syncSession();
