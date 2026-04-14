@@ -54,7 +54,7 @@ export default function AppSidebar() {
   ];
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     navigate("/administrator/auth");
   };
 
