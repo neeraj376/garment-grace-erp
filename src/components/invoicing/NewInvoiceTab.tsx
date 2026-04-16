@@ -378,6 +378,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           tax_amount: taxAmount,
           discount_amount: discount,
           total_amount: total,
+          pending_amount: source === "wholesale" ? pendingAmount : 0,
           created_by: userId ?? null,
         })
         .select()
@@ -425,6 +426,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
       setCart([]);
       setDiscount(0);
+      setPendingAmount(0);
       setCustomerMobile("");
       setCustomerName("");
       setCustomerGender("");
