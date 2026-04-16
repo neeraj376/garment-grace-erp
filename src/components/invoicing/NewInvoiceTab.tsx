@@ -92,8 +92,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
+  const isAuthErrorMessage = (message: string) => /jwt|token|session|expired|refresh/i.test(message);
+
   const showMutationError = (title: string, message: string) => {
-    if (/jwt|token|session/i.test(message)) {
+    if (isAuthErrorMessage(message)) {
       toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
       return;
     }
@@ -101,21 +103,40 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title, description: message, variant: "destructive" });
   };
 
-  // Proactively refresh session before any DB write to avoid JWT expired errors
-  const ensureFreshSession = async (): Promise<boolean> => {
+  const ensureFreshSession = async (forceRefresh = false): Promise<boolean> => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error || !session) {
-        // Try refreshing
-        const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) {
-          toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
-          return false;
-        }
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) throw error;
+
+      const expiresSoon =
+        forceRefresh ||
+        !session ||
+        !session.expires_at ||
+        session.expires_at <= Math.floor(Date.now() / 1000) + 60;
+
+      if (!expiresSoon) return true;
+
+      const {
+        data: { session: refreshedSession },
+        error: refreshError,
+      } = await supabase.auth.refreshSession();
+
+      if (refreshError || !refreshedSession) {
+        toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+        return false;
       }
+
       return true;
-    } catch {
-      toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
+    } catch (error: any) {
+      toast({
+        title: "Session expired",
+        description: error?.message ?? "Please log in again.",
+        variant: "destructive",
+      });
       return false;
     }
   };
