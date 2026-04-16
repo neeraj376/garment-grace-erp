@@ -496,7 +496,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
-      cart, source, paymentMethod, selectedEmployee, discount,
+      cart, source, paymentMethod, selectedEmployee, discount, pendingAmount,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
@@ -520,7 +520,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       showMutationError("Error holding invoice", error.message);
       return;
     }
-    setCart([]); setDiscount(0); setCustomerMobile(""); setCustomerName("");
+    setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
     clearDraft();
     fetchHeldInvoices();
