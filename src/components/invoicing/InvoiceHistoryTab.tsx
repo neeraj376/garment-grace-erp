@@ -407,6 +407,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   </TableCell>
                   <TableCell className="text-right font-medium">₹{Number(inv.total_amount).toLocaleString("en-IN")}</TableCell>
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">{inv.source}</Badge>
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
                   </TableCell>
