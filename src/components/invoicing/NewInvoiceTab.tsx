@@ -495,16 +495,28 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       customerMobile, customerName, customerGender, customerLocation,
       cart, source, paymentMethod, selectedEmployee, discount,
     };
-    const { error } = await supabase.from("held_invoices").insert({
+
+    let { error } = await supabase.from("held_invoices").insert({
       store_id: storeId,
       held_by: userId ?? null,
       data: heldData,
     } as any);
+
+    if (error && isAuthErrorMessage(error.message)) {
+      const refreshed = await ensureFreshSession(true);
+      if (!refreshed) return;
+
+      ({ error } = await supabase.from("held_invoices").insert({
+        store_id: storeId,
+        held_by: userId ?? null,
+        data: heldData,
+      } as any));
+    }
+
     if (error) {
       showMutationError("Error holding invoice", error.message);
       return;
     }
-    // Clear current form
     setCart([]); setDiscount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
     clearDraft();
@@ -518,31 +530,49 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Session expired", description: "Please log in again.", variant: "destructive" });
       return;
     }
-    // If current form has items, hold them first
     if (cart.length > 0) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
         cart, source, paymentMethod, selectedEmployee, discount,
       };
-      const { error } = await supabase.from("held_invoices").insert({
+
+      let { error } = await supabase.from("held_invoices").insert({
         store_id: storeId,
         held_by: userId ?? null,
         data: currentData,
       } as any);
+
+      if (error && isAuthErrorMessage(error.message)) {
+        const refreshed = await ensureFreshSession(true);
+        if (!refreshed) return;
+
+        ({ error } = await supabase.from("held_invoices").insert({
+          store_id: storeId,
+          held_by: userId ?? null,
+          data: currentData,
+        } as any));
+      }
 
       if (error) {
         showMutationError("Error holding current invoice", error.message);
         return;
       }
     }
-    // Delete the resumed one from DB
-    const { error } = await supabase.from("held_invoices").delete().eq("id", held.id);
+
+    let { error } = await supabase.from("held_invoices").delete().eq("id", held.id);
+
+    if (error && isAuthErrorMessage(error.message)) {
+      const refreshed = await ensureFreshSession(true);
+      if (!refreshed) return;
+
+      ({ error } = await supabase.from("held_invoices").delete().eq("id", held.id));
+    }
+
     if (error) {
       showMutationError("Error resuming invoice", error.message);
       return;
     }
     fetchHeldInvoices();
-    // Restore held invoice
     setCart(held.cart);
     setCustomerMobile(held.customerMobile);
     setCustomerName(held.customerName);
@@ -556,7 +586,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   };
 
   const handleDeleteHeld = async (id: string) => {
-    const { error } = await supabase.from("held_invoices").delete().eq("id", id);
+    let { error } = await supabase.from("held_invoices").delete().eq("id", id);
+
+    if (error && isAuthErrorMessage(error.message)) {
+      const refreshed = await ensureFreshSession(true);
+      if (!refreshed) return;
+
+      ({ error } = await supabase.from("held_invoices").delete().eq("id", id));
+    }
+
     if (error) {
       showMutationError("Error removing held invoice", error.message);
       return;
