@@ -28,6 +28,7 @@ export default function Dashboard() {
     monthlyOffline: 0,
     monthlyWholesale: 0,
     dailyAverage: 0,
+    totalPending: 0,
   });
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
