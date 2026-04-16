@@ -23,8 +23,10 @@ export default function Dashboard() {
     totalProducts: 0,
     todayOnline: 0,
     todayOffline: 0,
+    todayWholesale: 0,
     monthlyOnline: 0,
     monthlyOffline: 0,
+    monthlyWholesale: 0,
     dailyAverage: 0,
   });
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
@@ -47,7 +49,8 @@ export default function Dashboard() {
 
       const todaySales = todayInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
       const todayOnline = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
-      const todayOffline = todaySales - todayOnline;
+      const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const todayOffline = todaySales - todayOnline - todayWholesale;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
@@ -58,7 +61,8 @@ export default function Dashboard() {
 
       const monthlySales = monthInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
       const monthlyOnline = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
-      const monthlyOffline = monthlySales - monthlyOnline;
+      const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const monthlyOffline = monthlySales - monthlyOnline - monthlyWholesale;
 
       // Daily average this month
       const dayOfMonth = today.getDate();
@@ -88,8 +92,10 @@ export default function Dashboard() {
         totalProducts: productCount ?? 0,
         todayOnline,
         todayOffline,
+        todayWholesale,
         monthlyOnline,
         monthlyOffline,
+        monthlyWholesale,
         dailyAverage,
       });
 
