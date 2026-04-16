@@ -1,4 +1,4 @@
-import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package } from "lucide-react";
+import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package, AlertTriangle } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
@@ -28,6 +28,7 @@ export default function Dashboard() {
     monthlyOffline: 0,
     monthlyWholesale: 0,
     dailyAverage: 0,
+    totalPending: 0,
   });
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
@@ -85,6 +86,16 @@ export default function Dashboard() {
         .eq("store_id", storeId)
         .eq("is_active", true);
 
+      // Total pending amount (all wholesale invoices with pending > 0)
+      const { data: pendingInvoices } = await supabase
+        .from("invoices")
+        .select("pending_amount")
+        .eq("store_id", storeId)
+        .eq("source", "wholesale")
+        .gt("pending_amount", 0);
+
+      const totalPending = pendingInvoices?.reduce((sum, inv) => sum + Number(inv.pending_amount), 0) ?? 0;
+
       setStats({
         todaySales,
         monthlySales,
@@ -97,6 +108,7 @@ export default function Dashboard() {
         monthlyOffline,
         monthlyWholesale,
         dailyAverage,
+        totalPending,
       });
 
       // Payment breakdown
@@ -153,6 +165,15 @@ export default function Dashboard() {
         <h1 className="page-header">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">Overview of your store performance</p>
       </div>
+
+      {stats.totalPending > 0 && (
+        <Card className="p-4 border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+          <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">
+            <AlertTriangle className="h-4 w-4" /> Total Wholesale Pending
+          </div>
+          <p className="text-2xl font-bold font-display text-amber-800 dark:text-amber-200">{formatCurrency(stats.totalPending)}</p>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Today's Sales" value={formatCurrency(stats.todaySales)} icon={IndianRupee} changeType="positive" change="Live" />

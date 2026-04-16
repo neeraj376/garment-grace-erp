@@ -81,6 +81,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
+  const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
@@ -209,9 +210,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation,
-      source, paymentMethod, selectedEmployee, discount,
+      source, paymentMethod, selectedEmployee, discount, pendingAmount,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethod, selectedEmployee, discount]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethod, selectedEmployee, discount, pendingAmount]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -377,6 +378,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           tax_amount: taxAmount,
           discount_amount: discount,
           total_amount: total,
+          pending_amount: source === "wholesale" ? pendingAmount : 0,
           created_by: userId ?? null,
         })
         .select()
@@ -424,6 +426,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
       setCart([]);
       setDiscount(0);
+      setPendingAmount(0);
       setCustomerMobile("");
       setCustomerName("");
       setCustomerGender("");
@@ -493,7 +496,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
-      cart, source, paymentMethod, selectedEmployee, discount,
+      cart, source, paymentMethod, selectedEmployee, discount, pendingAmount,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
@@ -517,7 +520,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       showMutationError("Error holding invoice", error.message);
       return;
     }
-    setCart([]); setDiscount(0); setCustomerMobile(""); setCustomerName("");
+    setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
     clearDraft();
     fetchHeldInvoices();
@@ -533,7 +536,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (cart.length > 0) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
-        cart, source, paymentMethod, selectedEmployee, discount,
+        cart, source, paymentMethod, selectedEmployee, discount, pendingAmount,
       };
 
       let { error } = await supabase.from("held_invoices").insert({
@@ -582,6 +585,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setPaymentMethod(held.paymentMethod);
     setSelectedEmployee(held.selectedEmployee);
     setDiscount(held.discount);
+    setPendingAmount((held as any).pendingAmount ?? 0);
     toast({ title: "Invoice resumed", description: `${held.customerName || "Invoice"} restored` });
   };
 
@@ -855,6 +859,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <span>Total</span>
               <span>₹{total.toLocaleString("en-IN")}</span>
             </div>
+            {source === "wholesale" && (
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-muted-foreground">Pending Amount</span>
+                <Input
+                  type="number"
+                  min={0}
+                  max={total}
+                  value={pendingAmount}
+                  onChange={e => setPendingAmount(Math.min(Number(e.target.value) || 0, total))}
+                  className="w-28 text-right"
+                />
+              </div>
+            )}
             <Button variant="secondary" className="w-full mt-3" onClick={() => setShowPreview(true)} disabled={cart.length === 0}>
               <Eye className="h-4 w-4 mr-2" /> Preview Invoice
             </Button>
