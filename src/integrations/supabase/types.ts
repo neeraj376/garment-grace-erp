@@ -415,6 +415,7 @@ export type Database = {
           loyalty_points_earned: number
           notes: string | null
           payment_method: string
+          pending_amount: number
           source: string
           status: string
           store_id: string
@@ -433,6 +434,7 @@ export type Database = {
           loyalty_points_earned?: number
           notes?: string | null
           payment_method?: string
+          pending_amount?: number
           source?: string
           status?: string
           store_id: string
@@ -451,6 +453,7 @@ export type Database = {
           loyalty_points_earned?: number
           notes?: string | null
           payment_method?: string
+          pending_amount?: number
           source?: string
           status?: string
           store_id?: string
