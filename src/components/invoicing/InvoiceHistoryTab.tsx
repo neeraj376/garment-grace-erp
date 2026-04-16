@@ -358,6 +358,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Created By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -366,11 +367,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={canEdit ? 10 : 9} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={canEdit ? 11 : 10} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={canEdit ? 10 : 9} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={canEdit ? 11 : 10} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
@@ -406,6 +407,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   </TableCell>
                   <TableCell className="text-right font-medium">₹{Number(inv.total_amount).toLocaleString("en-IN")}</TableCell>
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">{inv.source}</Badge>
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
                   </TableCell>
