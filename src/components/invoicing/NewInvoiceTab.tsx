@@ -536,7 +536,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (cart.length > 0) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
-        cart, source, paymentMethod, selectedEmployee, discount,
+        cart, source, paymentMethod, selectedEmployee, discount, pendingAmount,
       };
 
       let { error } = await supabase.from("held_invoices").insert({
@@ -585,6 +585,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setPaymentMethod(held.paymentMethod);
     setSelectedEmployee(held.selectedEmployee);
     setDiscount(held.discount);
+    setPendingAmount((held as any).pendingAmount ?? 0);
     toast({ title: "Invoice resumed", description: `${held.customerName || "Invoice"} restored` });
   };
 
