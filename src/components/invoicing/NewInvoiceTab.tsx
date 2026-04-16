@@ -210,9 +210,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation,
-      source, paymentMethod, selectedEmployee, discount,
+      source, paymentMethod, selectedEmployee, discount, pendingAmount,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethod, selectedEmployee, discount]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethod, selectedEmployee, discount, pendingAmount]);
 
   useEffect(() => {
     if (!storeId) return;
