@@ -358,6 +358,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Created By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
