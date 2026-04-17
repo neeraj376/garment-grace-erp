@@ -116,12 +116,14 @@ export default function Reports() {
       });
     }
 
+    // Collected revenue excludes wholesale pending amounts
+    const collected = (inv: any) => Number(inv.total_amount) - Number(inv.pending_amount ?? 0);
+
     let revenue = 0, cost = 0, tax = 0;
     (invData ?? []).forEach(inv => {
-      revenue += Number(inv.total_amount);
+      revenue += collected(inv);
       tax += Number(inv.tax_amount);
       (inv.invoice_items as any[])?.forEach(item => {
-        // Prefer batch buying price, fallback to product buying price
         const unitCost = item.batch_id && batchBuyingPriceMap[item.batch_id] > 0
           ? batchBuyingPriceMap[item.batch_id]
           : (buyingPriceMap[item.product_id] ?? 0);
@@ -135,7 +137,7 @@ export default function Reports() {
     const paymentMap: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const method = (inv.payment_method || "other").toLowerCase();
-      paymentMap[method] = (paymentMap[method] || 0) + Number(inv.total_amount);
+      paymentMap[method] = (paymentMap[method] || 0) + collected(inv);
     });
     setPaymentSplit(
       Object.entries(paymentMap)
@@ -148,7 +150,7 @@ export default function Reports() {
     (invData ?? []).forEach(inv => {
       const src = (inv.source || "offline").toLowerCase();
       const label = src === "online" ? "Online" : src === "wholesale" ? "Wholesale" : "Offline";
-      sourceMap[label] = (sourceMap[label] || 0) + Number(inv.total_amount);
+      sourceMap[label] = (sourceMap[label] || 0) + collected(inv);
     });
     setSourceSplit(
       Object.entries(sourceMap)
@@ -159,7 +161,7 @@ export default function Reports() {
     const grouped: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-      grouped[day] = (grouped[day] || 0) + Number(inv.total_amount);
+      grouped[day] = (grouped[day] || 0) + collected(inv);
     });
     setSalesData(Object.entries(grouped).map(([date, amount]) => ({ date, amount })));
 
@@ -177,7 +179,7 @@ export default function Reports() {
     (invData ?? []).forEach((inv: any) => {
       if (inv.employee_id && empMap[inv.employee_id]) {
         empMap[inv.employee_id].invoiceCount += 1;
-        empMap[inv.employee_id].totalSales += Number(inv.total_amount);
+        empMap[inv.employee_id].totalSales += collected(inv);
       }
     });
 
