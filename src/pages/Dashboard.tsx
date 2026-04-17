@@ -41,28 +41,31 @@ export default function Dashboard() {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
+      // Collected = total_amount - pending_amount (excludes uncollected wholesale dues)
+      const collected = (inv: any) => Number(inv.total_amount) - Number(inv.pending_amount ?? 0);
+
       // Today's sales
       const { data: todayInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, payment_method, customer_id, source")
+        .select("total_amount, pending_amount, payment_method, customer_id, source")
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
-      const todaySales = todayInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
-      const todayOnline = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
-      const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const todaySales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOnline = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const todayOffline = todaySales - todayOnline - todayWholesale;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, source")
+        .select("total_amount, pending_amount, source")
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
-      const monthlySales = monthInvoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
-      const monthlyOnline = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
-      const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+      const monthlySales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyOnline = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const monthlyOffline = monthlySales - monthlyOnline - monthlyWholesale;
 
       // Daily average this month
@@ -111,11 +114,11 @@ export default function Dashboard() {
         totalPending,
       });
 
-      // Payment breakdown
+      // Payment breakdown (use collected amount, not gross)
       const paymentMap: Record<string, number> = {};
       todayInvoices?.forEach((inv) => {
         const method = inv.payment_method || "cash";
-        paymentMap[method] = (paymentMap[method] || 0) + Number(inv.total_amount);
+        paymentMap[method] = (paymentMap[method] || 0) + collected(inv);
       });
       setPaymentBreakdown(
         Object.entries(paymentMap).map(([name, value]) => ({
@@ -135,7 +138,7 @@ export default function Dashboard() {
       const weekStart = days[0].toISOString();
       const { data: weekInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, created_at")
+        .select("total_amount, pending_amount, created_at")
         .eq("store_id", storeId)
         .gte("created_at", weekStart);
 
@@ -148,7 +151,7 @@ export default function Dashboard() {
             const t = new Date(inv.created_at);
             return t >= dayStart && t < dayEnd;
           })
-          .reduce((sum, inv) => sum + Number(inv.total_amount), 0) ?? 0;
+          .reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
         return { day: dayStr, sales };
       });
       setWeeklySales(weeklyData);
