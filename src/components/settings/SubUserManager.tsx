@@ -291,18 +291,39 @@ export default function SubUserManager() {
                     <p className="font-medium text-sm">{u.full_name || "Staff"}</p>
                     <Badge variant="outline" className="text-xs mt-1">Staff</Badge>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setPwUserId(u.user_id);
-                      setPwUserName(u.full_name || "Staff");
-                      setNewPassword("");
-                      setPwDialogOpen(true);
-                    }}
-                  >
-                    <KeyRound className="h-4 w-4 mr-1" /> Change Password
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setPwUserId(u.user_id);
+                        setPwUserName(u.full_name || "Staff");
+                        setNewPassword("");
+                        setPwDialogOpen(true);
+                      }}
+                    >
+                      <KeyRound className="h-4 w-4 mr-1" /> Change Password
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete {u.full_name || "this staff member"}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This permanently removes their login and access. They will no longer be able to sign in. This cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(u.user_id, u.full_name || "Staff")} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {PERMISSION_MODULES.map(({ key, label }) => (
