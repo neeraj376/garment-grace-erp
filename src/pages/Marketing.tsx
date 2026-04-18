@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Users, CheckCircle2, AlertCircle, Loader2, MessageCircle } from "lucide-react";
+import { Send, Users, CheckCircle2, AlertCircle, Loader2, MessageCircle, Search } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -28,40 +30,83 @@ interface MsgLog {
   customer_id: string | null;
 }
 
+interface CustomerRow {
+  id: string;
+  name: string | null;
+  mobile: string;
+  group_invite_sent_at: string | null;
+}
+
 export default function Marketing() {
   const { storeId } = useStore();
   const { toast } = useToast();
   const [stats, setStats] = useState<Stats>({ total: 0, invited: 0, pending: 0 });
   const [logs, setLogs] = useState<MsgLog[]>([]);
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "pending" | "invited">("all");
+  const [resend, setResend] = useState(false);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
     if (!storeId) return;
     setLoading(true);
-    const [{ count: total }, { count: invited }, { data: logRows }] = await Promise.all([
+    const [{ count: total }, { count: invited }, { data: logRows }, { data: custRows }] = await Promise.all([
       supabase.from("customers").select("id", { count: "exact", head: true })
         .eq("store_id", storeId).not("mobile", "is", null),
       supabase.from("customers").select("id", { count: "exact", head: true })
         .eq("store_id", storeId).not("group_invite_sent_at", "is", null),
       supabase.from("marketing_messages").select("*")
         .eq("store_id", storeId).order("created_at", { ascending: false }).limit(50),
+      supabase.from("customers").select("id, name, mobile, group_invite_sent_at")
+        .eq("store_id", storeId).not("mobile", "is", null).order("created_at", { ascending: false }),
     ]);
     const totalN = total ?? 0;
     const invitedN = invited ?? 0;
     setStats({ total: totalN, invited: invitedN, pending: Math.max(0, totalN - invitedN) });
     setLogs((logRows as MsgLog[]) || []);
+    setCustomers((custRows as CustomerRow[]) || []);
+    setSelected(new Set());
     setLoading(false);
   };
 
   useEffect(() => { refresh(); }, [storeId]);
 
-  const handleBulkSend = async () => {
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return customers.filter((c) => {
+      if (filter === "pending" && c.group_invite_sent_at) return false;
+      if (filter === "invited" && !c.group_invite_sent_at) return false;
+      if (!q) return true;
+      return (
+        (c.name || "").toLowerCase().includes(q) ||
+        (c.mobile || "").toLowerCase().includes(q)
+      );
+    });
+  }, [customers, search, filter]);
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((c) => selected.has(c.id));
+  const toggleAllFiltered = () => {
+    const next = new Set(selected);
+    if (allFilteredSelected) {
+      filtered.forEach((c) => next.delete(c.id));
+    } else {
+      filtered.forEach((c) => next.add(c.id));
+    }
+    setSelected(next);
+  };
+  const toggleOne = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelected(next);
+  };
+
+  const sendInvoke = async (body: any) => {
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-whatsapp-group-invite", {
-        body: { mode: "bulk" },
-      });
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-group-invite", { body });
       if (error) throw error;
       if (data?.success === false) throw new Error(data.error || "Failed");
       toast({
@@ -76,6 +121,10 @@ export default function Marketing() {
     }
   };
 
+  const handleBulkSend = () => sendInvoke({ mode: "bulk" });
+  const handleSelectedSend = () =>
+    sendInvoke({ mode: "selected", customerIds: Array.from(selected), skipInvited: !resend });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -87,7 +136,7 @@ export default function Marketing() {
           <AlertDialogTrigger asChild>
             <Button disabled={sending || stats.pending === 0} size="lg">
               {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-              Send invite to {stats.pending} customer{stats.pending === 1 ? "" : "s"}
+              Send to all {stats.pending} pending
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -120,6 +169,107 @@ export default function Marketing() {
           <CardContent><div className="text-3xl font-bold">{stats.pending}</div></CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle>Customers</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name or mobile"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 w-56"
+              />
+            </div>
+            <div className="flex rounded-md border">
+              {(["all", "pending", "invited"] as const).map((f) => (
+                <Button
+                  key={f}
+                  size="sm"
+                  variant={filter === f ? "default" : "ghost"}
+                  className="rounded-none capitalize first:rounded-l-md last:rounded-r-md"
+                  onClick={() => setFilter(f)}
+                >
+                  {f}
+                </Button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox checked={resend} onCheckedChange={(v) => setResend(!!v)} />
+              Resend to already invited
+            </label>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button disabled={sending || selected.size === 0} size="sm">
+                  {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                  Send to {selected.size} selected
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Send invite to selected customers?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Sending WhatsApp group invite to <b>{selected.size}</b> selected customer{selected.size === 1 ? "" : "s"}.
+                    {resend
+                      ? " Already-invited customers WILL be re-sent."
+                      : " Already-invited customers will be skipped."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSelectedSend}>Send now</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-sm text-muted-foreground">Loading...</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No customers match.</div>
+          ) : (
+            <div className="max-h-[480px] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox checked={allFilteredSelected} onCheckedChange={toggleAllFiltered} />
+                    </TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Mobile</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Invited on</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((c) => (
+                    <TableRow key={c.id} className="cursor-pointer" onClick={() => toggleOne(c.id)}>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggleOne(c.id)} />
+                      </TableCell>
+                      <TableCell className="font-medium">{c.name || "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{c.mobile}</TableCell>
+                      <TableCell>
+                        {c.group_invite_sent_at ? (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-600">Invited</Badge>
+                        ) : (
+                          <Badge variant="secondary">Pending</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {c.group_invite_sent_at ? format(new Date(c.group_invite_sent_at), "dd MMM yyyy") : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Recent messages</CardTitle></CardHeader>

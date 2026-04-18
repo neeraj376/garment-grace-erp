@@ -92,7 +92,8 @@ serve(async (req) => {
     if (!storeId) throw new Error("No store");
 
     const body = await req.json();
-    const mode: "single" | "bulk" = body.mode || "single";
+    const mode: "single" | "bulk" | "selected" = body.mode || "single";
+    const skipInvited: boolean = body.skipInvited !== false; // default true
 
     // Build target list
     let targets: Array<{ id: string | null; phone: string; name: string }> = [];
@@ -104,6 +105,23 @@ serve(async (req) => {
         phone: body.phone,
         name: body.customerName || "Customer",
       });
+    } else if (mode === "selected") {
+      const ids: string[] = Array.isArray(body.customerIds) ? body.customerIds : [];
+      if (ids.length === 0) throw new Error("customerIds required");
+      let q = admin
+        .from("customers")
+        .select("id, mobile, name, group_invite_sent_at")
+        .eq("store_id", storeId)
+        .in("id", ids)
+        .not("mobile", "is", null);
+      if (skipInvited) q = q.is("group_invite_sent_at", null);
+      const { data: customers, error } = await q;
+      if (error) throw error;
+      targets = (customers || []).map((c) => ({
+        id: c.id,
+        phone: c.mobile,
+        name: c.name || "Customer",
+      }));
     } else {
       // bulk: all customers in store with mobile, not yet invited
       const { data: customers, error } = await admin
@@ -156,7 +174,7 @@ serve(async (req) => {
       }
 
       // Soft delay to avoid provider rate limits
-      if (mode === "bulk") await new Promise((res) => setTimeout(res, 200));
+      if (mode !== "single") await new Promise((res) => setTimeout(res, 200));
     }
 
     const sent = results.filter((r) => r.status === "sent").length;
