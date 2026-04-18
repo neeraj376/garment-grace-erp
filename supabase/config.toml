@@ -3,6 +3,9 @@ project_id = "kwbbkvfudrzznrhoumej"
 [functions.send-whatsapp-invoice]
 verify_jwt = false
 
+[functions.send-whatsapp-group-invite]
+verify_jwt = false
+
 [functions.invoice-og]
 verify_jwt = false
 
