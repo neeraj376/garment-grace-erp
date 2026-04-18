@@ -20,6 +20,7 @@ import Reports from "@/pages/Reports";
 import Employees from "@/pages/Employees";
 import SettingsPage from "@/pages/SettingsPage";
 import PhotoManager from "@/pages/PhotoManager";
+import Marketing from "@/pages/Marketing";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
 
@@ -118,6 +119,7 @@ function AppRoutes() {
         <Route path="employees" element={<Employees />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="photos" element={<PhotoManager />} />
+        <Route path="marketing" element={<Marketing />} />
       </Route>
       {shopRoutes}
       <Route path="/administrator/auth" element={<Navigate to="/administrator" replace />} />
