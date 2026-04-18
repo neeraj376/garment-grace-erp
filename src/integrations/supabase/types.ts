@@ -93,6 +93,7 @@ export type Database = {
           created_at: string
           email: string | null
           gender: string | null
+          group_invite_sent_at: string | null
           id: string
           location: string | null
           loyalty_points: number
@@ -107,6 +108,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           gender?: string | null
+          group_invite_sent_at?: string | null
           id?: string
           location?: string | null
           loyalty_points?: number
@@ -121,6 +123,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           gender?: string | null
+          group_invite_sent_at?: string | null
           id?: string
           location?: string | null
           loyalty_points?: number
@@ -533,6 +536,57 @@ export type Database = {
           },
           {
             foreignKeyName: "loyalty_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_messages: {
+        Row: {
+          campaign: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          error: string | null
+          id: string
+          phone: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          campaign?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          error?: string | null
+          id?: string
+          phone: string
+          status?: string
+          store_id: string
+        }
+        Update: {
+          campaign?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          error?: string | null
+          id?: string
+          phone?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_messages_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
