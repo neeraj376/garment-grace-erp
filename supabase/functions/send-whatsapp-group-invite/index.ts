@@ -174,7 +174,7 @@ serve(async (req) => {
       }
 
       // Soft delay to avoid provider rate limits
-      if (mode === "bulk") await new Promise((res) => setTimeout(res, 200));
+      if (mode !== "single") await new Promise((res) => setTimeout(res, 200));
     }
 
     const sent = results.filter((r) => r.status === "sent").length;
