@@ -73,6 +73,16 @@ export default function Employees() {
     }
   };
 
+  const handleDelete = async (emp: any) => {
+    const { error } = await supabase.from("employees").delete().eq("id", emp.id);
+    if (error) {
+      toast({ title: "Cannot delete", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Employee deleted" });
+      fetchEmployees();
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
