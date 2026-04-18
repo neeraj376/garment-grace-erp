@@ -85,6 +85,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
+  const [groupInviteSent, setGroupInviteSent] = useState(false);
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [nameSuggestions, setNameSuggestions] = useState<any[]>([]);
@@ -424,6 +426,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
       setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
+      setGroupInviteSent(false);
       setCart([]);
       setDiscount(0);
       setPendingAmount(0);
@@ -478,6 +481,29 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
     } finally {
       setSendingWhatsApp(false);
+    }
+  };
+
+  const handleSendGroupInvite = async () => {
+    if (!lastInvoice?.customerMobile) return;
+    setSendingGroupInvite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-group-invite", {
+        body: {
+          mode: "single",
+          phone: lastInvoice.customerMobile,
+          customerName: lastInvoice.customerName || "Customer",
+        },
+      });
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || "Failed");
+      if (data?.failed > 0) throw new Error(data.results?.[0]?.error || "Send failed");
+      setGroupInviteSent(true);
+      toast({ title: "Group invite sent!", description: `WhatsApp group invite sent to ${lastInvoice.customerMobile}` });
+    } catch (err: any) {
+      toast({ title: "Group invite error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingGroupInvite(false);
     }
   };
 
@@ -912,6 +938,22 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </div>
                 {!lastInvoice.customerMobile && (
                   <p className="text-xs text-amber-600">Enter customer mobile to send via WhatsApp</p>
+                )}
+                {lastInvoice.customerMobile && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleSendGroupInvite}
+                    disabled={sendingGroupInvite || groupInviteSent}
+                  >
+                    {sendingGroupInvite ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                    )}
+                    {groupInviteSent ? "Group invite sent ✓" : "Send WhatsApp group invite"}
+                  </Button>
                 )}
               </div>
             )}
