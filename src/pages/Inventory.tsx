@@ -68,29 +68,58 @@ export default function Inventory() {
 
   const fetchProducts = async () => {
     if (!storeId) return;
-    // Fetch all products in batches to avoid Supabase 1000-row default limit
-    let allData: any[] = [];
+    // Fetch products WITHOUT embedded inventory_batches — large embedded arrays
+    // can cause partial pages (response size cap) and silently truncate the catalog
+    // for users with large stores.
+    let allProducts: any[] = [];
     let from = 0;
     const pageSize = 1000;
     while (true) {
-      const { data: page } = await supabase
+      const { data: page, error } = await supabase
         .from("products")
-        .select("*, inventory_batches(quantity, buying_price)")
+        .select("*")
         .eq("store_id", storeId)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .range(from, from + pageSize - 1);
+      if (error) { console.error("Inventory products fetch error:", error); break; }
       if (!page || page.length === 0) break;
-      allData = allData.concat(page);
+      allProducts = allProducts.concat(page);
       if (page.length < pageSize) break;
       from += pageSize;
     }
-    const data = allData;
 
-    const mapped = data?.map((p: any) => ({
-      ...p,
-      total_stock: p.inventory_batches?.reduce((s: number, b: any) => s + b.quantity, 0) ?? 0,
-    })) ?? [];
+    // Fetch all inventory batches for this store separately, also paginated.
+    let allBatches: any[] = [];
+    let bFrom = 0;
+    while (true) {
+      const { data: bPage, error: bErr } = await supabase
+        .from("inventory_batches")
+        .select("product_id, quantity, buying_price")
+        .eq("store_id", storeId)
+        .range(bFrom, bFrom + pageSize - 1);
+      if (bErr) { console.error("Inventory batches fetch error:", bErr); break; }
+      if (!bPage || bPage.length === 0) break;
+      allBatches = allBatches.concat(bPage);
+      if (bPage.length < pageSize) break;
+      bFrom += pageSize;
+    }
+
+    const batchesByProduct = new Map<string, { quantity: number; buying_price: number }[]>();
+    for (const b of allBatches) {
+      const arr = batchesByProduct.get(b.product_id) || [];
+      arr.push({ quantity: b.quantity, buying_price: Number(b.buying_price) });
+      batchesByProduct.set(b.product_id, arr);
+    }
+
+    const mapped = allProducts.map((p: any) => {
+      const batches = batchesByProduct.get(p.id) || [];
+      return {
+        ...p,
+        inventory_batches: batches,
+        total_stock: batches.reduce((s, b) => s + b.quantity, 0),
+      };
+    });
     setProducts(mapped);
   };
 
