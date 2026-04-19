@@ -219,7 +219,15 @@ export default function SubUserManager() {
   const handleDelete = async (userId: string, name: string) => {
     try {
       const { data, error } = await supabase.functions.invoke("delete-sub-user", { body: { userId } });
-      if (error) throw error;
+      if (error) {
+        let msg = error.message;
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx?.json) { const j = await ctx.json(); if (j?.error) msg = j.error; }
+          else if (ctx?.text) { const t = await ctx.text(); if (t) msg = t; }
+        } catch {}
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
       toast({ title: "Sub-user deleted", description: `${name} has been removed.` });
       fetchSubUsers();
