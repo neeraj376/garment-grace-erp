@@ -103,27 +103,59 @@ export default function Marketing() {
     setSelected(next);
   };
 
-  const sendInvoke = async (body: any) => {
+  const BATCH_SIZE = 50;
+
+  const sendInBatches = async (customerIds: string[], skipInvited: boolean) => {
+    if (customerIds.length === 0) {
+      toast({ title: "Nothing to send", description: "No customers selected." });
+      return;
+    }
     setSending(true);
+    let totalSent = 0, totalFailed = 0, totalProcessed = 0;
+    const batches: string[][] = [];
+    for (let i = 0; i < customerIds.length; i += BATCH_SIZE) {
+      batches.push(customerIds.slice(i, i + BATCH_SIZE));
+    }
     try {
-      const { data, error } = await supabase.functions.invoke("send-whatsapp-group-invite", { body });
-      if (error) throw error;
-      if (data?.success === false) throw new Error(data.error || "Failed");
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        toast({
+          title: `Sending batch ${i + 1} of ${batches.length}`,
+          description: `${batch.length} customers in this batch...`,
+        });
+        const { data, error } = await supabase.functions.invoke("send-whatsapp-group-invite", {
+          body: { mode: "selected", customerIds: batch, skipInvited },
+        });
+        if (error) throw error;
+        if (data?.success === false) throw new Error(data.error || "Failed");
+        totalSent += data.sent || 0;
+        totalFailed += data.failed || 0;
+        totalProcessed += data.total || 0;
+      }
       toast({
         title: "Broadcast complete",
-        description: `Sent: ${data.sent} • Failed: ${data.failed} • Total: ${data.total}`,
+        description: `Sent: ${totalSent} • Failed: ${totalFailed} • Processed: ${totalProcessed} • Batches: ${batches.length}`,
       });
       await refresh();
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({
+        title: "Error during batched send",
+        description: `${e.message}. Sent so far: ${totalSent}, Failed: ${totalFailed}`,
+        variant: "destructive",
+      });
+      await refresh();
     } finally {
       setSending(false);
     }
   };
 
-  const handleBulkSend = () => sendInvoke({ mode: "bulk" });
+  const handleBulkSend = async () => {
+    // Bulk = all pending customers (have mobile, not invited)
+    const pendingIds = customers.filter((c) => !c.group_invite_sent_at).map((c) => c.id);
+    await sendInBatches(pendingIds, true);
+  };
   const handleSelectedSend = () =>
-    sendInvoke({ mode: "selected", customerIds: Array.from(selected), skipInvited: !resend });
+    sendInBatches(Array.from(selected), !resend);
 
   return (
     <div className="space-y-6 animate-fade-in">
