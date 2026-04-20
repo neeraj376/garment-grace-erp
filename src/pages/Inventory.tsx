@@ -510,7 +510,7 @@ export default function Inventory() {
           </div>
           <Button variant={showFilters ? "default" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 mr-1" /> Filters
-            {hasActiveFilters && <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">{[filterCategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "__all__").length + (filterBuyingPriceMin !== "" ? 1 : 0) + (filterBuyingPriceMax !== "" ? 1 : 0)}</Badge>}
+            {hasActiveFilters && <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">{[filterCategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "__all__").length + (filterBuyingPriceMin !== "" ? 1 : 0) + (filterBuyingPriceMax !== "" ? 1 : 0) + (filterMissingBuyingPrice ? 1 : 0)}</Badge>}
           </Button>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
