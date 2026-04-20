@@ -389,7 +389,7 @@ export default function Inventory() {
   const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
   const colors = [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[];
 
-  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "";
+  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "" || filterMissingBuyingPrice;
 
   const clearFilters = () => {
     setFilterCategory("__all__");
@@ -399,6 +399,7 @@ export default function Inventory() {
     setFilterStock("__all__");
     setFilterBuyingPriceMin("");
     setFilterBuyingPriceMax("");
+    setFilterMissingBuyingPrice(false);
   };
 
   const filtered = products.filter(p => {
