@@ -567,6 +567,14 @@ export default function Inventory() {
               <span className="text-xs text-muted-foreground">–</span>
               <Input type="number" placeholder="Max" value={filterBuyingPriceMax} onChange={e => setFilterBuyingPriceMax(e.target.value)} className="w-24 h-9 bg-background" />
             </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="missing-buying-price"
+                checked={filterMissingBuyingPrice}
+                onCheckedChange={(checked) => setFilterMissingBuyingPrice(Boolean(checked))}
+              />
+              <Label htmlFor="missing-buying-price" className="text-sm cursor-pointer">No Buying Price</Label>
+            </div>
           </div>
         )}
       </div>
