@@ -380,7 +380,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           tax_amount: taxAmount,
           discount_amount: discount,
           total_amount: total,
-          pending_amount: source === "wholesale" ? pendingAmount : 0,
+          pending_amount: pendingAmount,
           created_by: userId ?? null,
         })
         .select()
@@ -885,19 +885,17 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               <span>Total</span>
               <span>₹{total.toLocaleString("en-IN")}</span>
             </div>
-            {source === "wholesale" && (
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-muted-foreground">Pending Amount</span>
-                <Input
-                  type="number"
-                  min={0}
-                  max={total}
-                  value={pendingAmount}
-                  onChange={e => setPendingAmount(Math.min(Number(e.target.value) || 0, total))}
-                  className="w-28 text-right"
-                />
-              </div>
-            )}
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-muted-foreground">Pending Amount</span>
+              <Input
+                type="number"
+                min={0}
+                max={total}
+                value={pendingAmount}
+                onChange={e => setPendingAmount(Math.min(Number(e.target.value) || 0, total))}
+                className="w-28 text-right"
+              />
+            </div>
             <Button variant="secondary" className="w-full mt-3" onClick={() => setShowPreview(true)} disabled={cart.length === 0}>
               <Eye className="h-4 w-4 mr-2" /> Preview Invoice
             </Button>
