@@ -424,7 +424,8 @@ export default function Inventory() {
       : Number(p.buying_price ?? 0);
     const matchesBuyingPriceMin = filterBuyingPriceMin === "" || effectiveBuyingPrice >= parseFloat(filterBuyingPriceMin);
     const matchesBuyingPriceMax = filterBuyingPriceMax === "" || effectiveBuyingPrice <= parseFloat(filterBuyingPriceMax);
-    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax;
+    const matchesMissingBuyingPrice = !filterMissingBuyingPrice || effectiveBuyingPrice === 0;
+    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax && matchesMissingBuyingPrice;
   });
 
   return (
