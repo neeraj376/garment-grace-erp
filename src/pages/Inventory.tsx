@@ -53,6 +53,7 @@ export default function Inventory() {
   const [filterStock, setFilterStock] = useState("__all__");
   const [filterBuyingPriceMin, setFilterBuyingPriceMin] = useState("");
   const [filterBuyingPriceMax, setFilterBuyingPriceMax] = useState("");
+  const [filterMissingBuyingPrice, setFilterMissingBuyingPrice] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -388,7 +389,7 @@ export default function Inventory() {
   const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
   const colors = [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[];
 
-  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "";
+  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "" || filterMissingBuyingPrice;
 
   const clearFilters = () => {
     setFilterCategory("__all__");
@@ -398,6 +399,7 @@ export default function Inventory() {
     setFilterStock("__all__");
     setFilterBuyingPriceMin("");
     setFilterBuyingPriceMax("");
+    setFilterMissingBuyingPrice(false);
   };
 
   const filtered = products.filter(p => {
@@ -422,7 +424,8 @@ export default function Inventory() {
       : Number(p.buying_price ?? 0);
     const matchesBuyingPriceMin = filterBuyingPriceMin === "" || effectiveBuyingPrice >= parseFloat(filterBuyingPriceMin);
     const matchesBuyingPriceMax = filterBuyingPriceMax === "" || effectiveBuyingPrice <= parseFloat(filterBuyingPriceMax);
-    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax;
+    const matchesMissingBuyingPrice = !filterMissingBuyingPrice || effectiveBuyingPrice === 0;
+    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax && matchesMissingBuyingPrice;
   });
 
   return (
@@ -507,7 +510,7 @@ export default function Inventory() {
           </div>
           <Button variant={showFilters ? "default" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 mr-1" /> Filters
-            {hasActiveFilters && <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">{[filterCategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "__all__").length + (filterBuyingPriceMin !== "" ? 1 : 0) + (filterBuyingPriceMax !== "" ? 1 : 0)}</Badge>}
+            {hasActiveFilters && <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">{[filterCategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "__all__").length + (filterBuyingPriceMin !== "" ? 1 : 0) + (filterBuyingPriceMax !== "" ? 1 : 0) + (filterMissingBuyingPrice ? 1 : 0)}</Badge>}
           </Button>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -563,6 +566,14 @@ export default function Inventory() {
               <Input type="number" placeholder="Min" value={filterBuyingPriceMin} onChange={e => setFilterBuyingPriceMin(e.target.value)} className="w-24 h-9 bg-background" />
               <span className="text-xs text-muted-foreground">–</span>
               <Input type="number" placeholder="Max" value={filterBuyingPriceMax} onChange={e => setFilterBuyingPriceMax(e.target.value)} className="w-24 h-9 bg-background" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="missing-buying-price"
+                checked={filterMissingBuyingPrice}
+                onCheckedChange={(checked) => setFilterMissingBuyingPrice(Boolean(checked))}
+              />
+              <Label htmlFor="missing-buying-price" className="text-sm cursor-pointer">No Buying Price</Label>
             </div>
           </div>
         )}
