@@ -380,7 +380,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           tax_amount: taxAmount,
           discount_amount: discount,
           total_amount: total,
-          pending_amount: source === "wholesale" ? pendingAmount : 0,
+          pending_amount: pendingAmount,
           created_by: userId ?? null,
         })
         .select()
