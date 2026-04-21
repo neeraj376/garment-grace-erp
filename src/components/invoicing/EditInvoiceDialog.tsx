@@ -21,6 +21,7 @@ interface Invoice {
   source: string;
   status: string;
   notes: string | null;
+  pending_amount?: number;
   created_by: string | null;
   customer_id: string | null;
   customers: { name: string | null; mobile: string } | null;
@@ -58,6 +59,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [status, setStatus] = useState(invoice.status);
   const [notes, setNotes] = useState(invoice.notes || "");
   const [discountAmount, setDiscountAmount] = useState(String(invoice.discount_amount));
+  const [pendingAmount, setPendingAmount] = useState(String(invoice.pending_amount ?? 0));
   const [selectedEmployee, setSelectedEmployee] = useState("");
 
   // Customer fields
@@ -236,6 +238,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           status,
           notes: notes || null,
           discount_amount: Number(discountAmount) || 0,
+          pending_amount: Number(pendingAmount) || 0,
           subtotal: parseFloat(itemsSubtotal.toFixed(2)),
           tax_amount: parseFloat(itemsTax.toFixed(2)),
           total_amount: parseFloat(grandTotal.toFixed(2)),
@@ -467,6 +470,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Extra Discount</span>
                 <Input type="number" value={discountAmount} onChange={e => setDiscountAmount(e.target.value)} className="w-24 text-right" min="0" />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Pending Amount</span>
+                <Input type="number" value={pendingAmount} onChange={e => setPendingAmount(e.target.value)} className="w-24 text-right" min="0" />
               </div>
               <div className="border-t pt-2 flex justify-between font-bold text-base">
                 <span>Total</span>
