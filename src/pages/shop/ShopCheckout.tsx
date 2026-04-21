@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -31,12 +31,16 @@ interface CourierOption {
   estimated_delivery_days: number;
 }
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function ShopCheckout() {
   const { items, clearCart } = useCart();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const payuFormRef = useRef<HTMLFormElement>(null);
-  const [payuData, setPayuData] = useState<Record<string, string> | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -118,12 +122,12 @@ export default function ShopCheckout() {
   }, [form.pincode, items]);
 
   useEffect(() => {
-    if (items.length === 0 && !payuData && !loading) {
+    if (items.length === 0 && !loading) {
       navigate("/cart");
     }
-  }, [items.length, navigate, payuData, loading]);
+  }, [items.length, navigate, loading]);
 
-  if (items.length === 0 && !payuData) {
+  if (items.length === 0) {
     return null;
   }
 
@@ -167,7 +171,7 @@ export default function ShopCheckout() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("guest-checkout", {
+      const { data, error } = await supabase.functions.invoke("razorpay-create-order", {
         body: {
           guest_name: form.name,
           guest_email: form.email || null,
@@ -186,25 +190,64 @@ export default function ShopCheckout() {
 
       if (error) throw error;
 
-      // Don't clear cart here — it triggers redirect before PayU form submits
+      const rzp = data.razorpay;
+      const orderId = data.order_id;
 
-      const payu = data.payu;
-      setPayuData({
-        key: payu.key,
-        txnid: payu.txnid,
-        amount: payu.amount,
-        productinfo: payu.productinfo,
-        firstname: payu.firstname,
-        email: payu.email,
-        phone: payu.phone,
-        surl: payu.surl,
-        furl: payu.furl,
-        hash: payu.hash,
+      if (!window.Razorpay) {
+        toast.error("Payment gateway failed to load. Please refresh and try again.");
+        setLoading(false);
+        return;
+      }
+
+      const options = {
+        key: rzp.key_id,
+        amount: rzp.amount,
+        currency: rzp.currency,
+        name: "Originee Store",
+        description: `Order ${data.order_number}`,
+        order_id: rzp.razorpay_order_id,
+        prefill: {
+          name: rzp.name,
+          email: rzp.email,
+          contact: rzp.phone,
+        },
+        theme: { color: "#1e40af" },
+        handler: async (response: any) => {
+          try {
+            const { data: verifyData, error: verifyErr } = await supabase.functions.invoke(
+              "razorpay-verify",
+              {
+                body: {
+                  order_id: orderId,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                },
+              }
+            );
+            if (verifyErr || !verifyData?.success) {
+              throw new Error(verifyErr?.message || "Verification failed");
+            }
+            clearCart();
+            navigate(`/payment-result?status=success&order_id=${orderId}`);
+          } catch {
+            navigate(`/payment-result?status=failed&order_id=${orderId}`);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            toast.info("Payment cancelled");
+          },
+        },
+      };
+
+      const rzpInstance = new window.Razorpay(options);
+      rzpInstance.on("payment.failed", () => {
+        setLoading(false);
+        navigate(`/payment-result?status=failed&order_id=${orderId}`);
       });
-
-      setTimeout(() => {
-        payuFormRef.current?.submit();
-      }, 100);
+      rzpInstance.open();
     } catch (err: any) {
       toast.error(err.message || "Failed to place order");
       setLoading(false);
@@ -388,24 +431,15 @@ export default function ShopCheckout() {
                 size="lg"
                 disabled={loading || !form.state || !serviceable || !selectedCourier}
               >
-                {loading ? "Processing..." : `Pay ₹${total.toLocaleString("en-IN")} with PayU`}
+                {loading ? "Processing..." : `Pay ₹${total.toLocaleString("en-IN")} with Razorpay`}
               </Button>
               <p className="text-[11px] text-muted-foreground text-center mt-2">
-                Secure payment via PayU. UPI, Cards, Net Banking accepted.
+                Secure payment via Razorpay. UPI, Cards, Net Banking, Wallets accepted.
               </p>
             </CardContent>
           </Card>
         </div>
       </form>
-
-      {/* Hidden PayU redirect form */}
-      {payuData && (
-        <form ref={payuFormRef} method="POST" action="https://secure.payu.in/_payment" style={{ display: "none" }}>
-          {Object.entries(payuData).map(([k, v]) => (
-            <input key={k} type="hidden" name={k} value={v} />
-          ))}
-        </form>
-      )}
     </div>
   );
 }
