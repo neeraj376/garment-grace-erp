@@ -43,6 +43,13 @@ export default function ShopProduct() {
     toast.success("Added to cart!");
   };
 
+  const photos = useMemo(() => parsePhotoUrls(product?.photo_url ?? null), [product]);
+  const mediaItems: { type: "image" | "video"; url: string }[] = useMemo(() => {
+    const items: { type: "image" | "video"; url: string }[] = photos.map((url) => ({ type: "image", url }));
+    if (product?.video_url) items.push({ type: "video", url: product.video_url });
+    return items;
+  }, [photos, product]);
+
   if (loading) {
     return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Loading...</div>;
   }
@@ -51,12 +58,6 @@ export default function ShopProduct() {
     return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Product not found.</div>;
   }
 
-  const photos = useMemo(() => parsePhotoUrls(product?.photo_url ?? null), [product]);
-  const mediaItems: { type: "image" | "video"; url: string }[] = useMemo(() => {
-    const items: { type: "image" | "video"; url: string }[] = photos.map((url) => ({ type: "image", url }));
-    if (product?.video_url) items.push({ type: "video", url: product.video_url });
-    return items;
-  }, [photos, product]);
 
   const discount = product.mrp && product.mrp > product.selling_price
     ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100)
