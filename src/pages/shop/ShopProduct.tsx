@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, ArrowLeft, Minus, Plus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
+import { parsePhotoUrls } from "@/lib/photoUtils";
 
 export default function ShopProduct() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ export default function ShopProduct() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
+  const [activeMedia, setActiveMedia] = useState(0);
   const { addToCart } = useCart();
 
   const [outOfStock, setOutOfStock] = useState(false);
@@ -41,6 +43,13 @@ export default function ShopProduct() {
     toast.success("Added to cart!");
   };
 
+  const photos = useMemo(() => parsePhotoUrls(product?.photo_url ?? null), [product]);
+  const mediaItems: { type: "image" | "video"; url: string }[] = useMemo(() => {
+    const items: { type: "image" | "video"; url: string }[] = photos.map((url) => ({ type: "image", url }));
+    if (product?.video_url) items.push({ type: "video", url: product.video_url });
+    return items;
+  }, [photos, product]);
+
   if (loading) {
     return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Loading...</div>;
   }
@@ -49,9 +58,12 @@ export default function ShopProduct() {
     return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Product not found.</div>;
   }
 
+
   const discount = product.mrp && product.mrp > product.selling_price
     ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100)
     : 0;
+
+  const current = mediaItems[activeMedia];
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -60,12 +72,40 @@ export default function ShopProduct() {
       </button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-        {/* Image */}
-        <div className="aspect-[3/4] bg-muted rounded-xl overflow-hidden">
-          {product.photo_url ? (
-            <img src={product.photo_url} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-6xl text-muted-foreground">👕</div>
+        {/* Media */}
+        <div className="space-y-3">
+          <div className="aspect-[3/4] bg-muted rounded-xl overflow-hidden">
+            {current ? (
+              current.type === "image" ? (
+                <img src={current.url} alt={product.name} className="w-full h-full object-cover" />
+              ) : (
+                <video src={current.url} controls playsInline className="w-full h-full object-cover" />
+              )
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-6xl text-muted-foreground">👕</div>
+            )}
+          </div>
+          {mediaItems.length > 1 && (
+            <div className="flex gap-2 flex-wrap">
+              {mediaItems.map((m, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveMedia(i)}
+                  className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                    i === activeMedia ? "border-primary" : "border-border"
+                  }`}
+                >
+                  {m.type === "image" ? (
+                    <img src={m.url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <video src={m.url} muted className="w-full h-full object-cover" />
+                  )}
+                  {m.type === "video" && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-xs font-bold">▶</span>
+                  )}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

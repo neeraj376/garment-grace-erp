@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { parsePhotoUrls } from "@/lib/photoUtils";
 
 interface Product {
   id: string;
@@ -17,6 +18,8 @@ export default function ProductCard({ product }: { product: Product }) {
   const discount = product.mrp && product.mrp > product.selling_price
     ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100)
     : 0;
+  const photos = parsePhotoUrls(product.photo_url);
+  const firstPhoto = photos[0] ?? null;
 
   return (
     <Link
@@ -24,9 +27,9 @@ export default function ProductCard({ product }: { product: Product }) {
       className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-200"
     >
       <div className="aspect-[3/4] bg-muted relative overflow-hidden">
-        {product.photo_url ? (
+        {firstPhoto ? (
           <img
-            src={product.photo_url}
+            src={firstPhoto}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
