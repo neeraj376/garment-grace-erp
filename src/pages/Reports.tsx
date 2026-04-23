@@ -9,6 +9,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { CalendarDays, Users, Download, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import InventoryAgingReport from "@/components/reports/InventoryAgingReport";
 import CategorySizeReport from "@/components/reports/CategorySizeReport";
 
@@ -46,11 +48,12 @@ export default function Reports() {
   const [employeeSales, setEmployeeSales] = useState<EmployeeSales[]>([]);
   const [paymentSplit, setPaymentSplit] = useState<PaymentSplit[]>([]);
   const [sourceSplit, setSourceSplit] = useState<PaymentSplit[]>([]);
+  const [useCurrentPrice, setUseCurrentPrice] = useState(false);
 
   useEffect(() => {
     if (!storeId) return;
     fetchReport();
-  }, [storeId, period, customStart, customEnd]);
+  }, [storeId, period, customStart, customEnd, useCurrentPrice]);
 
   const getDateRange = () => {
     const now = new Date();
@@ -124,9 +127,11 @@ export default function Reports() {
       revenue += collected(inv);
       tax += Number(inv.tax_amount);
       (inv.invoice_items as any[])?.forEach(item => {
-        const unitCost = item.batch_id && batchBuyingPriceMap[item.batch_id] > 0
-          ? batchBuyingPriceMap[item.batch_id]
-          : (buyingPriceMap[item.product_id] ?? 0);
+        const unitCost = useCurrentPrice
+          ? (buyingPriceMap[item.product_id] ?? 0)
+          : (item.batch_id && batchBuyingPriceMap[item.batch_id] > 0
+              ? batchBuyingPriceMap[item.batch_id]
+              : (buyingPriceMap[item.product_id] ?? 0));
         cost += unitCost * item.quantity;
       });
     });
@@ -252,7 +257,17 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="sales" className="space-y-6">
-          <div className="flex items-center justify-end flex-wrap gap-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="use-current-price"
+                checked={useCurrentPrice}
+                onCheckedChange={setUseCurrentPrice}
+              />
+              <Label htmlFor="use-current-price" className="cursor-pointer text-sm">
+                Recalculate using current product price
+              </Label>
+            </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" onClick={downloadReport}>
                 <Download className="h-4 w-4 mr-1" /> Export CSV
