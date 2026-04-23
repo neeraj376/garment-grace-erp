@@ -87,6 +87,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
   const [source, setSource] = useState<string>("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+  const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
