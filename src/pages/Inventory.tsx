@@ -653,6 +653,7 @@ export default function Inventory() {
               <TableHead>Size / Color</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
+              <TableHead className="text-right">Sold</TableHead>
               {canUpload && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
