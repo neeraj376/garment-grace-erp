@@ -917,6 +917,61 @@ export default function Inventory() {
           onSaved={fetchProducts}
         />
       )}
+
+      <Dialog open={soldDialogOpen} onOpenChange={setSoldDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Invoices with sold items
+              {!soldInvoicesLoading && soldInvoices.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({soldInvoices.length} invoice{soldInvoices.length === 1 ? "" : "s"})
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {soldInvoicesLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Loading invoices…
+            </div>
+          ) : soldInvoices.length === 0 ? (
+            <p className="text-center text-muted-foreground py-12">No invoices found for the current filter.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="text-right">Qty Sold</TableHead>
+                  <TableHead className="text-right">Item Value</TableHead>
+                  <TableHead className="text-right">Invoice Total</TableHead>
+                  <TableHead className="w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {soldInvoices.map(r => (
+                  <TableRow key={r.invoice_id}>
+                    <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {r.created_at ? new Date(r.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                    </TableCell>
+                    <TableCell>{r.customer_name || <span className="text-muted-foreground">Walk-in</span>}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.sold_qty.toLocaleString("en-IN")}</TableCell>
+                    <TableCell className="text-right tabular-nums">₹{r.sold_value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">₹{r.total_amount.toLocaleString("en-IN")}</TableCell>
+                    <TableCell>
+                      <Link to={`/invoice/${r.invoice_id}`} target="_blank" className="text-primary hover:opacity-70">
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
