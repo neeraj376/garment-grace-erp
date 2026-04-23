@@ -87,6 +87,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
   const [source, setSource] = useState<string>("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+  const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
@@ -350,6 +351,25 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
       return;
     }
+    const paidAmountTarget = total - pendingAmount;
+    let breakdownNote = "";
+    if (paymentMethods.length > 1) {
+      const sum = paymentMethods.reduce((s, m) => s + (Number(paymentBreakdown[m]) || 0), 0);
+      if (Math.abs(sum - paidAmountTarget) > 0.5) {
+        toast({
+          title: "Payment breakdown mismatch",
+          description: `Breakdown total ₹${sum.toFixed(2)} must equal ₹${paidAmountTarget.toFixed(2)} (Total − Pending).`,
+          variant: "destructive",
+        });
+        return;
+      }
+      breakdownNote = paymentMethods
+        .map(m => {
+          const label = PAYMENT_OPTIONS.find(o => o.value === m)?.label ?? m;
+          return `${label}: ₹${(Number(paymentBreakdown[m]) || 0).toFixed(2)}`;
+        })
+        .join(", ");
+    }
     setCreatingInvoice(true);
     try {
       const sessionOk = await ensureFreshSession();
@@ -393,6 +413,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
           payment_method: paymentMethods.join("+"),
+          notes: breakdownNote || null,
           subtotal,
           tax_amount: taxAmount,
           discount_amount: discount,
@@ -454,6 +475,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSelectedEmployee("");
       setSource("");
       setPaymentMethods([]);
+      setPaymentBreakdown({});
       clearDraft();
     } catch (err: any) {
       showMutationError("Error", err?.message ?? "Could not create invoice");
@@ -906,6 +928,42 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </PopoverContent>
               </Popover>
             </div>
+            {paymentMethods.length > 1 && (
+              <div className="space-y-2 rounded-md border p-3 bg-muted/30">
+                <Label className="text-xs">Amount breakdown <span className="text-destructive">*</span></Label>
+                {paymentMethods.map(m => {
+                  const label = PAYMENT_OPTIONS.find(o => o.value === m)?.label ?? m;
+                  return (
+                    <div key={m} className="flex items-center justify-between gap-2">
+                      <span className="text-sm">{label}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={paymentBreakdown[m] ?? ""}
+                        placeholder="0"
+                        onChange={e =>
+                          setPaymentBreakdown(prev => ({ ...prev, [m]: Number(e.target.value) || 0 }))
+                        }
+                        className="w-28 text-right"
+                      />
+                    </div>
+                  );
+                })}
+                {(() => {
+                  const sum = paymentMethods.reduce((s, m) => s + (Number(paymentBreakdown[m]) || 0), 0);
+                  const target = total - pendingAmount;
+                  const diff = target - sum;
+                  return (
+                    <div className="flex justify-between text-xs pt-1 border-t">
+                      <span className="text-muted-foreground">Entered ₹{sum.toFixed(2)} / ₹{target.toFixed(2)}</span>
+                      <span className={Math.abs(diff) < 0.5 ? "text-green-600" : "text-destructive"}>
+                        {Math.abs(diff) < 0.5 ? "✓ matches" : `Δ ₹${diff.toFixed(2)}`}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
             <div>
               <Label>Sales Employee <span className="text-destructive">*</span></Label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
