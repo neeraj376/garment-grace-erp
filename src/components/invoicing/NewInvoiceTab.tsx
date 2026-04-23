@@ -574,6 +574,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
+    setSource(""); setPaymentMethods([]);
     clearDraft();
     fetchHeldInvoices();
     toast({ title: "Invoice held", description: `${customerName || "Invoice"} parked — ${cart.length} item(s)` });
