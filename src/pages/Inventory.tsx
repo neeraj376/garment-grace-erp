@@ -69,6 +69,9 @@ export default function Inventory() {
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
+  const [soldDialogOpen, setSoldDialogOpen] = useState(false);
+  const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
+  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
 
   const fetchProducts = async () => {
     if (!storeId) return;
