@@ -551,6 +551,7 @@ export default function Inventory() {
     }
   };
 
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[];
   const brands = [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[];
   const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
   const colors = [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[];
