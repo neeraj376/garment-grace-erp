@@ -77,46 +77,72 @@ export default function Reports() {
   const fetchReport = async () => {
     const { start, end } = getDateRange();
 
-    const { data: invData } = await supabase
-      .from("invoices")
-      .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
-      .eq("store_id", storeId!)
-      .gte("created_at", start)
-      .lte("created_at", end)
-      .order("created_at", { ascending: true });
+    // Page through invoices to avoid the default 1000-row cap silently truncating data
+    const PAGE = 1000;
+    let from = 0;
+    const invData: any[] = [];
+    while (true) {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
+        .eq("store_id", storeId!)
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .order("created_at", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) break;
+      const batch = data ?? [];
+      invData.push(...batch);
+      if (batch.length < PAGE) break;
+      from += PAGE;
+    }
 
     // Collect product IDs and batch IDs
     const productIds = new Set<string>();
     const batchIds = new Set<string>();
-    (invData ?? []).forEach(inv => {
+    invData.forEach(inv => {
       (inv.invoice_items as any[])?.forEach(item => {
         if (item.product_id) productIds.add(item.product_id);
         if (item.batch_id) batchIds.add(item.batch_id);
       });
     });
 
+    // Helper to chunk fetches (avoids URL length limits & 1000 row default cap)
+    const CHUNK = 500;
+    const chunked = <T,>(arr: T[]): T[][] => {
+      const out: T[][] = [];
+      for (let i = 0; i < arr.length; i += CHUNK) out.push(arr.slice(i, i + CHUNK));
+      return out;
+    };
+
     // Fetch product-level buying prices as fallback
     const buyingPriceMap: Record<string, number> = {};
     if (productIds.size > 0) {
-      const { data: productData } = await supabase
-        .from("products")
-        .select("id, buying_price")
-        .in("id", Array.from(productIds));
-      (productData ?? []).forEach((p: any) => {
-        buyingPriceMap[p.id] = Number(p.buying_price) || 0;
-      });
+      for (const ids of chunked(Array.from(productIds))) {
+        const { data: productData } = await supabase
+          .from("products")
+          .select("id, buying_price")
+          .in("id", ids)
+          .limit(ids.length);
+        (productData ?? []).forEach((p: any) => {
+          buyingPriceMap[p.id] = Number(p.buying_price) || 0;
+        });
+      }
     }
 
     // Fetch batch-level buying prices (more accurate per-purchase cost)
     const batchBuyingPriceMap: Record<string, number> = {};
     if (batchIds.size > 0) {
-      const { data: batchData } = await supabase
-        .from("inventory_batches")
-        .select("id, buying_price")
-        .in("id", Array.from(batchIds));
-      (batchData ?? []).forEach((b: any) => {
-        batchBuyingPriceMap[b.id] = Number(b.buying_price) || 0;
-      });
+      for (const ids of chunked(Array.from(batchIds))) {
+        const { data: batchData } = await supabase
+          .from("inventory_batches")
+          .select("id, buying_price")
+          .in("id", ids)
+          .limit(ids.length);
+        (batchData ?? []).forEach((b: any) => {
+          batchBuyingPriceMap[b.id] = Number(b.buying_price) || 0;
+        });
+      }
     }
 
     // Collected revenue excludes wholesale pending amounts
