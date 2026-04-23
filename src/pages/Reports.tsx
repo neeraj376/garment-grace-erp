@@ -77,18 +77,30 @@ export default function Reports() {
   const fetchReport = async () => {
     const { start, end } = getDateRange();
 
-    const { data: invData } = await supabase
-      .from("invoices")
-      .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
-      .eq("store_id", storeId!)
-      .gte("created_at", start)
-      .lte("created_at", end)
-      .order("created_at", { ascending: true });
+    // Page through invoices to avoid the default 1000-row cap silently truncating data
+    const PAGE = 1000;
+    let from = 0;
+    const invData: any[] = [];
+    while (true) {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
+        .eq("store_id", storeId!)
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .order("created_at", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) break;
+      const batch = data ?? [];
+      invData.push(...batch);
+      if (batch.length < PAGE) break;
+      from += PAGE;
+    }
 
     // Collect product IDs and batch IDs
     const productIds = new Set<string>();
     const batchIds = new Set<string>();
-    (invData ?? []).forEach(inv => {
+    invData.forEach(inv => {
       (inv.invoice_items as any[])?.forEach(item => {
         if (item.product_id) productIds.add(item.product_id);
         if (item.batch_id) batchIds.add(item.batch_id);
