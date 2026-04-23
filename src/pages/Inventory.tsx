@@ -35,6 +35,7 @@ interface Product {
   is_active: boolean;
   total_stock?: number;
   sold_quantity?: number;
+  last_stock_added_at?: string | null;
   buying_price?: number | null;
   inventory_batches?: { quantity: number; buying_price: number }[];
 }
@@ -97,7 +98,7 @@ export default function Inventory() {
     while (true) {
       const { data: bPage, error: bErr } = await supabase
         .from("inventory_batches")
-        .select("product_id, quantity, buying_price")
+        .select("product_id, quantity, buying_price, received_at")
         .eq("store_id", storeId)
         .range(bFrom, bFrom + pageSize - 1);
       if (bErr) { console.error("Inventory batches fetch error:", bErr); break; }
@@ -108,10 +109,17 @@ export default function Inventory() {
     }
 
     const batchesByProduct = new Map<string, { quantity: number; buying_price: number }[]>();
+    const latestBatchDate = new Map<string, string>();
     for (const b of allBatches) {
       const arr = batchesByProduct.get(b.product_id) || [];
       arr.push({ quantity: b.quantity, buying_price: Number(b.buying_price) });
       batchesByProduct.set(b.product_id, arr);
+      if (b.received_at) {
+        const prev = latestBatchDate.get(b.product_id);
+        if (!prev || new Date(b.received_at) > new Date(prev)) {
+          latestBatchDate.set(b.product_id, b.received_at);
+        }
+      }
     }
 
     // Fetch sold quantities from invoice_items for this store's invoices.
@@ -161,6 +169,7 @@ export default function Inventory() {
         inventory_batches: batches,
         total_stock: batches.reduce((s, b) => s + b.quantity, 0),
         sold_quantity: soldByProduct.get(p.id) || 0,
+        last_stock_added_at: latestBatchDate.get(p.id) || null,
       };
     });
     setProducts(mapped);
@@ -654,13 +663,14 @@ export default function Inventory() {
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
               <TableHead className="text-right">Sold</TableHead>
+              <TableHead className="whitespace-nowrap">Stock Added</TableHead>
               {canUpload && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={canUpload ? 11 : 9} className="text-center py-12">
+              <TableCell colSpan={canUpload ? 12 : 10} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
@@ -704,6 +714,11 @@ export default function Inventory() {
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground tabular-nums">
                     {(p.sold_quantity ?? 0).toLocaleString("en-IN")}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                    {p.last_stock_added_at
+                      ? new Date(p.last_stock_added_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                      : "—"}
                   </TableCell>
                   {canUpload && (
                     <TableCell>
