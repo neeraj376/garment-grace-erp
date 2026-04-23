@@ -127,9 +127,11 @@ export default function Reports() {
       revenue += collected(inv);
       tax += Number(inv.tax_amount);
       (inv.invoice_items as any[])?.forEach(item => {
-        const unitCost = item.batch_id && batchBuyingPriceMap[item.batch_id] > 0
-          ? batchBuyingPriceMap[item.batch_id]
-          : (buyingPriceMap[item.product_id] ?? 0);
+        const unitCost = useCurrentPrice
+          ? (buyingPriceMap[item.product_id] ?? 0)
+          : (item.batch_id && batchBuyingPriceMap[item.batch_id] > 0
+              ? batchBuyingPriceMap[item.batch_id]
+              : (buyingPriceMap[item.product_id] ?? 0));
         cost += unitCost * item.quantity;
       });
     });
