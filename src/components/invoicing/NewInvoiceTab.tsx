@@ -6,10 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown } from "lucide-react";
 import InvoicePreviewDialog from "./InvoicePreviewDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const PAYMENT_OPTIONS: { value: string; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "card", label: "Card" },
+  { value: "upi", label: "UPI" },
+  { value: "wallet", label: "Wallet" },
+];
 
 interface CartItem {
   product_id: string;
@@ -76,8 +85,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerName, setCustomerName] = useState(() => loadDraft()?.customerName ?? "");
   const [customerGender, setCustomerGender] = useState(() => loadDraft()?.customerGender ?? "");
   const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
-  const [source, setSource] = useState(() => loadDraft()?.source ?? "offline");
-  const [paymentMethod, setPaymentMethod] = useState(() => loadDraft()?.paymentMethod ?? "cash");
+  const [source, setSource] = useState<string>(() => loadDraft()?.source ?? "");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(() => {
+    const draft = loadDraft();
+    if (Array.isArray(draft?.paymentMethods)) return draft.paymentMethods;
+    if (typeof draft?.paymentMethod === "string" && draft.paymentMethod) {
+      return draft.paymentMethod.split("+").filter(Boolean);
+    }
+    return [];
+  });
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
@@ -212,9 +228,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation,
-      source, paymentMethod, selectedEmployee, discount, pendingAmount,
+      source, paymentMethods, selectedEmployee, discount, pendingAmount,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethod, selectedEmployee, discount, pendingAmount]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -333,6 +349,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a sales employee", variant: "destructive" });
       return;
     }
+    if (!source) {
+      toast({ title: "Error", description: "Please select a source", variant: "destructive" });
+      return;
+    }
+    if (paymentMethods.length === 0) {
+      toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
+      return;
+    }
     setCreatingInvoice(true);
     try {
       const sessionOk = await ensureFreshSession();
@@ -375,7 +399,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           customer_id: customerId,
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
-          payment_method: paymentMethod,
+          payment_method: paymentMethods.join("+"),
           subtotal,
           tax_amount: taxAmount,
           discount_amount: discount,
@@ -435,6 +459,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setCustomerGender("");
       setCustomerLocation("");
       setSelectedEmployee("");
+      setSource("");
+      setPaymentMethods([]);
       clearDraft();
     } catch (err: any) {
       showMutationError("Error", err?.message ?? "Could not create invoice");
@@ -522,7 +548,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
-      cart, source, paymentMethod, selectedEmployee, discount, pendingAmount,
+      cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
@@ -548,6 +574,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
+    setSource(""); setPaymentMethods([]);
     clearDraft();
     fetchHeldInvoices();
     toast({ title: "Invoice held", description: `${customerName || "Invoice"} parked — ${cart.length} item(s)` });
@@ -562,7 +589,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (cart.length > 0) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
-        cart, source, paymentMethod, selectedEmployee, discount, pendingAmount,
+        cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       };
 
       let { error } = await supabase.from("held_invoices").insert({
@@ -608,7 +635,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCustomerGender(held.customerGender);
     setCustomerLocation(held.customerLocation);
     setSource(held.source);
-    setPaymentMethod(held.paymentMethod);
+    setPaymentMethods(Array.isArray((held as any).paymentMethods) ? (held as any).paymentMethods : (typeof held.paymentMethod === "string" && held.paymentMethod ? held.paymentMethod.split("+").filter(Boolean) : []));
     setSelectedEmployee(held.selectedEmployee);
     setDiscount(held.discount);
     setPendingAmount((held as any).pendingAmount ?? 0);
@@ -835,9 +862,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             </div>
             <div><Label>Location <span className="text-destructive">*</span></Label><Input value={customerLocation} onChange={e => setCustomerLocation(e.target.value)} /></div>
             <div>
-              <Label>Source</Label>
+              <Label>Source <span className="text-destructive">*</span></Label>
               <Select value={source} onValueChange={setSource}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="offline">Offline (Walk-in)</SelectItem>
                   <SelectItem value="online">Online</SelectItem>
@@ -846,16 +873,45 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               </Select>
             </div>
             <div>
-              <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="wallet">Wallet</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Payment Method <span className="text-destructive">*</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    <span className={paymentMethods.length === 0 ? "text-muted-foreground" : ""}>
+                      {paymentMethods.length === 0
+                        ? "Select payment method(s)"
+                        : paymentMethods
+                            .map(v => PAYMENT_OPTIONS.find(o => o.value === v)?.label ?? v)
+                            .join(" + ")}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-2" align="start">
+                  <div className="space-y-1">
+                    {PAYMENT_OPTIONS.map(opt => {
+                      const checked = paymentMethods.includes(opt.value);
+                      return (
+                        <label
+                          key={opt.value}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer text-sm"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              setPaymentMethods(prev =>
+                                v ? [...prev, opt.value] : prev.filter(p => p !== opt.value)
+                              );
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2 px-2">Tip: pick multiple to split payment (e.g. Cash + UPI).</p>
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label>Sales Employee <span className="text-destructive">*</span></Label>
@@ -966,7 +1022,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       cart={cart}
       customerName={customerName}
       customerMobile={customerMobile}
-      paymentMethod={paymentMethod}
+      paymentMethod={paymentMethods.join("+")}
       subtotal={subtotal}
       taxAmount={taxAmount}
       discount={discount}
