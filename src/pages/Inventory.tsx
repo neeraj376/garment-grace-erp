@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X } from "lucide-react";
+import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import EditProductDialog from "@/components/inventory/EditProductDialog";
@@ -68,6 +69,9 @@ export default function Inventory() {
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
+  const [soldDialogOpen, setSoldDialogOpen] = useState(false);
+  const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
+  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
 
   const fetchProducts = async () => {
     if (!storeId) return;
@@ -435,6 +439,118 @@ export default function Inventory() {
     }
   };
 
+  const openSoldInvoices = async () => {
+    if (!storeId) return;
+    setSoldDialogOpen(true);
+    setSoldInvoicesLoading(true);
+    setSoldInvoices([]);
+    try {
+      const productIdSet = new Set(filtered.map(p => p.id));
+      if (productIdSet.size === 0) { setSoldInvoicesLoading(false); return; }
+
+      // 1. Get this store's invoice ids
+      const pageSize = 1000;
+      let invIds: string[] = [];
+      let iFrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("id")
+          .eq("store_id", storeId)
+          .range(iFrom, iFrom + pageSize - 1);
+        if (error) { console.error(error); break; }
+        if (!data || data.length === 0) break;
+        invIds = invIds.concat(data.map((r: any) => r.id));
+        if (data.length < pageSize) break;
+        iFrom += pageSize;
+      }
+      if (invIds.length === 0) { setSoldInvoicesLoading(false); return; }
+
+      // 2. Fetch invoice items for those invoices, restricted to filtered products
+      const productIds = Array.from(productIdSet);
+      const aggregate = new Map<string, { sold_qty: number; sold_value: number }>();
+      const chunkSize = 200;
+      for (let i = 0; i < invIds.length; i += 500) {
+        const invChunk = invIds.slice(i, i + 500);
+        for (let j = 0; j < productIds.length; j += chunkSize) {
+          const prodChunk = productIds.slice(j, j + chunkSize);
+          let itFrom = 0;
+          while (true) {
+            const { data: items, error } = await supabase
+              .from("invoice_items")
+              .select("invoice_id, product_id, quantity, returned_quantity, unit_price, total")
+              .in("invoice_id", invChunk)
+              .in("product_id", prodChunk)
+              .range(itFrom, itFrom + pageSize - 1);
+            if (error) { console.error(error); break; }
+            if (!items || items.length === 0) break;
+            for (const it of items as any[]) {
+              const netQty = (it.quantity || 0) - (it.returned_quantity || 0);
+              if (netQty <= 0) continue;
+              const ratio = it.quantity > 0 ? netQty / it.quantity : 0;
+              const netValue = Number(it.total || 0) * ratio;
+              const cur = aggregate.get(it.invoice_id) || { sold_qty: 0, sold_value: 0 };
+              cur.sold_qty += netQty;
+              cur.sold_value += netValue;
+              aggregate.set(it.invoice_id, cur);
+            }
+            if (items.length < pageSize) break;
+            itFrom += pageSize;
+          }
+        }
+      }
+
+      const matchingInvIds = Array.from(aggregate.keys());
+      if (matchingInvIds.length === 0) { setSoldInvoicesLoading(false); return; }
+
+      // 3. Fetch invoice metadata in chunks
+      const invMeta = new Map<string, { invoice_number: string; created_at: string; total_amount: number; customer_id: string | null }>();
+      for (let i = 0; i < matchingInvIds.length; i += 500) {
+        const chunk = matchingInvIds.slice(i, i + 500);
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("id, invoice_number, created_at, total_amount, customer_id")
+          .in("id", chunk);
+        if (error) { console.error(error); continue; }
+        for (const inv of (data || []) as any[]) {
+          invMeta.set(inv.id, {
+            invoice_number: inv.invoice_number,
+            created_at: inv.created_at,
+            total_amount: Number(inv.total_amount || 0),
+            customer_id: inv.customer_id,
+          });
+        }
+      }
+
+      // 4. Fetch customer names
+      const custIds = Array.from(new Set(Array.from(invMeta.values()).map(m => m.customer_id).filter(Boolean) as string[]));
+      const custName = new Map<string, string>();
+      for (let i = 0; i < custIds.length; i += 500) {
+        const chunk = custIds.slice(i, i + 500);
+        const { data } = await supabase.from("customers").select("id, name, mobile").in("id", chunk);
+        for (const c of (data || []) as any[]) custName.set(c.id, c.name || c.mobile || "—");
+      }
+
+      const rows = matchingInvIds.map(id => {
+        const meta = invMeta.get(id);
+        const agg = aggregate.get(id)!;
+        return {
+          invoice_id: id,
+          invoice_number: meta?.invoice_number || "—",
+          created_at: meta?.created_at || "",
+          customer_name: meta?.customer_id ? custName.get(meta.customer_id) || null : null,
+          total_amount: meta?.total_amount || 0,
+          sold_qty: agg.sold_qty,
+          sold_value: Math.round(agg.sold_value * 100) / 100,
+        };
+      }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setSoldInvoices(rows);
+    } finally {
+      setSoldInvoicesLoading(false);
+    }
+  };
+
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[];
   const brands = [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[];
   const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
@@ -773,11 +889,16 @@ export default function Inventory() {
               <p className="text-2xl font-bold text-success">{inStockPieces.toLocaleString("en-IN")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{inStockProducts} products</p>
             </div>
-            <div className="rounded-lg border bg-card p-4 text-center">
+            <button
+              type="button"
+              onClick={openSoldInvoices}
+              className="rounded-lg border bg-card p-4 text-center hover:bg-accent hover:border-primary/50 transition-colors cursor-pointer"
+              title="Click to view invoices"
+            >
               <p className="text-sm text-muted-foreground">Sold (pcs)</p>
               <p className="text-2xl font-bold text-primary">{soldPieces.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">net of returns</p>
-            </div>
+              <p className="text-xs text-muted-foreground mt-0.5">net of returns · click to view</p>
+            </button>
             <div className="rounded-lg border bg-card p-4 text-center">
               <p className="text-sm text-muted-foreground">Out of Stock</p>
               <p className="text-2xl font-bold text-destructive">{outOfStockProducts.toLocaleString("en-IN")}</p>
@@ -796,6 +917,61 @@ export default function Inventory() {
           onSaved={fetchProducts}
         />
       )}
+
+      <Dialog open={soldDialogOpen} onOpenChange={setSoldDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Invoices with sold items
+              {!soldInvoicesLoading && soldInvoices.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({soldInvoices.length} invoice{soldInvoices.length === 1 ? "" : "s"})
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {soldInvoicesLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Loading invoices…
+            </div>
+          ) : soldInvoices.length === 0 ? (
+            <p className="text-center text-muted-foreground py-12">No invoices found for the current filter.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="text-right">Qty Sold</TableHead>
+                  <TableHead className="text-right">Item Value</TableHead>
+                  <TableHead className="text-right">Invoice Total</TableHead>
+                  <TableHead className="w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {soldInvoices.map(r => (
+                  <TableRow key={r.invoice_id}>
+                    <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {r.created_at ? new Date(r.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                    </TableCell>
+                    <TableCell>{r.customer_name || <span className="text-muted-foreground">Walk-in</span>}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.sold_qty.toLocaleString("en-IN")}</TableCell>
+                    <TableCell className="text-right tabular-nums">₹{r.sold_value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">₹{r.total_amount.toLocaleString("en-IN")}</TableCell>
+                    <TableCell>
+                      <Link to={`/invoice/${r.invoice_id}`} target="_blank" className="text-primary hover:opacity-70">
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
