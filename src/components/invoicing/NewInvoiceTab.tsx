@@ -624,7 +624,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCustomerGender(held.customerGender);
     setCustomerLocation(held.customerLocation);
     setSource(held.source);
-    setPaymentMethod(held.paymentMethod);
+    setPaymentMethods(Array.isArray((held as any).paymentMethods) ? (held as any).paymentMethods : (typeof held.paymentMethod === "string" && held.paymentMethod ? held.paymentMethod.split("+").filter(Boolean) : []));
     setSelectedEmployee(held.selectedEmployee);
     setDiscount(held.discount);
     setPendingAmount((held as any).pendingAmount ?? 0);
