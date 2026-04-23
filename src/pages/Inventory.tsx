@@ -34,6 +34,7 @@ interface Product {
   video_url: string | null;
   is_active: boolean;
   total_stock?: number;
+  sold_quantity?: number;
   buying_price?: number | null;
   inventory_batches?: { quantity: number; buying_price: number }[];
 }
