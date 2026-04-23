@@ -85,15 +85,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerName, setCustomerName] = useState(() => loadDraft()?.customerName ?? "");
   const [customerGender, setCustomerGender] = useState(() => loadDraft()?.customerGender ?? "");
   const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
-  const [source, setSource] = useState<string>(() => loadDraft()?.source ?? "");
-  const [paymentMethods, setPaymentMethods] = useState<string[]>(() => {
-    const draft = loadDraft();
-    if (Array.isArray(draft?.paymentMethods)) return draft.paymentMethods;
-    if (typeof draft?.paymentMethod === "string" && draft.paymentMethod) {
-      return draft.paymentMethod.split("+").filter(Boolean);
-    }
-    return [];
-  });
+  const [source, setSource] = useState<string>("");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
