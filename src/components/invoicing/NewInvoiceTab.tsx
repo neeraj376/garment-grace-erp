@@ -475,6 +475,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSelectedEmployee("");
       setSource("");
       setPaymentMethods([]);
+      setPaymentBreakdown({});
       clearDraft();
     } catch (err: any) {
       showMutationError("Error", err?.message ?? "Could not create invoice");
