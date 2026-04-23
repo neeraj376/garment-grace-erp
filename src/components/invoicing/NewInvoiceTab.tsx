@@ -862,9 +862,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             </div>
             <div><Label>Location <span className="text-destructive">*</span></Label><Input value={customerLocation} onChange={e => setCustomerLocation(e.target.value)} /></div>
             <div>
-              <Label>Source</Label>
+              <Label>Source <span className="text-destructive">*</span></Label>
               <Select value={source} onValueChange={setSource}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="offline">Offline (Walk-in)</SelectItem>
                   <SelectItem value="online">Online</SelectItem>
