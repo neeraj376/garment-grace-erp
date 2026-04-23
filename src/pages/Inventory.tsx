@@ -439,7 +439,118 @@ export default function Inventory() {
     }
   };
 
-  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[];
+  const openSoldInvoices = async () => {
+    if (!storeId) return;
+    setSoldDialogOpen(true);
+    setSoldInvoicesLoading(true);
+    setSoldInvoices([]);
+    try {
+      const productIdSet = new Set(filtered.map(p => p.id));
+      if (productIdSet.size === 0) { setSoldInvoicesLoading(false); return; }
+
+      // 1. Get this store's invoice ids
+      const pageSize = 1000;
+      let invIds: string[] = [];
+      let iFrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("id")
+          .eq("store_id", storeId)
+          .range(iFrom, iFrom + pageSize - 1);
+        if (error) { console.error(error); break; }
+        if (!data || data.length === 0) break;
+        invIds = invIds.concat(data.map((r: any) => r.id));
+        if (data.length < pageSize) break;
+        iFrom += pageSize;
+      }
+      if (invIds.length === 0) { setSoldInvoicesLoading(false); return; }
+
+      // 2. Fetch invoice items for those invoices, restricted to filtered products
+      const productIds = Array.from(productIdSet);
+      const aggregate = new Map<string, { sold_qty: number; sold_value: number }>();
+      const chunkSize = 200;
+      for (let i = 0; i < invIds.length; i += 500) {
+        const invChunk = invIds.slice(i, i + 500);
+        for (let j = 0; j < productIds.length; j += chunkSize) {
+          const prodChunk = productIds.slice(j, j + chunkSize);
+          let itFrom = 0;
+          while (true) {
+            const { data: items, error } = await supabase
+              .from("invoice_items")
+              .select("invoice_id, product_id, quantity, returned_quantity, unit_price, total")
+              .in("invoice_id", invChunk)
+              .in("product_id", prodChunk)
+              .range(itFrom, itFrom + pageSize - 1);
+            if (error) { console.error(error); break; }
+            if (!items || items.length === 0) break;
+            for (const it of items as any[]) {
+              const netQty = (it.quantity || 0) - (it.returned_quantity || 0);
+              if (netQty <= 0) continue;
+              const ratio = it.quantity > 0 ? netQty / it.quantity : 0;
+              const netValue = Number(it.total || 0) * ratio;
+              const cur = aggregate.get(it.invoice_id) || { sold_qty: 0, sold_value: 0 };
+              cur.sold_qty += netQty;
+              cur.sold_value += netValue;
+              aggregate.set(it.invoice_id, cur);
+            }
+            if (items.length < pageSize) break;
+            itFrom += pageSize;
+          }
+        }
+      }
+
+      const matchingInvIds = Array.from(aggregate.keys());
+      if (matchingInvIds.length === 0) { setSoldInvoicesLoading(false); return; }
+
+      // 3. Fetch invoice metadata in chunks
+      const invMeta = new Map<string, { invoice_number: string; created_at: string; total_amount: number; customer_id: string | null }>();
+      for (let i = 0; i < matchingInvIds.length; i += 500) {
+        const chunk = matchingInvIds.slice(i, i + 500);
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("id, invoice_number, created_at, total_amount, customer_id")
+          .in("id", chunk);
+        if (error) { console.error(error); continue; }
+        for (const inv of (data || []) as any[]) {
+          invMeta.set(inv.id, {
+            invoice_number: inv.invoice_number,
+            created_at: inv.created_at,
+            total_amount: Number(inv.total_amount || 0),
+            customer_id: inv.customer_id,
+          });
+        }
+      }
+
+      // 4. Fetch customer names
+      const custIds = Array.from(new Set(Array.from(invMeta.values()).map(m => m.customer_id).filter(Boolean) as string[]));
+      const custName = new Map<string, string>();
+      for (let i = 0; i < custIds.length; i += 500) {
+        const chunk = custIds.slice(i, i + 500);
+        const { data } = await supabase.from("customers").select("id, name, mobile").in("id", chunk);
+        for (const c of (data || []) as any[]) custName.set(c.id, c.name || c.mobile || "—");
+      }
+
+      const rows = matchingInvIds.map(id => {
+        const meta = invMeta.get(id);
+        const agg = aggregate.get(id)!;
+        return {
+          invoice_id: id,
+          invoice_number: meta?.invoice_number || "—",
+          created_at: meta?.created_at || "",
+          customer_name: meta?.customer_id ? custName.get(meta.customer_id) || null : null,
+          total_amount: meta?.total_amount || 0,
+          sold_qty: agg.sold_qty,
+          sold_value: Math.round(agg.sold_value * 100) / 100,
+        };
+      }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setSoldInvoices(rows);
+    } finally {
+      setSoldInvoicesLoading(false);
+    }
+  };
+
   const brands = [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[];
   const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
   const colors = [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[];
