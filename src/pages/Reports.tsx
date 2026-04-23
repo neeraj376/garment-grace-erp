@@ -48,11 +48,12 @@ export default function Reports() {
   const [employeeSales, setEmployeeSales] = useState<EmployeeSales[]>([]);
   const [paymentSplit, setPaymentSplit] = useState<PaymentSplit[]>([]);
   const [sourceSplit, setSourceSplit] = useState<PaymentSplit[]>([]);
+  const [useCurrentPrice, setUseCurrentPrice] = useState(false);
 
   useEffect(() => {
     if (!storeId) return;
     fetchReport();
-  }, [storeId, period, customStart, customEnd]);
+  }, [storeId, period, customStart, customEnd, useCurrentPrice]);
 
   const getDateRange = () => {
     const now = new Date();
