@@ -538,7 +538,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
-      cart, source, paymentMethod, selectedEmployee, discount, pendingAmount,
+      cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
