@@ -34,6 +34,7 @@ interface Product {
   video_url: string | null;
   is_active: boolean;
   total_stock?: number;
+  sold_quantity?: number;
   buying_price?: number | null;
   inventory_batches?: { quantity: number; buying_price: number }[];
 }
@@ -113,12 +114,53 @@ export default function Inventory() {
       batchesByProduct.set(b.product_id, arr);
     }
 
+    // Fetch sold quantities from invoice_items for this store's invoices.
+    // First get invoice IDs for the store, then sum quantities (minus returns) per product.
+    const soldByProduct = new Map<string, number>();
+    let invIds: string[] = [];
+    let iFrom = 0;
+    while (true) {
+      const { data: invPage, error: invErr } = await supabase
+        .from("invoices")
+        .select("id")
+        .eq("store_id", storeId)
+        .range(iFrom, iFrom + pageSize - 1);
+      if (invErr) { console.error("Invoices fetch error:", invErr); break; }
+      if (!invPage || invPage.length === 0) break;
+      invIds = invIds.concat(invPage.map((i: any) => i.id));
+      if (invPage.length < pageSize) break;
+      iFrom += pageSize;
+    }
+    if (invIds.length > 0) {
+      const chunkSize = 500;
+      for (let i = 0; i < invIds.length; i += chunkSize) {
+        const chunk = invIds.slice(i, i + chunkSize);
+        let itFrom = 0;
+        while (true) {
+          const { data: items, error: itErr } = await supabase
+            .from("invoice_items")
+            .select("product_id, quantity, returned_quantity")
+            .in("invoice_id", chunk)
+            .range(itFrom, itFrom + pageSize - 1);
+          if (itErr) { console.error("Invoice items fetch error:", itErr); break; }
+          if (!items || items.length === 0) break;
+          for (const it of items) {
+            const sold = (it.quantity || 0) - (it.returned_quantity || 0);
+            soldByProduct.set(it.product_id, (soldByProduct.get(it.product_id) || 0) + sold);
+          }
+          if (items.length < pageSize) break;
+          itFrom += pageSize;
+        }
+      }
+    }
+
     const mapped = allProducts.map((p: any) => {
       const batches = batchesByProduct.get(p.id) || [];
       return {
         ...p,
         inventory_batches: batches,
         total_stock: batches.reduce((s, b) => s + b.quantity, 0),
+        sold_quantity: soldByProduct.get(p.id) || 0,
       };
     });
     setProducts(mapped);
@@ -611,13 +653,14 @@ export default function Inventory() {
               <TableHead>Size / Color</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">Stock</TableHead>
+              <TableHead className="text-right">Sold</TableHead>
               {canUpload && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={canUpload ? 10 : 8} className="text-center py-12">
+              <TableCell colSpan={canUpload ? 11 : 9} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
@@ -659,6 +702,9 @@ export default function Inventory() {
                       {p.total_stock}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {(p.sold_quantity ?? 0).toLocaleString("en-IN")}
+                  </TableCell>
                   {canUpload && (
                     <TableCell>
                       <div className="flex gap-1">
@@ -693,25 +739,34 @@ export default function Inventory() {
         const totalProducts = filtered.length;
         const inStockProducts = filtered.filter(p => (p.total_stock ?? 0) > 0).length;
         const outOfStockProducts = totalProducts - inStockProducts;
-        const totalPieces = filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0);
-        const inStockPieces = totalPieces; // all pieces are from in-stock items
+        const inStockPieces = filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0);
+        const soldPieces = filtered.reduce((sum, p) => sum + (p.sold_quantity ?? 0), 0);
+        const totalPieces = inStockPieces + soldPieces;
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="rounded-lg border bg-card p-4 text-center">
               <p className="text-sm text-muted-foreground">Total Products</p>
               <p className="text-2xl font-bold">{totalProducts.toLocaleString("en-IN")}</p>
             </div>
             <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Total Pieces in Stock</p>
-              <p className="text-2xl font-bold text-green-600">{totalPieces.toLocaleString("en-IN")}</p>
+              <p className="text-sm text-muted-foreground">Total Inventory (pcs)</p>
+              <p className="text-2xl font-bold">{totalPieces.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">in-stock + sold</p>
             </div>
             <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">In Stock Products</p>
-              <p className="text-2xl font-bold text-green-600">{inStockProducts.toLocaleString("en-IN")}</p>
+              <p className="text-sm text-muted-foreground">In-Stock (pcs)</p>
+              <p className="text-2xl font-bold text-success">{inStockPieces.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{inStockProducts} products</p>
             </div>
             <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Out of Stock Products</p>
-              <p className="text-2xl font-bold text-red-600">{outOfStockProducts.toLocaleString("en-IN")}</p>
+              <p className="text-sm text-muted-foreground">Sold (pcs)</p>
+              <p className="text-2xl font-bold text-primary">{soldPieces.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">net of returns</p>
+            </div>
+            <div className="rounded-lg border bg-card p-4 text-center">
+              <p className="text-sm text-muted-foreground">Out of Stock</p>
+              <p className="text-2xl font-bold text-destructive">{outOfStockProducts.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">products</p>
             </div>
           </div>
         );
