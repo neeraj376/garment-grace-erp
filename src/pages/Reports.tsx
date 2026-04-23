@@ -95,28 +95,42 @@ export default function Reports() {
       });
     });
 
+    // Helper to chunk fetches (avoids URL length limits & 1000 row default cap)
+    const CHUNK = 500;
+    const chunked = <T,>(arr: T[]): T[][] => {
+      const out: T[][] = [];
+      for (let i = 0; i < arr.length; i += CHUNK) out.push(arr.slice(i, i + CHUNK));
+      return out;
+    };
+
     // Fetch product-level buying prices as fallback
     const buyingPriceMap: Record<string, number> = {};
     if (productIds.size > 0) {
-      const { data: productData } = await supabase
-        .from("products")
-        .select("id, buying_price")
-        .in("id", Array.from(productIds));
-      (productData ?? []).forEach((p: any) => {
-        buyingPriceMap[p.id] = Number(p.buying_price) || 0;
-      });
+      for (const ids of chunked(Array.from(productIds))) {
+        const { data: productData } = await supabase
+          .from("products")
+          .select("id, buying_price")
+          .in("id", ids)
+          .limit(ids.length);
+        (productData ?? []).forEach((p: any) => {
+          buyingPriceMap[p.id] = Number(p.buying_price) || 0;
+        });
+      }
     }
 
     // Fetch batch-level buying prices (more accurate per-purchase cost)
     const batchBuyingPriceMap: Record<string, number> = {};
     if (batchIds.size > 0) {
-      const { data: batchData } = await supabase
-        .from("inventory_batches")
-        .select("id, buying_price")
-        .in("id", Array.from(batchIds));
-      (batchData ?? []).forEach((b: any) => {
-        batchBuyingPriceMap[b.id] = Number(b.buying_price) || 0;
-      });
+      for (const ids of chunked(Array.from(batchIds))) {
+        const { data: batchData } = await supabase
+          .from("inventory_batches")
+          .select("id, buying_price")
+          .in("id", ids)
+          .limit(ids.length);
+        (batchData ?? []).forEach((b: any) => {
+          batchBuyingPriceMap[b.id] = Number(b.buying_price) || 0;
+        });
+      }
     }
 
     // Collected revenue excludes wholesale pending amounts
