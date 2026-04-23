@@ -391,7 +391,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           customer_id: customerId,
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
-          payment_method: paymentMethod,
+          payment_method: paymentMethods.join("+"),
           subtotal,
           tax_amount: taxAmount,
           discount_amount: discount,
