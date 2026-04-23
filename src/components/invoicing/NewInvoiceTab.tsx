@@ -862,16 +862,45 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               </Select>
             </div>
             <div>
-              <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="wallet">Wallet</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Payment Method <span className="text-destructive">*</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    <span className={paymentMethods.length === 0 ? "text-muted-foreground" : ""}>
+                      {paymentMethods.length === 0
+                        ? "Select payment method(s)"
+                        : paymentMethods
+                            .map(v => PAYMENT_OPTIONS.find(o => o.value === v)?.label ?? v)
+                            .join(" + ")}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-2" align="start">
+                  <div className="space-y-1">
+                    {PAYMENT_OPTIONS.map(opt => {
+                      const checked = paymentMethods.includes(opt.value);
+                      return (
+                        <label
+                          key={opt.value}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer text-sm"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              setPaymentMethods(prev =>
+                                v ? [...prev, opt.value] : prev.filter(p => p !== opt.value)
+                              );
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2 px-2">Tip: pick multiple to split payment (e.g. Cash + UPI).</p>
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label>Sales Employee <span className="text-destructive">*</span></Label>
