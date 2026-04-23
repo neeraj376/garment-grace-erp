@@ -351,6 +351,25 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
       return;
     }
+    const paidAmountTarget = total - pendingAmount;
+    let breakdownNote = "";
+    if (paymentMethods.length > 1) {
+      const sum = paymentMethods.reduce((s, m) => s + (Number(paymentBreakdown[m]) || 0), 0);
+      if (Math.abs(sum - paidAmountTarget) > 0.5) {
+        toast({
+          title: "Payment breakdown mismatch",
+          description: `Breakdown total ₹${sum.toFixed(2)} must equal ₹${paidAmountTarget.toFixed(2)} (Total − Pending).`,
+          variant: "destructive",
+        });
+        return;
+      }
+      breakdownNote = paymentMethods
+        .map(m => {
+          const label = PAYMENT_OPTIONS.find(o => o.value === m)?.label ?? m;
+          return `${label}: ₹${(Number(paymentBreakdown[m]) || 0).toFixed(2)}`;
+        })
+        .join(", ");
+    }
     setCreatingInvoice(true);
     try {
       const sessionOk = await ensureFreshSession();
