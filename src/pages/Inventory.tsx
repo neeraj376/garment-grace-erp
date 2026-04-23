@@ -702,6 +702,9 @@ export default function Inventory() {
                       {p.total_stock}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {(p.sold_quantity ?? 0).toLocaleString("en-IN")}
+                  </TableCell>
                   {canUpload && (
                     <TableCell>
                       <div className="flex gap-1">
