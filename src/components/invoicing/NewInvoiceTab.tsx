@@ -1011,7 +1011,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       cart={cart}
       customerName={customerName}
       customerMobile={customerMobile}
-      paymentMethod={paymentMethod}
+      paymentMethod={paymentMethods.join("+")}
       subtotal={subtotal}
       taxAmount={taxAmount}
       discount={discount}
