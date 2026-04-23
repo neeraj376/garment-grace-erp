@@ -349,6 +349,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a sales employee", variant: "destructive" });
       return;
     }
+    if (!source) {
+      toast({ title: "Error", description: "Please select a source", variant: "destructive" });
+      return;
+    }
+    if (paymentMethods.length === 0) {
+      toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
+      return;
+    }
     setCreatingInvoice(true);
     try {
       const sessionOk = await ensureFreshSession();
