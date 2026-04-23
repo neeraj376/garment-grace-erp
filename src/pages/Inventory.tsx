@@ -739,25 +739,34 @@ export default function Inventory() {
         const totalProducts = filtered.length;
         const inStockProducts = filtered.filter(p => (p.total_stock ?? 0) > 0).length;
         const outOfStockProducts = totalProducts - inStockProducts;
-        const totalPieces = filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0);
-        const inStockPieces = totalPieces; // all pieces are from in-stock items
+        const inStockPieces = filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0);
+        const soldPieces = filtered.reduce((sum, p) => sum + (p.sold_quantity ?? 0), 0);
+        const totalPieces = inStockPieces + soldPieces;
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="rounded-lg border bg-card p-4 text-center">
               <p className="text-sm text-muted-foreground">Total Products</p>
               <p className="text-2xl font-bold">{totalProducts.toLocaleString("en-IN")}</p>
             </div>
             <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Total Pieces in Stock</p>
-              <p className="text-2xl font-bold text-green-600">{totalPieces.toLocaleString("en-IN")}</p>
+              <p className="text-sm text-muted-foreground">Total Inventory (pcs)</p>
+              <p className="text-2xl font-bold">{totalPieces.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">in-stock + sold</p>
             </div>
             <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">In Stock Products</p>
-              <p className="text-2xl font-bold text-green-600">{inStockProducts.toLocaleString("en-IN")}</p>
+              <p className="text-sm text-muted-foreground">In-Stock (pcs)</p>
+              <p className="text-2xl font-bold text-success">{inStockPieces.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{inStockProducts} products</p>
             </div>
             <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Out of Stock Products</p>
-              <p className="text-2xl font-bold text-red-600">{outOfStockProducts.toLocaleString("en-IN")}</p>
+              <p className="text-sm text-muted-foreground">Sold (pcs)</p>
+              <p className="text-2xl font-bold text-primary">{soldPieces.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">net of returns</p>
+            </div>
+            <div className="rounded-lg border bg-card p-4 text-center">
+              <p className="text-sm text-muted-foreground">Out of Stock</p>
+              <p className="text-2xl font-bold text-destructive">{outOfStockProducts.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">products</p>
             </div>
           </div>
         );
