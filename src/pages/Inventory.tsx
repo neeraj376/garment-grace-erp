@@ -660,7 +660,7 @@ export default function Inventory() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={canUpload ? 10 : 8} className="text-center py-12">
+              <TableCell colSpan={canUpload ? 11 : 9} className="text-center py-12">
                   <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No products found</p>
                 </TableCell>
