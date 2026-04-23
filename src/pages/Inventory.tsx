@@ -889,11 +889,16 @@ export default function Inventory() {
               <p className="text-2xl font-bold text-success">{inStockPieces.toLocaleString("en-IN")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{inStockProducts} products</p>
             </div>
-            <div className="rounded-lg border bg-card p-4 text-center">
+            <button
+              type="button"
+              onClick={openSoldInvoices}
+              className="rounded-lg border bg-card p-4 text-center hover:bg-accent hover:border-primary/50 transition-colors cursor-pointer"
+              title="Click to view invoices"
+            >
               <p className="text-sm text-muted-foreground">Sold (pcs)</p>
               <p className="text-2xl font-bold text-primary">{soldPieces.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">net of returns</p>
-            </div>
+              <p className="text-xs text-muted-foreground mt-0.5">net of returns · click to view</p>
+            </button>
             <div className="rounded-lg border bg-card p-4 text-center">
               <p className="text-sm text-muted-foreground">Out of Stock</p>
               <p className="text-2xl font-bold text-destructive">{outOfStockProducts.toLocaleString("en-IN")}</p>
