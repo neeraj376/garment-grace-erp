@@ -257,7 +257,17 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="sales" className="space-y-6">
-          <div className="flex items-center justify-end flex-wrap gap-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="use-current-price"
+                checked={useCurrentPrice}
+                onCheckedChange={setUseCurrentPrice}
+              />
+              <Label htmlFor="use-current-price" className="cursor-pointer text-sm">
+                Recalculate using current product price
+              </Label>
+            </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" onClick={downloadReport}>
                 <Download className="h-4 w-4 mr-1" /> Export CSV
