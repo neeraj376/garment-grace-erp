@@ -351,6 +351,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a source", variant: "destructive" });
       return;
     }
+    if (source === "online" && !courierName.trim()) {
+      toast({ title: "Error", description: "Courier Name is required for online invoices", variant: "destructive" });
+      return;
+    }
+    if (source === "online" && !awbNo.trim()) {
+      toast({ title: "Error", description: "AWB No. is required for online invoices", variant: "destructive" });
+      return;
+    }
     if (paymentMethods.length === 0) {
       toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
       return;
@@ -416,6 +424,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           customer_id: customerId,
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
+          courier_name: source === "online" ? courierName.trim() : null,
+          awb_no: source === "online" ? awbNo.trim() : null,
           payment_method: paymentMethods.join("+"),
           notes: breakdownNote || null,
           subtotal,
@@ -476,6 +486,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setCustomerName("");
       setCustomerGender("");
       setCustomerLocation("");
+      setCourierName("");
+      setAwbNo("");
       setSelectedEmployee("");
       setSource("");
       setPaymentMethods([]);
@@ -567,7 +579,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
-      cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
@@ -592,7 +604,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       return;
     }
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
-    setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
+    setCustomerGender(""); setCustomerLocation(""); setCourierName(""); setAwbNo(""); setSelectedEmployee("");
     setSource(""); setPaymentMethods([]);
     clearDraft();
     fetchHeldInvoices();
