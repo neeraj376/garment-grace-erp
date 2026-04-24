@@ -350,6 +350,18 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   </SelectContent>
                 </Select>
               </div>
+              {source === "online" && (
+                <>
+                  <div className="space-y-1">
+                    <Label>Courier Name <span className="text-destructive">*</span></Label>
+                    <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>AWB No. <span className="text-destructive">*</span></Label>
+                    <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+                  </div>
+                </>
+              )}
               <div className="space-y-1">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={setStatus}>
