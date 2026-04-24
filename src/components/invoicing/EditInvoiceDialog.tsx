@@ -202,6 +202,22 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
     p.sku.toLowerCase().includes(searchProduct.toLowerCase())
   );
 
+  const sendTrackingWhatsApp = async (normalizedCourierName: string, normalizedAwbNo: string) => {
+    const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+      body: {
+        templateName: "order_tracking_details",
+        phone: customerMobile.trim(),
+        customerName: customerName.trim() || "Customer",
+        invoiceNumber: invoice.invoice_number,
+        courierName: normalizedCourierName,
+        awbNo: normalizedAwbNo,
+      },
+    });
+
+    if (error) throw error;
+    if (data?.success === false) throw new Error(data.error || "Failed to send tracking message");
+  };
+
   const itemsSubtotal = items.reduce((s, i) => {
     const priceExclTax = i.total / (1 + (i.tax_rate || 5) / 100);
     return s + priceExclTax;
@@ -233,6 +249,17 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
 
     setSaving(true);
     try {
+      const normalizedCourierName = courierName.trim();
+      const normalizedAwbNo = awbNo.trim();
+      const shouldSendTrackingMessage = source === "online"
+        && normalizedCourierName
+        && normalizedAwbNo
+        && (
+          invoice.source !== "online" ||
+          (invoice.courier_name || "") !== normalizedCourierName ||
+          (invoice.awb_no || "") !== normalizedAwbNo
+        );
+
       // Update customer if linked
       if (invoice.customer_id) {
         await supabase
@@ -247,8 +274,8 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         .update({
           payment_method: paymentMethod,
           source,
-          courier_name: source === "online" ? courierName.trim() : null,
-          awb_no: source === "online" ? awbNo.trim() : null,
+          courier_name: source === "online" ? normalizedCourierName : null,
+          awb_no: source === "online" ? normalizedAwbNo : null,
           status,
           notes: notes || null,
           discount_amount: Number(discountAmount) || 0,
@@ -261,6 +288,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         .eq("id", invoice.id);
 
       if (error) throw error;
+
+      if (shouldSendTrackingMessage) {
+        try {
+          await sendTrackingWhatsApp(normalizedCourierName, normalizedAwbNo);
+        } catch (trackingErr: any) {
+          toast({ title: "Tracking message not sent", description: trackingErr.message, variant: "destructive" });
+        }
+      }
 
       // Update existing items and insert new ones
       for (const item of items) {
