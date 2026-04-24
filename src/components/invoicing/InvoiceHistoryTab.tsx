@@ -25,6 +25,8 @@ interface Invoice {
   subtotal: number;
   payment_method: string;
   source: string;
+  courier_name?: string | null;
+  awb_no?: string | null;
   status: string;
   notes: string | null;
   created_at: string;

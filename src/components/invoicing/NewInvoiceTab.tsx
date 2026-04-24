@@ -55,6 +55,8 @@ interface HeldInvoice {
   customerName: string;
   customerGender: string;
   customerLocation: string;
+  courierName?: string;
+  awbNo?: string;
   cart: CartItem[];
   source: string;
   paymentMethod: string;
@@ -85,6 +87,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerName, setCustomerName] = useState(() => loadDraft()?.customerName ?? "");
   const [customerGender, setCustomerGender] = useState(() => loadDraft()?.customerGender ?? "");
   const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
+  const [courierName, setCourierName] = useState(() => loadDraft()?.courierName ?? "");
+  const [awbNo, setAwbNo] = useState(() => loadDraft()?.awbNo ?? "");
   const [source, setSource] = useState<string>("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
@@ -222,9 +226,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation,
-      source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -347,6 +351,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a source", variant: "destructive" });
       return;
     }
+    if (source === "online" && !courierName.trim()) {
+      toast({ title: "Error", description: "Courier Name is required for online invoices", variant: "destructive" });
+      return;
+    }
+    if (source === "online" && !awbNo.trim()) {
+      toast({ title: "Error", description: "AWB No. is required for online invoices", variant: "destructive" });
+      return;
+    }
     if (paymentMethods.length === 0) {
       toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
       return;
@@ -412,6 +424,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           customer_id: customerId,
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
+          courier_name: source === "online" ? courierName.trim() : null,
+          awb_no: source === "online" ? awbNo.trim() : null,
           payment_method: paymentMethods.join("+"),
           notes: breakdownNote || null,
           subtotal,
@@ -472,6 +486,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setCustomerName("");
       setCustomerGender("");
       setCustomerLocation("");
+      setCourierName("");
+      setAwbNo("");
       setSelectedEmployee("");
       setSource("");
       setPaymentMethods([]);
@@ -563,7 +579,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation,
-      cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
@@ -588,7 +604,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       return;
     }
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
-    setCustomerGender(""); setCustomerLocation(""); setSelectedEmployee("");
+    setCustomerGender(""); setCustomerLocation(""); setCourierName(""); setAwbNo(""); setSelectedEmployee("");
     setSource(""); setPaymentMethods([]);
     clearDraft();
     fetchHeldInvoices();
@@ -604,7 +620,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (cart.length > 0) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
-        cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+        courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       };
 
       let { error } = await supabase.from("held_invoices").insert({
@@ -649,6 +665,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCustomerName(held.customerName);
     setCustomerGender(held.customerGender);
     setCustomerLocation(held.customerLocation);
+    setCourierName(held.courierName || "");
+    setAwbNo(held.awbNo || "");
     setSource(held.source);
     setPaymentMethods(Array.isArray((held as any).paymentMethods) ? (held as any).paymentMethods : (typeof held.paymentMethod === "string" && held.paymentMethod ? held.paymentMethod.split("+").filter(Boolean) : []));
     setSelectedEmployee(held.selectedEmployee);
@@ -887,6 +905,18 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            {source === "online" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label>Courier Name <span className="text-destructive">*</span></Label>
+                  <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
+                </div>
+                <div>
+                  <Label>AWB No. <span className="text-destructive">*</span></Label>
+                  <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+                </div>
+              </div>
+            )}
             <div>
               <Label>Payment Method <span className="text-destructive">*</span></Label>
               <Popover>
