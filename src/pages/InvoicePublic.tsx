@@ -12,6 +12,8 @@ interface InvoiceData {
   total_amount: number;
   payment_method: string;
   source: string;
+  courier_name: string | null;
+  awb_no: string | null;
   notes: string | null;
   store: {
     name: string;
@@ -49,7 +51,7 @@ export default function InvoicePublic() {
           .from("invoices")
           .select(`
             id, invoice_number, created_at, subtotal, tax_amount, discount_amount,
-            total_amount, payment_method, source, notes,
+            total_amount, payment_method, source, courier_name, awb_no, notes,
             stores!invoices_store_id_fkey(name, address, phone, email, gst_number, logo_url),
             customers!invoices_customer_id_fkey(name, mobile),
             invoice_items(quantity, unit_price, tax_amount, total, discount,
@@ -176,6 +178,9 @@ export default function InvoicePublic() {
         {/* Footer */}
         <div className="px-6 py-4 text-center text-xs text-gray-400">
           <p>Payment: {invoice.payment_method.toUpperCase()} • {invoice.source === "online" ? "Online" : "In-Store"}</p>
+          {invoice.source === "online" && (invoice.courier_name || invoice.awb_no) && (
+            <p className="mt-1">Courier: {invoice.courier_name || "—"} • AWB: {invoice.awb_no || "—"}</p>
+          )}
           <p className="mt-1">Thank you for your purchase!</p>
         </div>
       </div>
