@@ -408,6 +408,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          awb_no: string | null
+          courier_name: string | null
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -427,6 +429,8 @@ export type Database = {
           total_amount: number
         }
         Insert: {
+          awb_no?: string | null
+          courier_name?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -446,6 +450,8 @@ export type Database = {
           total_amount?: number
         }
         Update: {
+          awb_no?: string | null
+          courier_name?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null

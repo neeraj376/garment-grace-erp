@@ -1,0 +1,3 @@
+ALTER TABLE public.invoices
+ADD COLUMN IF NOT EXISTS courier_name TEXT,
+ADD COLUMN IF NOT EXISTS awb_no TEXT;
