@@ -55,6 +55,8 @@ interface HeldInvoice {
   customerName: string;
   customerGender: string;
   customerLocation: string;
+  courierName?: string;
+  awbNo?: string;
   cart: CartItem[];
   source: string;
   paymentMethod: string;
@@ -85,6 +87,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerName, setCustomerName] = useState(() => loadDraft()?.customerName ?? "");
   const [customerGender, setCustomerGender] = useState(() => loadDraft()?.customerGender ?? "");
   const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
+  const [courierName, setCourierName] = useState(() => loadDraft()?.courierName ?? "");
+  const [awbNo, setAwbNo] = useState(() => loadDraft()?.awbNo ?? "");
   const [source, setSource] = useState<string>("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
@@ -222,9 +226,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation,
-      source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
 
   useEffect(() => {
     if (!storeId) return;
