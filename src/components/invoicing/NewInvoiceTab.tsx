@@ -620,7 +620,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (cart.length > 0) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation,
-        cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+        courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       };
 
       let { error } = await supabase.from("held_invoices").insert({
@@ -665,6 +665,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCustomerName(held.customerName);
     setCustomerGender(held.customerGender);
     setCustomerLocation(held.customerLocation);
+    setCourierName(held.courierName || "");
+    setAwbNo(held.awbNo || "");
     setSource(held.source);
     setPaymentMethods(Array.isArray((held as any).paymentMethods) ? (held as any).paymentMethods : (typeof held.paymentMethod === "string" && held.paymentMethod ? held.paymentMethod.split("+").filter(Boolean) : []));
     setSelectedEmployee(held.selectedEmployee);
@@ -903,6 +905,18 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            {source === "online" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label>Courier Name <span className="text-destructive">*</span></Label>
+                  <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
+                </div>
+                <div>
+                  <Label>AWB No. <span className="text-destructive">*</span></Label>
+                  <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+                </div>
+              </div>
+            )}
             <div>
               <Label>Payment Method <span className="text-destructive">*</span></Label>
               <Popover>
