@@ -22,17 +22,23 @@ serve(async (req) => {
       throw new Error("WHATSAPP_API_URL is not configured");
     }
 
-    const WHATSAPP_TEMPLATE_NAME = Deno.env.get("WHATSAPP_TEMPLATE_NAME") || "originee_invoice_new";
-
     const raw = await req.json();
     const sanitize = (v: string) => (v || "").replace(/[\t\n\r]+/g, " ").replace(/\s{2,}/g, " ").trim();
+    const requestedTemplateName = sanitize(raw.templateName);
+    const WHATSAPP_TEMPLATE_NAME = requestedTemplateName || Deno.env.get("WHATSAPP_TEMPLATE_NAME") || "originee_invoice_new";
+    const isTrackingTemplate = WHATSAPP_TEMPLATE_NAME === "order_tracking_details";
     const { phone, invoiceUrl, invoiceImageUrl } = raw;
     const customerName = sanitize(raw.customerName);
     const invoiceNumber = sanitize(raw.invoiceNumber);
     const totalAmount = sanitize(String(raw.totalAmount || "0"));
+    const courierName = sanitize(raw.courierName);
+    const awbNo = sanitize(raw.awbNo);
 
-    if (!phone || !invoiceUrl) {
-      throw new Error("Missing required fields: phone, invoiceUrl");
+    if (!phone || (!isTrackingTemplate && !invoiceUrl)) {
+      throw new Error(isTrackingTemplate ? "Missing required field: phone" : "Missing required fields: phone, invoiceUrl");
+    }
+    if (isTrackingTemplate && (!courierName || !awbNo)) {
+      throw new Error("Missing required fields: courierName, awbNo");
     }
 
     // Clean phone number - ensure country code
@@ -69,24 +75,27 @@ serve(async (req) => {
 
     console.log(`Sending WhatsApp to ${phoneNumber}, template=${WHATSAPP_TEMPLATE_NAME}, image=${headerMediaUrl}`);
 
+    const template: Record<string, unknown> = {
+      name: WHATSAPP_TEMPLATE_NAME,
+      languageCode: "en",
+      bodyValues: isTrackingTemplate
+        ? [customerName || "Customer", invoiceNumber || "N/A", courierName, awbNo]
+        : [customerName || "Customer", invoiceNumber || "N/A", `₹${totalAmount || "0"}`],
+    };
+
+    if (!isTrackingTemplate) {
+      template.headerValues = [headerMediaUrl];
+      template.buttonValues = {
+        "0": [invoiceUrl],
+      };
+    }
+
     const payload = {
       countryCode: phoneNumber.substring(0, 2),
       phoneNumber: phoneNumber.substring(2),
       callbackData: `invoice_${invoiceNumber}`,
       type: "Template",
-      template: {
-        name: WHATSAPP_TEMPLATE_NAME,
-        languageCode: "en",
-        headerValues: [headerMediaUrl],
-        bodyValues: [
-          customerName || "Customer",
-          invoiceNumber || "N/A",
-          `₹${totalAmount || "0"}`,
-        ],
-        buttonValues: {
-          "0": [invoiceUrl],
-        },
-      },
+      template,
     };
 
     // Attempt to send, retry once on failure
@@ -115,9 +124,9 @@ serve(async (req) => {
       console.warn(`Attempt ${attempt + 1} failed: ${lastError}`);
 
       // On first failure, try without image header (plain template)
-      if (attempt === 0) {
+      if (attempt === 0 && !isTrackingTemplate) {
         console.log("Retrying without image header...");
-        payload.template.headerValues = [];
+        (payload.template as Record<string, unknown>).headerValues = [];
       }
     }
 
