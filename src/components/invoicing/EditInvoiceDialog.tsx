@@ -19,6 +19,8 @@ interface Invoice {
   subtotal: number;
   payment_method: string;
   source: string;
+  courier_name?: string | null;
+  awb_no?: string | null;
   status: string;
   notes: string | null;
   pending_amount?: number;
@@ -56,6 +58,8 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   // Invoice fields
   const [paymentMethod, setPaymentMethod] = useState(invoice.payment_method);
   const [source, setSource] = useState(invoice.source);
+  const [courierName, setCourierName] = useState(invoice.courier_name || "");
+  const [awbNo, setAwbNo] = useState(invoice.awb_no || "");
   const [status, setStatus] = useState(invoice.status);
   const [notes, setNotes] = useState(invoice.notes || "");
   const [discountAmount, setDiscountAmount] = useState(String(invoice.discount_amount));
@@ -218,6 +222,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       toast({ title: "Error", description: "Customer name is required", variant: "destructive" });
       return;
     }
+    if (source === "online" && !courierName.trim()) {
+      toast({ title: "Error", description: "Courier Name is required for online invoices", variant: "destructive" });
+      return;
+    }
+    if (source === "online" && !awbNo.trim()) {
+      toast({ title: "Error", description: "AWB No. is required for online invoices", variant: "destructive" });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -235,6 +247,8 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         .update({
           payment_method: paymentMethod,
           source,
+          courier_name: source === "online" ? courierName.trim() : null,
+          awb_no: source === "online" ? awbNo.trim() : null,
           status,
           notes: notes || null,
           discount_amount: Number(discountAmount) || 0,
