@@ -74,11 +74,43 @@ export default function Employees() {
   };
 
   const handleDelete = async (emp: any) => {
+    if (!storeId) return;
+
+    // Find Hrithik in the same store to reassign invoices to
+    const { data: hrithik, error: findErr } = await supabase
+      .from("employees")
+      .select("id, name")
+      .eq("store_id", storeId)
+      .ilike("name", "hrithik")
+      .maybeSingle();
+
+    if (findErr) {
+      toast({ title: "Cannot delete", description: findErr.message, variant: "destructive" });
+      return;
+    }
+
+    // Reassign only if we're not deleting Hrithik themselves
+    if (hrithik && hrithik.id !== emp.id) {
+      const { error: reassignErr } = await supabase
+        .from("invoices")
+        .update({ employee_id: hrithik.id })
+        .eq("store_id", storeId)
+        .eq("employee_id", emp.id);
+
+      if (reassignErr) {
+        toast({ title: "Cannot reassign invoices", description: reassignErr.message, variant: "destructive" });
+        return;
+      }
+    } else if (!hrithik) {
+      toast({ title: "Hrithik not found", description: "Cannot reassign invoices — no employee named 'Hrithik' in this store.", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase.from("employees").delete().eq("id", emp.id);
     if (error) {
       toast({ title: "Cannot delete", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Employee deleted" });
+      toast({ title: "Employee deleted", description: hrithik && hrithik.id !== emp.id ? `Past invoices reassigned to ${hrithik.name}` : undefined });
       fetchEmployees();
     }
   };
