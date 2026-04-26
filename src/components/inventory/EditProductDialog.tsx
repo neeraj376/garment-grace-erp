@@ -234,8 +234,11 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                 onOpenChange={setVideoSourceOpen}
                 mediaType="video"
                 onSelect={(source) => {
-                  if (source === "camera") videoCameraInputRef.current?.click();
-                  else videoInputRef.current?.click();
+                  const target = source === "camera" ? videoCameraInputRef.current : videoInputRef.current;
+                  if (target) {
+                    target.value = "";
+                    target.click();
+                  }
                 }}
               />
             </div>
