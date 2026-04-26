@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Video, X, Loader2 } from "lucide-react";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
+import MediaSourceDialog from "@/components/inventory/MediaSourceDialog";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 import { normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
 
