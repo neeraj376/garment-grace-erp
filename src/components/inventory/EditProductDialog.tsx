@@ -48,6 +48,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const videoInputRef = useRef<HTMLInputElement>(null);
   const videoCameraInputRef = useRef<HTMLInputElement>(null);
   const [videoSourceOpen, setVideoSourceOpen] = useState(false);
+  const [videoWebcamOpen, setVideoWebcamOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentStock, setCurrentStock] = useState(0);
   const [stockAdjustment, setStockAdjustment] = useState("");
