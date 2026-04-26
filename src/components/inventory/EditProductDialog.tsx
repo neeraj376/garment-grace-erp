@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Video, X, Loader2 } from "lucide-react";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
+import MediaSourceDialog from "@/components/inventory/MediaSourceDialog";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 import { normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
 
@@ -40,6 +41,8 @@ interface EditProductDialogProps {
 export default function EditProductDialog({ product, open, onOpenChange, storeId, onSaved }: EditProductDialogProps) {
   const { toast } = useToast();
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const videoCameraInputRef = useRef<HTMLInputElement>(null);
+  const [videoSourceOpen, setVideoSourceOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentStock, setCurrentStock] = useState(0);
   const [stockAdjustment, setStockAdjustment] = useState("");
@@ -197,7 +200,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                   size="sm"
                   className="mt-1"
                   disabled={uploading}
-                  onClick={() => videoInputRef.current?.click()}
+                  onClick={() => setVideoSourceOpen(true)}
                 >
                   {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Video className="h-4 w-4 mr-2" />}
                   Upload Video
@@ -214,8 +217,30 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                   e.target.value = "";
                 }}
               />
+              <input
+                ref={videoCameraInputRef}
+                type="file"
+                accept="video/*"
+                capture="environment"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadVideo(file);
+                  e.target.value = "";
+                }}
+              />
+              <MediaSourceDialog
+                open={videoSourceOpen}
+                onOpenChange={setVideoSourceOpen}
+                mediaType="video"
+                onSelect={(source) => {
+                  if (source === "camera") videoCameraInputRef.current?.click();
+                  else videoInputRef.current?.click();
+                }}
+              />
             </div>
           </div>
+
 
           {/* Stock Section */}
           <div className="border-t pt-3 space-y-3">
