@@ -8,8 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Video, X, Loader2 } from "lucide-react";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import MediaSourceDialog from "@/components/inventory/MediaSourceDialog";
+import WebcamCaptureDialog from "@/components/inventory/WebcamCaptureDialog";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 import { normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
+
+const isMobileDevice = () =>
+  typeof navigator !== "undefined" &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 interface Product {
   id: string;
@@ -43,6 +48,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const videoInputRef = useRef<HTMLInputElement>(null);
   const videoCameraInputRef = useRef<HTMLInputElement>(null);
   const [videoSourceOpen, setVideoSourceOpen] = useState(false);
+  const [videoWebcamOpen, setVideoWebcamOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentStock, setCurrentStock] = useState(0);
   const [stockAdjustment, setStockAdjustment] = useState("");
@@ -234,12 +240,24 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                 onOpenChange={setVideoSourceOpen}
                 mediaType="video"
                 onSelect={(source) => {
-                  const target = source === "camera" ? videoCameraInputRef.current : videoInputRef.current;
-                  if (target) {
-                    target.value = "";
-                    target.click();
+                  if (source === "camera") {
+                    if (isMobileDevice()) {
+                      const target = videoCameraInputRef.current;
+                      if (target) { target.value = ""; target.click(); }
+                    } else {
+                      setVideoWebcamOpen(true);
+                    }
+                  } else {
+                    const target = videoInputRef.current;
+                    if (target) { target.value = ""; target.click(); }
                   }
                 }}
+              />
+              <WebcamCaptureDialog
+                open={videoWebcamOpen}
+                onOpenChange={setVideoWebcamOpen}
+                mediaType="video"
+                onCapture={uploadVideo}
               />
             </div>
           </div>

@@ -6,6 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 import { ImagePlus, X, Loader2 } from "lucide-react";
 import { MAX_PHOTOS } from "@/lib/photoUtils";
 import MediaSourceDialog from "./MediaSourceDialog";
+import WebcamCaptureDialog from "./WebcamCaptureDialog";
+
+const isMobileDevice = () =>
+  typeof navigator !== "undefined" &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 interface PhotoUploaderProps {
   photos: string[];
@@ -20,6 +25,7 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
+  const [webcamOpen, setWebcamOpen] = useState(false);
 
   const handleUpload = async (file: File) => {
     if (photos.length >= MAX_PHOTOS) {
@@ -47,13 +53,24 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
   };
 
   const handleSourceSelect = (source: "gallery" | "camera") => {
-    // Trigger synchronously to preserve the user-gesture chain.
-    // Some browsers block camera access if there's any async gap.
-    const target = source === "camera" ? cameraInputRef.current : galleryInputRef.current;
-    if (target) {
-      // Reset value so picking the same file twice still fires onChange
-      target.value = "";
-      target.click();
+    if (source === "camera") {
+      // On mobile use the native camera input (opens device camera app).
+      // On desktop browsers use getUserMedia for in-app webcam capture.
+      if (isMobileDevice()) {
+        const target = cameraInputRef.current;
+        if (target) {
+          target.value = "";
+          target.click();
+        }
+      } else {
+        setWebcamOpen(true);
+      }
+    } else {
+      const target = galleryInputRef.current;
+      if (target) {
+        target.value = "";
+        target.click();
+      }
     }
   };
 
@@ -114,6 +131,12 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
         onOpenChange={setSourceDialogOpen}
         mediaType="image"
         onSelect={handleSourceSelect}
+      />
+      <WebcamCaptureDialog
+        open={webcamOpen}
+        onOpenChange={setWebcamOpen}
+        mediaType="image"
+        onCapture={handleUpload}
       />
     </div>
   );
