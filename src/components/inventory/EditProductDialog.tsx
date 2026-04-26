@@ -200,7 +200,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                   size="sm"
                   className="mt-1"
                   disabled={uploading}
-                  onClick={() => videoInputRef.current?.click()}
+                  onClick={() => setVideoSourceOpen(true)}
                 >
                   {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Video className="h-4 w-4 mr-2" />}
                   Upload Video
@@ -217,8 +217,30 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                   e.target.value = "";
                 }}
               />
+              <input
+                ref={videoCameraInputRef}
+                type="file"
+                accept="video/*"
+                capture="environment"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadVideo(file);
+                  e.target.value = "";
+                }}
+              />
+              <MediaSourceDialog
+                open={videoSourceOpen}
+                onOpenChange={setVideoSourceOpen}
+                mediaType="video"
+                onSelect={(source) => {
+                  if (source === "camera") videoCameraInputRef.current?.click();
+                  else videoInputRef.current?.click();
+                }}
+              />
             </div>
           </div>
+
 
           {/* Stock Section */}
           <div className="border-t pt-3 space-y-3">
