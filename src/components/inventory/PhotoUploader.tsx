@@ -6,6 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 import { ImagePlus, X, Loader2 } from "lucide-react";
 import { MAX_PHOTOS } from "@/lib/photoUtils";
 import MediaSourceDialog from "./MediaSourceDialog";
+import WebcamCaptureDialog from "./WebcamCaptureDialog";
+
+const isMobileDevice = () =>
+  typeof navigator !== "undefined" &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 interface PhotoUploaderProps {
   photos: string[];
