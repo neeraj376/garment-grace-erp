@@ -103,6 +103,8 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
         accept="image/*"
         capture="environment"
         className="hidden"
+        // @ts-expect-error - non-standard but improves camera trigger on some Android browsers
+        webkitdirectory={undefined}
         onChange={e => {
           const file = e.target.files?.[0];
           if (file) handleUpload(file);
