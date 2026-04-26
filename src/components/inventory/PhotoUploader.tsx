@@ -25,6 +25,7 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
+  const [webcamOpen, setWebcamOpen] = useState(false);
 
   const handleUpload = async (file: File) => {
     if (photos.length >= MAX_PHOTOS) {
