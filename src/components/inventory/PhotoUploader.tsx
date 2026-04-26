@@ -132,6 +132,12 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
         mediaType="image"
         onSelect={handleSourceSelect}
       />
+      <WebcamCaptureDialog
+        open={webcamOpen}
+        onOpenChange={setWebcamOpen}
+        mediaType="image"
+        onCapture={handleUpload}
+      />
     </div>
   );
 }
