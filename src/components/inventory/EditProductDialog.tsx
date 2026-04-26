@@ -240,12 +240,24 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
                 onOpenChange={setVideoSourceOpen}
                 mediaType="video"
                 onSelect={(source) => {
-                  const target = source === "camera" ? videoCameraInputRef.current : videoInputRef.current;
-                  if (target) {
-                    target.value = "";
-                    target.click();
+                  if (source === "camera") {
+                    if (isMobileDevice()) {
+                      const target = videoCameraInputRef.current;
+                      if (target) { target.value = ""; target.click(); }
+                    } else {
+                      setVideoWebcamOpen(true);
+                    }
+                  } else {
+                    const target = videoInputRef.current;
+                    if (target) { target.value = ""; target.click(); }
                   }
                 }}
+              />
+              <WebcamCaptureDialog
+                open={videoWebcamOpen}
+                onOpenChange={setVideoWebcamOpen}
+                mediaType="video"
+                onCapture={uploadVideo}
               />
             </div>
           </div>
