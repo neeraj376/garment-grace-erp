@@ -47,10 +47,13 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
   };
 
   const handleSourceSelect = (source: "gallery" | "camera") => {
-    if (source === "camera") {
-      cameraInputRef.current?.click();
-    } else {
-      galleryInputRef.current?.click();
+    // Trigger synchronously to preserve the user-gesture chain.
+    // Some browsers block camera access if there's any async gap.
+    const target = source === "camera" ? cameraInputRef.current : galleryInputRef.current;
+    if (target) {
+      // Reset value so picking the same file twice still fires onChange
+      target.value = "";
+      target.click();
     }
   };
 
