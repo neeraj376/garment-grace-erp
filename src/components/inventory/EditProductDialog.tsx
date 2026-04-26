@@ -41,6 +41,8 @@ interface EditProductDialogProps {
 export default function EditProductDialog({ product, open, onOpenChange, storeId, onSaved }: EditProductDialogProps) {
   const { toast } = useToast();
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const videoCameraInputRef = useRef<HTMLInputElement>(null);
+  const [videoSourceOpen, setVideoSourceOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentStock, setCurrentStock] = useState(0);
   const [stockAdjustment, setStockAdjustment] = useState("");
