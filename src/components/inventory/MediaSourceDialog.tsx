@@ -13,6 +13,14 @@ export default function MediaSourceDialog({ open, onOpenChange, mediaType, onSel
   const label = mediaType === "image" ? "Photo" : "Video";
   const cameraLabel = mediaType === "image" ? "Take Photo" : "Record Video";
 
+  const handleClick = (source: "gallery" | "camera") => {
+    // Fire the file input click SYNCHRONOUSLY within the user gesture,
+    // BEFORE closing the dialog. Closing first breaks the gesture chain
+    // in many mobile browsers and prevents the camera from opening.
+    onSelect(source);
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xs">
@@ -25,10 +33,7 @@ export default function MediaSourceDialog({ open, onOpenChange, mediaType, onSel
             type="button"
             variant="outline"
             className="h-24 flex flex-col gap-2"
-            onClick={() => {
-              onSelect("gallery");
-              onOpenChange(false);
-            }}
+            onClick={() => handleClick("gallery")}
           >
             <FolderOpen className="h-6 w-6" />
             <span className="text-xs">From Device</span>
@@ -37,10 +42,7 @@ export default function MediaSourceDialog({ open, onOpenChange, mediaType, onSel
             type="button"
             variant="outline"
             className="h-24 flex flex-col gap-2"
-            onClick={() => {
-              onSelect("camera");
-              onOpenChange(false);
-            }}
+            onClick={() => handleClick("camera")}
           >
             <Camera className="h-6 w-6" />
             <span className="text-xs">{cameraLabel}</span>
