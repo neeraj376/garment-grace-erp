@@ -6,6 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const getErrorMessage = (err: unknown) =>
+  err instanceof Error ? err.message : "Unknown error";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -42,7 +45,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error)?.message || "Unknown error" }), {
+    return new Response(JSON.stringify({ error: getErrorMessage(err) }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
