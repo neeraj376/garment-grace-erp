@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import ProductCard from "@/components/shop/ProductCard";
+import { groupVariants } from "@/lib/variantUtils";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
@@ -54,10 +55,11 @@ export default function ShopCategory() {
           p.category?.toLowerCase().includes(q)
       );
     }
-    if (sortBy === "price_low") result = [...result].sort((a, b) => a.selling_price - b.selling_price);
-    else if (sortBy === "price_high") result = [...result].sort((a, b) => b.selling_price - a.selling_price);
-    else if (sortBy === "name") result = [...result].sort((a, b) => a.name.localeCompare(b.name));
-    return result;
+    let groups = groupVariants(result);
+    if (sortBy === "price_low") groups = [...groups].sort((a, b) => a.minPrice - b.minPrice);
+    else if (sortBy === "price_high") groups = [...groups].sort((a, b) => b.maxPrice - a.maxPrice);
+    else if (sortBy === "name") groups = [...groups].sort((a, b) => a.primary.name.localeCompare(b.primary.name));
+    return groups;
   }, [products, search, sortBy]);
 
   return (
@@ -109,8 +111,15 @@ export default function ShopCategory() {
         <>
           <p className="text-sm text-muted-foreground mb-4">{filtered.length} products</p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {filtered.map((g) => (
+              <ProductCard
+                key={g.key}
+                product={g.primary}
+                colors={g.colors}
+                sizes={g.sizes}
+                minPrice={g.minPrice}
+                maxPrice={g.maxPrice}
+              />
             ))}
           </div>
         </>

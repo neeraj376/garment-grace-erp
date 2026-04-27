@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/shop/ProductCard";
+import { groupVariants } from "@/lib/variantUtils";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
@@ -27,8 +28,9 @@ export default function ShopHome() {
         p_limit: 50,
       });
       const allProducts = (featuredData ?? []).filter((p: any) => p.photo_url || p.video_url);
-      setFeatured(allProducts.filter((p: any) => p.photo_url).slice(0, 8));
-      setNewArrivals(allProducts.slice(0, 8));
+      const grouped = groupVariants(allProducts);
+      setFeatured(grouped.filter((g) => g.primary.photo_url).slice(0, 8));
+      setNewArrivals(grouped.slice(0, 8));
     };
     fetchProducts();
   }, []);
@@ -81,8 +83,15 @@ export default function ShopHome() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {featured.map((g) => (
+              <ProductCard
+                key={g.key}
+                product={g.primary}
+                colors={g.colors}
+                sizes={g.sizes}
+                minPrice={g.minPrice}
+                maxPrice={g.maxPrice}
+              />
             ))}
           </div>
         </section>
@@ -98,8 +107,15 @@ export default function ShopHome() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {newArrivals.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {newArrivals.map((g) => (
+              <ProductCard
+                key={g.key}
+                product={g.primary}
+                colors={g.colors}
+                sizes={g.sizes}
+                minPrice={g.minPrice}
+                maxPrice={g.maxPrice}
+              />
             ))}
           </div>
         </section>

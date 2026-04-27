@@ -7,38 +7,119 @@ import { ShoppingBag, ArrowLeft, Minus, Plus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { parsePhotoUrls } from "@/lib/photoUtils";
+import { colorToHex, sortSizes } from "@/lib/variantUtils";
 
 export default function ShopProduct() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<any>(null);
+  const [siblings, setSiblings] = useState<any[]>([]);
+  const [stockMap, setStockMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeMedia, setActiveMedia] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const { addToCart } = useCart();
 
-  const [outOfStock, setOutOfStock] = useState(false);
-
+  // Fetch the product, then fetch all sibling variants (same name + brand).
   useEffect(() => {
     if (!id) return;
-    const fetchProduct = async () => {
-      const { data } = await supabase
+    const fetchAll = async () => {
+      setLoading(true);
+      const { data: base } = await supabase
         .from("products")
         .select("*")
         .eq("id", id)
         .maybeSingle();
-      setProduct(data);
 
-      if (data) {
-        const { data: stockData } = await supabase.rpc("get_product_stock", { p_product_id: id });
-        setOutOfStock((stockData ?? 0) <= 0);
+      if (!base) {
+        setProduct(null);
+        setLoading(false);
+        return;
       }
+      setProduct(base);
+      setSelectedColor(base.color ?? null);
+      setSelectedSize(base.size ?? null);
+      setActiveMedia(0);
+
+      // Fetch siblings: same store, name, brand, active.
+      let q = supabase
+        .from("products")
+        .select("*")
+        .eq("store_id", base.store_id)
+        .eq("is_active", true)
+        .eq("name", base.name);
+      q = base.brand ? q.eq("brand", base.brand) : q.is("brand", null);
+      const { data: sibs } = await q;
+      const list = sibs ?? [base];
+      setSiblings(list);
+
+      // Stock for each sibling.
+      const stocks: Record<string, number> = {};
+      await Promise.all(
+        list.map(async (s) => {
+          const { data: st } = await supabase.rpc("get_product_stock", { p_product_id: s.id });
+          stocks[s.id] = st ?? 0;
+        })
+      );
+      setStockMap(stocks);
       setLoading(false);
     };
-    fetchProduct();
+    fetchAll();
   }, [id]);
 
+  // Available colors and sizes across the variant group.
+  const allColors = useMemo(
+    () => Array.from(new Set(siblings.map((s) => s.color).filter(Boolean))) as string[],
+    [siblings]
+  );
+  const allSizes = useMemo(
+    () => sortSizes(Array.from(new Set(siblings.map((s) => s.size).filter(Boolean))) as string[]),
+    [siblings]
+  );
+
+  // Find the variant matching the current color+size selection.
+  const matchedVariant = useMemo(() => {
+    if (!siblings.length) return product;
+    const exact = siblings.find(
+      (s) =>
+        (allColors.length === 0 || s.color === selectedColor) &&
+        (allSizes.length === 0 || s.size === selectedSize)
+    );
+    if (exact) return exact;
+    // Fallback: match color only.
+    if (allColors.length > 0 && selectedColor) {
+      const byColor = siblings.find((s) => s.color === selectedColor);
+      if (byColor) return byColor;
+    }
+    return product;
+  }, [siblings, selectedColor, selectedSize, product, allColors.length, allSizes.length]);
+
+  // Sync displayed product to matched variant (so price/photos/stock follow selection).
+  useEffect(() => {
+    if (matchedVariant && matchedVariant.id !== product?.id) {
+      setProduct(matchedVariant);
+      setActiveMedia(0);
+    }
+  }, [matchedVariant, product?.id]);
+
+  // Stock helpers per color and (color, size).
+  const colorHasStock = (color: string) =>
+    siblings.some((s) => s.color === color && (stockMap[s.id] ?? 0) > 0);
+  const sizeHasStockForColor = (size: string) =>
+    siblings.some(
+      (s) =>
+        s.size === size &&
+        (allColors.length === 0 || s.color === selectedColor) &&
+        (stockMap[s.id] ?? 0) > 0
+    );
+
+  const currentStock = product ? (stockMap[product.id] ?? 0) : 0;
+  const outOfStock = currentStock <= 0;
+
   const handleAddToCart = () => {
+    if (!product) return;
     addToCart(product.id, qty);
     toast.success("Added to cart!");
   };
@@ -57,7 +138,6 @@ export default function ShopProduct() {
   if (!product) {
     return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Product not found.</div>;
   }
-
 
   const discount = product.mrp && product.mrp > product.selling_price
     ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100)
@@ -128,23 +208,73 @@ export default function ShopProduct() {
 
           <p className="text-sm text-muted-foreground mb-1">Tax: {product.tax_rate}% GST included</p>
 
-          <div className="border-t border-border my-4 pt-4 space-y-3">
+          {/* Color selector */}
+          {allColors.length > 0 && (
+            <div className="mt-5">
+              <p className="text-sm font-medium text-foreground mb-2">
+                Color: <span className="text-muted-foreground font-normal">{selectedColor}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {allColors.map((c) => {
+                  const hex = colorToHex(c);
+                  const inStock = colorHasStock(c);
+                  const isSelected = selectedColor === c;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setSelectedColor(c)}
+                      title={c}
+                      className={`relative w-9 h-9 rounded-full border-2 transition-all ${
+                        isSelected ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-foreground/40"
+                      } ${!inStock ? "opacity-40" : ""}`}
+                      style={{ backgroundColor: hex ?? "hsl(var(--muted))" }}
+                    >
+                      {!hex && (
+                        <span className="absolute inset-0 flex items-center justify-center text-[9px] font-medium text-foreground">
+                          {c.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Size selector */}
+          {allSizes.length > 0 && (
+            <div className="mt-5">
+              <p className="text-sm font-medium text-foreground mb-2">
+                Size: <span className="text-muted-foreground font-normal">{selectedSize ?? "Select"}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {allSizes.map((s) => {
+                  const inStock = sizeHasStockForColor(s);
+                  const isSelected = selectedSize === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setSelectedSize(s)}
+                      disabled={!inStock}
+                      className={`min-w-[44px] h-10 px-3 rounded-lg border text-sm font-medium transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-foreground hover:border-foreground/40"
+                      } ${!inStock ? "opacity-40 line-through cursor-not-allowed" : ""}`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-border my-5 pt-4 space-y-3">
             {product.category && (
               <div className="flex gap-2 text-sm">
                 <span className="text-muted-foreground w-20">Category</span>
                 <span className="text-foreground font-medium">{product.category}</span>
-              </div>
-            )}
-            {product.size && (
-              <div className="flex gap-2 text-sm">
-                <span className="text-muted-foreground w-20">Size</span>
-                <span className="text-foreground font-medium">{product.size}</span>
-              </div>
-            )}
-            {product.color && (
-              <div className="flex gap-2 text-sm">
-                <span className="text-muted-foreground w-20">Color</span>
-                <span className="text-foreground font-medium">{product.color}</span>
               </div>
             )}
             {product.material && (
