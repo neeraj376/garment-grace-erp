@@ -47,6 +47,24 @@ const PERMISSION_MODULES = [
   { key: "can_settings", label: "Settings" },
 ];
 
+const getFunctionErrorMessage = async (error: unknown) => {
+  const fallback = error instanceof Error ? error.message : "Something went wrong";
+  const context = (error as { context?: Response })?.context;
+
+  if (!context) return fallback;
+
+  try {
+    const payload = await context.clone().json();
+    return payload?.error || fallback;
+  } catch {
+    try {
+      return (await context.clone().text()) || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+};
+
 export default function SubUserManager() {
   const { storeId } = useStore();
   const { role } = usePermissions();
@@ -164,7 +182,7 @@ export default function SubUserManager() {
         },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error));
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "Sub-user created", description: `${form.email} can now log in.` });
@@ -204,7 +222,7 @@ export default function SubUserManager() {
       const { data, error } = await supabase.functions.invoke("reset-sub-user-password", {
         body: { userId: pwUserId, newPassword },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error));
       if (data?.error) throw new Error(data.error);
       toast({ title: "Password updated", description: `Password changed for ${pwUserName || "staff member"}.` });
       setPwDialogOpen(false);
