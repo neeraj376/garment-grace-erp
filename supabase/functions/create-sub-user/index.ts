@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const getErrorMessage = (err: unknown) =>
+  err instanceof Error ? err.message : "Unknown error";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -50,7 +53,12 @@ Deno.serve(async (req) => {
       user_metadata: { full_name: fullName || email },
     });
 
-    if (createError) throw createError;
+    if (createError) {
+      if (createError.code === "email_exists") {
+        throw new Error("This email is already registered. Use a different email address for the sub-user.");
+      }
+      throw createError;
+    }
 
     // Update their profile with store_id and role='staff'
     const { error: profileError } = await adminClient
@@ -86,10 +94,11 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, userId: newUser.user.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
-    console.error("create-sub-user error:", err?.message, err);
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("create-sub-user error:", message, err);
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: message }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
