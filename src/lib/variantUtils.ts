@@ -44,7 +44,7 @@ const normalize = (s: string | null | undefined): string => {
 };
 
 const groupKey = (p: { name: string; brand: string | null; category?: string | null }) =>
-  `${normalize(p.brand)}|${normalize(p.category ?? "")}|${normalize(p.name)}`;
+  `${normalize(p.brand)}|${normalize(p.name)}`;
 
 export function groupVariants(products: VariantProduct[]): VariantGroup[] {
   const map = new Map<string, VariantProduct[]>();
