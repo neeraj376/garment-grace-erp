@@ -2,9 +2,11 @@ import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, X, Loader2, Sparkles } from "lucide-react";
 import { MAX_PHOTOS } from "@/lib/photoUtils";
+import { optimizeImage } from "@/lib/imageOptimize";
 import MediaSourceDialog from "./MediaSourceDialog";
 import WebcamCaptureDialog from "./WebcamCaptureDialog";
 
@@ -24,8 +26,10 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [statusLabel, setStatusLabel] = useState<string>("");
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
   const [webcamOpen, setWebcamOpen] = useState(false);
+  const [aiCleanup, setAiCleanup] = useState(true);
 
   const handleUpload = async (file: File) => {
     if (photos.length >= MAX_PHOTOS) {
@@ -34,17 +38,48 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
     }
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
+      // 1. Optimize: resize to 1600px max, re-encode JPEG ~82% quality
+      setStatusLabel("Optimizing…");
+      const optimized = await optimizeImage(file, { maxDimension: 1600, quality: 0.82 });
+
+      // 2. Upload optimized version to storage
+      setStatusLabel("Uploading…");
+      const ext = (optimized.name.split(".").pop() || "jpg").toLowerCase();
       const path = `${storeId}/${productId || "new"}-photo-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("product-media").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage
+        .from("product-media")
+        .upload(path, optimized, { upsert: true, contentType: optimized.type });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from("product-media").getPublicUrl(path);
-      onChange([...photos, urlData.publicUrl]);
-      toast({ title: "Image uploaded" });
+      let finalUrl = urlData.publicUrl;
+
+      // 3. Optional: AI background cleanup (replaces the file in-place)
+      if (aiCleanup) {
+        setStatusLabel("AI cleaning background…");
+        try {
+          const cleanPath = path.replace(/\.[^.]+$/, "") + "-clean.png";
+          const { data, error: fnErr } = await supabase.functions.invoke("remove-background", {
+            body: { imageUrl: finalUrl, storagePath: cleanPath },
+          });
+          if (fnErr) throw fnErr;
+          if (data?.url) finalUrl = data.url;
+        } catch (aiErr: any) {
+          // Non-fatal — keep the optimized original
+          console.warn("AI cleanup failed:", aiErr);
+          toast({
+            title: "AI cleanup skipped",
+            description: aiErr?.message || "Using original image.",
+          });
+        }
+      }
+
+      onChange([...photos, finalUrl]);
+      toast({ title: "Image ready" });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
       setUploading(false);
+      setStatusLabel("");
     }
   };
 
@@ -54,8 +89,6 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
 
   const handleSourceSelect = (source: "gallery" | "camera") => {
     if (source === "camera") {
-      // On mobile use the native camera input (opens device camera app).
-      // On desktop browsers use getUserMedia for in-app webcam capture.
       if (isMobileDevice()) {
         const target = cameraInputRef.current;
         if (target) {
@@ -76,7 +109,23 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
 
   return (
     <div>
-      <Label className="text-xs text-muted-foreground">Product Images ({photos.length}/{MAX_PHOTOS})</Label>
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs text-muted-foreground">
+          Product Images ({photos.length}/{MAX_PHOTOS})
+        </Label>
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3 w-3 text-muted-foreground" />
+          <Label htmlFor="ai-cleanup-toggle" className="text-xs text-muted-foreground cursor-pointer">
+            Auto AI cleanup
+          </Label>
+          <Switch
+            id="ai-cleanup-toggle"
+            checked={aiCleanup}
+            onCheckedChange={setAiCleanup}
+            disabled={uploading}
+          />
+        </div>
+      </div>
       <div className="flex flex-wrap gap-2 mt-1">
         {photos.map((url, i) => (
           <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
@@ -99,7 +148,9 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
             onClick={() => setSourceDialogOpen(true)}
           >
             {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
-            <span className="text-[10px]">Add</span>
+            <span className="text-[10px] leading-tight text-center px-1">
+              {uploading ? statusLabel || "Working…" : "Add"}
+            </span>
           </Button>
         )}
       </div>
