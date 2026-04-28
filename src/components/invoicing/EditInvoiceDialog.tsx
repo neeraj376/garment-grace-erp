@@ -26,7 +26,7 @@ interface Invoice {
   pending_amount?: number;
   created_by: string | null;
   customer_id: string | null;
-  customers: { name: string | null; mobile: string } | null;
+  customers: { name: string | null; mobile: string; email?: string | null } | null;
 }
 
 interface InvoiceItem {
@@ -69,6 +69,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   // Customer fields
   const [customerMobile, setCustomerMobile] = useState(invoice.customers?.mobile || "");
   const [customerName, setCustomerName] = useState(invoice.customers?.name || "");
+  const [customerEmail, setCustomerEmail] = useState(invoice.customers?.email || "");
 
   // Items
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -264,7 +265,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       if (invoice.customer_id) {
         await supabase
           .from("customers")
-          .update({ name: customerName, mobile: customerMobile })
+          .update({ name: customerName, mobile: customerMobile, email: customerEmail.trim() || null })
           .eq("id", invoice.customer_id);
       }
 
@@ -356,6 +357,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
               <div className="space-y-1">
                 <Label>Name <span className="text-destructive">*</span></Label>
                 <Input value={customerName} onChange={e => setCustomerName(e.target.value)} />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label>Email</Label>
+                <Input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="optional" />
               </div>
             </div>
 
