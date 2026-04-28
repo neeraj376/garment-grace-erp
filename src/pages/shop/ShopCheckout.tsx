@@ -74,9 +74,9 @@ export default function ShopCheckout() {
     const timer = setTimeout(async () => {
       setCheckingPincode(true);
       try {
-        // Calculate total weight: 300g (0.3kg) per item
+        // Calculate total weight: 500g (0.5kg) per item
         const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-        const totalWeightKg = Math.max(0.5, totalQuantity * 0.3); // minimum 0.5kg
+        const totalWeightKg = Math.max(0.5, totalQuantity * 0.5);
 
         const { data, error } = await supabase.functions.invoke("shiprocket", {
           body: {
