@@ -87,6 +87,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerName, setCustomerName] = useState(() => loadDraft()?.customerName ?? "");
   const [customerGender, setCustomerGender] = useState(() => loadDraft()?.customerGender ?? "");
   const [customerLocation, setCustomerLocation] = useState(() => loadDraft()?.customerLocation ?? "");
+  const [customerEmail, setCustomerEmail] = useState(() => loadDraft()?.customerEmail ?? "");
   const [courierName, setCourierName] = useState(() => loadDraft()?.courierName ?? "");
   const [awbNo, setAwbNo] = useState(() => loadDraft()?.awbNo ?? "");
   const [source, setSource] = useState<string>("");
@@ -183,7 +184,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const timeout = setTimeout(async () => {
       const { data } = await supabase
         .from("customers")
-        .select("id, mobile, name, gender, location")
+        .select("id, mobile, name, gender, location, email")
         .eq("store_id", storeId)
         .ilike("mobile", `%${customerMobile}%`)
         .limit(5);
@@ -203,7 +204,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const timeout = setTimeout(async () => {
       const { data } = await supabase
         .from("customers")
-        .select("id, mobile, name, gender, location")
+        .select("id, mobile, name, gender, location, email")
         .eq("store_id", storeId)
         .ilike("name", `%${customerName}%`)
         .limit(5);
@@ -218,6 +219,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCustomerName(cust.name || "");
     setCustomerGender(cust.gender || "");
     setCustomerLocation(cust.location || "");
+    setCustomerEmail(cust.email || "");
     setShowCustomerSuggestions(false);
     setShowNameSuggestions(false);
   };
@@ -225,10 +227,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   // Persist draft to localStorage
   useEffect(() => {
     saveDraft({
-      cart, customerMobile, customerName, customerGender, customerLocation,
+      cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -407,6 +409,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               name: customerName || null,
               gender: customerGender || null,
               location: customerLocation || null,
+              email: customerEmail.trim() || null,
             })
             .select()
             .single();
@@ -486,6 +489,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setCustomerName("");
       setCustomerGender("");
       setCustomerLocation("");
+      setCustomerEmail("");
       setCourierName("");
       setAwbNo("");
       setSelectedEmployee("");
@@ -894,6 +898,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               </Select>
             </div>
             <div><Label>Location <span className="text-destructive">*</span></Label><Input value={customerLocation} onChange={e => setCustomerLocation(e.target.value)} /></div>
+            <div><Label>Email</Label><Input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="optional" /></div>
             <div>
               <Label>Source <span className="text-destructive">*</span></Label>
               <Select value={source} onValueChange={setSource}>
