@@ -8,13 +8,50 @@ import { groupVariants } from "@/lib/variantUtils";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
-const HERO_CATEGORIES = [
-  { name: "Jeans", image: "👖" },
-  { name: "T-shirt", image: "👕" },
-  { name: "Jacket", image: "🧥" },
-  { name: "Hoodie", image: "🪭" },
-  { name: "Trousers", image: "🩳" },
-  { name: "Shorts", image: "🩲" },
+// SVG icons for garment categories (clearer than emoji)
+const JeansIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M5 3h14l-1 18h-5l-1-10-1 10H6L5 3z" />
+    <path d="M5 3h14" />
+  </svg>
+);
+const TshirtIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M4 7l4-4h8l4 4-3 3-2-2v13H6V8L4 10 4 7z" />
+  </svg>
+);
+const JacketIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M4 7l4-4 4 3 4-3 4 4-3 3v11H7V10L4 7z" />
+    <path d="M12 6v15" />
+  </svg>
+);
+const HoodieIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M8 3c-1 2-1 4 0 5-2 0-4 1-5 4l3 2v7h12v-7l3-2c-1-3-3-4-5-4 1-1 1-3 0-5" />
+    <path d="M9 8c1 2 5 2 6 0" />
+    <path d="M12 13v4" />
+  </svg>
+);
+const TrousersIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M5 3h14v4l-2 14h-4l-1-11-1 11H7L5 7V3z" />
+  </svg>
+);
+const ShortsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M5 4h14v4l-1 8h-5l-1-7-1 7H6L5 8V4z" />
+    <path d="M5 8h14" />
+  </svg>
+);
+
+const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element }[] = [
+  { name: "Jeans", Icon: JeansIcon },
+  { name: "T-shirt", Icon: TshirtIcon },
+  { name: "Jacket", Icon: JacketIcon },
+  { name: "Hoodie", Icon: HoodieIcon },
+  { name: "Trousers", Icon: TrousersIcon },
+  { name: "Shorts", Icon: ShortsIcon },
 ];
 
 export default function ShopHome() {
