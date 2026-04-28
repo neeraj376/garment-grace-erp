@@ -12,7 +12,7 @@ const HERO_CATEGORIES = [
   { name: "Jeans", image: "👖" },
   { name: "T-shirt", image: "👕" },
   { name: "Jacket", image: "🧥" },
-  { name: "Hoodie", image: "🧤" },
+  { name: "Hoodie", image: "👚" },
   { name: "Trousers", image: "👔" },
   { name: "Shorts", image: "🩳" },
 ];
