@@ -642,10 +642,34 @@ export default function Inventory() {
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>SKU</Label><Input value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} placeholder="Auto-generated if empty" /></div>
                       <div><Label>Name *</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
-                      <div><Label>Category</Label><Input value={form.category} onChange={e => setForm({...form, category: e.target.value})} /></div>
-                      <div><Label>Brand</Label><Input value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
-                      <div><Label>Size</Label><Input value={form.size} onChange={e => setForm({...form, size: e.target.value})} /></div>
-                      <div><Label>Color</Label><Input value={form.color} onChange={e => setForm({...form, color: e.target.value})} /></div>
+                      <div>
+                        <Label>Category</Label>
+                        <Input list="inv-categories" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="Select or type new" />
+                        <datalist id="inv-categories">
+                          {categories.map(c => <option key={c} value={c} />)}
+                        </datalist>
+                      </div>
+                      <div>
+                        <Label>Brand</Label>
+                        <Input list="inv-brands" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} placeholder="Select or type new" />
+                        <datalist id="inv-brands">
+                          {brands.map(b => <option key={b} value={b} />)}
+                        </datalist>
+                      </div>
+                      <div>
+                        <Label>Size</Label>
+                        <Input list="inv-sizes" value={form.size} onChange={e => setForm({...form, size: e.target.value})} placeholder="Select or type new" />
+                        <datalist id="inv-sizes">
+                          {sizes.map(s => <option key={s} value={s} />)}
+                        </datalist>
+                      </div>
+                      <div>
+                        <Label>Color</Label>
+                        <Input list="inv-colors" value={form.color} onChange={e => setForm({...form, color: e.target.value})} placeholder="Select or type new" />
+                        <datalist id="inv-colors">
+                          {colors.map(c => <option key={c} value={c} />)}
+                        </datalist>
+                      </div>
                       <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} required /></div>
                       <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
                       <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>

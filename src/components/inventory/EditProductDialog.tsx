@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,26 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
     video_url: "" as string | null,
   });
+  const [suggestions, setSuggestions] = useState<{categories: string[]; subcategories: string[]; brands: string[]; sizes: string[]; colors: string[]}>({categories: [], subcategories: [], brands: [], sizes: [], colors: []});
+
+  useEffect(() => {
+    if (!open || !storeId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("category, subcategory, brand, size, color")
+        .eq("store_id", storeId)
+        .limit(5000);
+      const uniq = (arr: (string | null)[]) => [...new Set(arr.filter(Boolean) as string[])].sort();
+      setSuggestions({
+        categories: uniq((data ?? []).map((r: any) => r.category)),
+        subcategories: uniq((data ?? []).map((r: any) => r.subcategory)),
+        brands: uniq((data ?? []).map((r: any) => r.brand)),
+        sizes: uniq((data ?? []).map((r: any) => r.size)),
+        colors: uniq((data ?? []).map((r: any) => r.color)),
+      });
+    })();
+  }, [open, storeId]);
 
   const [lastProductId, setLastProductId] = useState<string | null>(null);
   if (product && product.id !== lastProductId) {
@@ -169,11 +189,31 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
           <div className="grid grid-cols-2 gap-3">
             <div><Label>SKU *</Label><Input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} required /></div>
             <div><Label>Name *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
-            <div><Label>Category</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
-            <div><Label>Subcategory</Label><Input value={form.subcategory} onChange={e => setForm({ ...form, subcategory: e.target.value })} /></div>
-            <div><Label>Brand</Label><Input value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} /></div>
-            <div><Label>Size</Label><Input value={form.size} onChange={e => setForm({ ...form, size: e.target.value })} /></div>
-            <div><Label>Color</Label><Input value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} /></div>
+            <div>
+              <Label>Category</Label>
+              <Input list="edit-categories" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Select or type new" />
+              <datalist id="edit-categories">{suggestions.categories.map(c => <option key={c} value={c} />)}</datalist>
+            </div>
+            <div>
+              <Label>Subcategory</Label>
+              <Input list="edit-subcategories" value={form.subcategory} onChange={e => setForm({ ...form, subcategory: e.target.value })} placeholder="Select or type new" />
+              <datalist id="edit-subcategories">{suggestions.subcategories.map(c => <option key={c} value={c} />)}</datalist>
+            </div>
+            <div>
+              <Label>Brand</Label>
+              <Input list="edit-brands" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="Select or type new" />
+              <datalist id="edit-brands">{suggestions.brands.map(c => <option key={c} value={c} />)}</datalist>
+            </div>
+            <div>
+              <Label>Size</Label>
+              <Input list="edit-sizes" value={form.size} onChange={e => setForm({ ...form, size: e.target.value })} placeholder="Select or type new" />
+              <datalist id="edit-sizes">{suggestions.sizes.map(c => <option key={c} value={c} />)}</datalist>
+            </div>
+            <div>
+              <Label>Color</Label>
+              <Input list="edit-colors" value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} placeholder="Select or type new" />
+              <datalist id="edit-colors">{suggestions.colors.map(c => <option key={c} value={c} />)}</datalist>
+            </div>
             <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({ ...form, selling_price: e.target.value })} required /></div>
             <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({ ...form, mrp: e.target.value })} /></div>
             <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({ ...form, tax_rate: e.target.value })} /></div>
