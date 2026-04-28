@@ -65,7 +65,7 @@ export default function Inventory() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", brand: "", size: "", color: "",
-    selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "",
+    selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "",
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
@@ -221,7 +221,7 @@ export default function Inventory() {
 
       toast({ title: "Product added" });
       setDialogOpen(false);
-      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "18", buying_price: "", quantity: "" });
+      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "" });
       setNewProductPhotos([]);
       fetchProducts();
     } catch (err: any) {
@@ -279,7 +279,7 @@ export default function Inventory() {
       const mrpVal = cleanNumber(row.mrp || row.maximum_retail_price);
       const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.purchasprice || row.purchaseprice || row.cost_price || row.cost || row.bp || row.cp);
       const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
-      const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 18;
+      const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 5;
 
       try {
         const photoUrl = row.photo_url || row.image_url || row.image || row.photo || row.picture || null;

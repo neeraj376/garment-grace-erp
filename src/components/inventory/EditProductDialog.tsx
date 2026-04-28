@@ -56,7 +56,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const [photos, setPhotos] = useState<string[]>([]);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
-    selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
+    selling_price: "", mrp: "", tax_rate: "5", buying_price: "",
     video_url: "" as string | null,
   });
   const [suggestions, setSuggestions] = useState<{categories: string[]; subcategories: string[]; brands: string[]; sizes: string[]; colors: string[]}>({categories: [], subcategories: [], brands: [], sizes: [], colors: []});
