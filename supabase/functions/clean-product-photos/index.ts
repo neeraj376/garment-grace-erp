@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
   const results: any[] = [];
   for (const p of products) {
     try {
-      const inputDataUrl = await fetchAsDataUrl(p.photo_url);
+      const sourceUrl = firstPhotoUrl(p.photo_url);
+      const inputDataUrl = await fetchAsDataUrl(sourceUrl);
 
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
