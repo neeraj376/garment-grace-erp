@@ -48,8 +48,11 @@ Deno.serve(async (req) => {
     products = data || [];
   } else {
     // Default: all active products with a photo and stock > 0
-    const { data: stockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: body.store_id });
-    const ids = (stockIds || []).map((r: any) => r.get_in_stock_product_ids ?? r);
+    const { data: stockIds, error: rpcErr } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: body.store_id });
+    if (rpcErr) {
+      return new Response(JSON.stringify({ error: `rpc: ${rpcErr.message}` }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const ids = (stockIds || []).map((r: any) => (typeof r === "string" ? r : r.get_in_stock_product_ids ?? r.id ?? r));
     const { data } = await supabase
       .from("products")
       .select("id, store_id, photo_url, sku")
