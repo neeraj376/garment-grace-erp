@@ -52,13 +52,16 @@ Deno.serve(async (req) => {
     if (rpcErr) {
       return new Response(JSON.stringify({ error: `rpc: ${rpcErr.message}` }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const ids = (stockIds || []).map((r: any) => (typeof r === "string" ? r : r.get_in_stock_product_ids ?? r.id ?? r));
-    const { data } = await supabase
+    const ids: string[] = (stockIds || []).map((r: any) => (typeof r === "string" ? r : r.get_in_stock_product_ids ?? r.id ?? r));
+    const { data, error: prodErr } = await supabase
       .from("products")
       .select("id, store_id, photo_url, sku")
       .eq("is_active", true)
       .not("photo_url", "is", null)
-      .in("id", ids);
+      .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    if (prodErr) {
+      return new Response(JSON.stringify({ error: `products: ${prodErr.message}`, idsCount: ids.length }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     products = data || [];
   }
 
