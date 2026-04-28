@@ -95,15 +95,17 @@ export default function ShopHome() {
       <section className="container mx-auto px-4 py-12">
         <h2 className="font-display text-2xl font-bold mb-6">Shop by Category</h2>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-          {HERO_CATEGORIES.map((cat) => (
+          {HERO_CATEGORIES.map(({ name, Icon }) => (
             <Link
-              key={cat.name}
-              to={`/category/${encodeURIComponent(cat.name)}`}
+              key={name}
+              to={`/category/${encodeURIComponent(name)}`}
               className="bg-card rounded-xl border border-border p-4 text-center hover:shadow-md transition-shadow group"
             >
-              <div className="text-3xl mb-2">{cat.image}</div>
+              <div className="mb-2 text-foreground/80 group-hover:text-primary transition-colors">
+                <Icon />
+              </div>
               <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                {cat.name}
+                {name}
               </span>
             </Link>
           ))}
