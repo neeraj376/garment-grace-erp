@@ -26,8 +26,25 @@ export interface VariantGroup {
   maxPrice: number;
 }
 
-const groupKey = (p: { name: string; brand: string | null }) =>
-  `${(p.brand ?? "").trim().toLowerCase()}|${(p.name ?? "").trim().toLowerCase()}`;
+// Normalize a string for fuzzy variant grouping:
+// - lowercase, trim
+// - strip punctuation
+// - collapse whitespace
+// - singularize trailing plural "s" on each word (pants -> pant, shoes -> shoe)
+const normalize = (s: string | null | undefined): string => {
+  if (!s) return "";
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .map((w) => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w))
+    .join(" ");
+};
+
+const groupKey = (p: { name: string; brand: string | null; category?: string | null }) =>
+  `${normalize(p.brand)}|${normalize(p.category ?? "")}|${normalize(p.name)}`;
 
 export function groupVariants(products: VariantProduct[]): VariantGroup[] {
   const map = new Map<string, VariantProduct[]>();
