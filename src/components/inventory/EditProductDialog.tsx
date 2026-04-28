@@ -58,6 +58,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
     video_url: "" as string | null,
+  });
   const [suggestions, setSuggestions] = useState<{categories: string[]; subcategories: string[]; brands: string[]; sizes: string[]; colors: string[]}>({categories: [], subcategories: [], brands: [], sizes: [], colors: []});
 
   useEffect(() => {
