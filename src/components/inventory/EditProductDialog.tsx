@@ -58,7 +58,26 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "18", buying_price: "",
     video_url: "" as string | null,
-  });
+  const [suggestions, setSuggestions] = useState<{categories: string[]; subcategories: string[]; brands: string[]; sizes: string[]; colors: string[]}>({categories: [], subcategories: [], brands: [], sizes: [], colors: []});
+
+  useEffect(() => {
+    if (!open || !storeId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("category, subcategory, brand, size, color")
+        .eq("store_id", storeId)
+        .limit(5000);
+      const uniq = (arr: (string | null)[]) => [...new Set(arr.filter(Boolean) as string[])].sort();
+      setSuggestions({
+        categories: uniq((data ?? []).map((r: any) => r.category)),
+        subcategories: uniq((data ?? []).map((r: any) => r.subcategory)),
+        brands: uniq((data ?? []).map((r: any) => r.brand)),
+        sizes: uniq((data ?? []).map((r: any) => r.size)),
+        colors: uniq((data ?? []).map((r: any) => r.color)),
+      });
+    })();
+  }, [open, storeId]);
 
   const [lastProductId, setLastProductId] = useState<string | null>(null);
   if (product && product.id !== lastProductId) {
