@@ -32,7 +32,7 @@ interface Invoice {
   created_at: string;
   created_by: string | null;
   customer_id: string | null;
-  customers: { name: string | null; mobile: string } | null;
+  customers: { name: string | null; mobile: string; email?: string | null } | null;
 }
 
 interface Props {
@@ -98,7 +98,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     setLoading(true);
     const { data, error } = await supabase
       .from("invoices")
-      .select("*, customers(name, mobile)")
+      .select("*, customers(name, mobile, email)")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false });
 
