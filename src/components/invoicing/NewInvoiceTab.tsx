@@ -55,6 +55,7 @@ interface HeldInvoice {
   customerName: string;
   customerGender: string;
   customerLocation: string;
+  customerEmail?: string;
   courierName?: string;
   awbNo?: string;
   cart: CartItem[];
@@ -582,7 +583,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (!sessionOk) return;
 
     const heldData = {
-      customerMobile, customerName, customerGender, customerLocation,
+      customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
     };
 
@@ -608,7 +609,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       return;
     }
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
-    setCustomerGender(""); setCustomerLocation(""); setCourierName(""); setAwbNo(""); setSelectedEmployee("");
+    setCustomerGender(""); setCustomerLocation(""); setCustomerEmail(""); setCourierName(""); setAwbNo(""); setSelectedEmployee("");
     setSource(""); setPaymentMethods([]);
     clearDraft();
     fetchHeldInvoices();
@@ -623,7 +624,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
     if (cart.length > 0) {
       const currentData = {
-        customerMobile, customerName, customerGender, customerLocation,
+        customerMobile, customerName, customerGender, customerLocation, customerEmail,
         courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       };
 
@@ -669,6 +670,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCustomerName(held.customerName);
     setCustomerGender(held.customerGender);
     setCustomerLocation(held.customerLocation);
+    setCustomerEmail(held.customerEmail || "");
     setCourierName(held.courierName || "");
     setAwbNo(held.awbNo || "");
     setSource(held.source);
