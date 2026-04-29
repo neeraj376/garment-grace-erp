@@ -20,10 +20,8 @@ async function sendEmailViaSMTP(to: string, code: string): Promise<void> {
   const subject = "Your Originee Login OTP";
   const body = `Your one-time verification code is: ${code}\n\nThis code expires in 5 minutes. Do not share it with anyone.`;
 
-  // Use Gmail SMTP via Deno's built-in SMTP support
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
-
   const conn = await Deno.connectTls({ hostname: "smtp.gmail.com", port: 465 });
 
   async function readResponse(): Promise<string> {
@@ -31,18 +29,13 @@ async function sendEmailViaSMTP(to: string, code: string): Promise<void> {
     const n = await conn.read(buf);
     return decoder.decode(buf.subarray(0, n || 0));
   }
-
   async function sendCommand(cmd: string): Promise<string> {
     await conn.write(encoder.encode(cmd + "\r\n"));
     return await readResponse();
   }
 
-  // Read greeting
   await readResponse();
-
   await sendCommand("EHLO localhost");
-  
-  // AUTH LOGIN
   await sendCommand("AUTH LOGIN");
   await sendCommand(btoa(from));
   const authResult = await sendCommand(btoa(password));
@@ -81,7 +74,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email } = await req.json();
+    const { email, otpOnly: otpOnlyRequest } = await req.json();
     if (!email) {
       return new Response(
         JSON.stringify({ error: "Email is required" }),
@@ -89,10 +82,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Check if this is an OTP-only employee account
+    const { data: empAuth } = await supabaseAdmin
+      .from("employee_auth_passwords")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    const isOtpOnly = !!empAuth;
 
     // Invalidate any existing unused OTPs for this email
     await supabaseAdmin
@@ -103,20 +107,18 @@ Deno.serve(async (req) => {
 
     // Generate new OTP
     const code = generateOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-    // Store OTP
     const { error: insertError } = await supabaseAdmin
       .from("otp_codes")
       .insert({ email, code, expires_at: expiresAt });
 
     if (insertError) throw insertError;
 
-    // Send email
     await sendEmailViaSMTP(email, code);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, otpOnly: isOtpOnly }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {

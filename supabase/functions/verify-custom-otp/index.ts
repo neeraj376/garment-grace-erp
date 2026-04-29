@@ -44,19 +44,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
       perPage: 1000,
     });
-
     if (usersError) throw usersError;
 
     const authUser = usersData.users.find(
-      (user) => user.email?.toLowerCase() === String(email).toLowerCase()
+      (user) => user.email?.toLowerCase() === normalizedEmail
     );
 
     let storeId: string | null = null;
-
     if (authUser) {
       const { data: profile, error: profileError } = await supabaseAdmin
         .from("profiles")
@@ -74,11 +74,23 @@ Deno.serve(async (req) => {
       .update({ used: true })
       .eq("id", otpRecords[0].id);
 
+    // For OTP-only employee accounts, return the internal password so the
+    // client can complete signInWithPassword. Email-control was just proven
+    // by the OTP, so this is a safe handoff for accounts the user does not
+    // know the password for.
+    const { data: empAuth } = await supabaseAdmin
+      .from("employee_auth_passwords")
+      .select("password")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
     return new Response(
       JSON.stringify({
         valid: true,
         email,
         storeId,
+        otpOnly: !!empAuth,
+        otpOnlyPassword: empAuth?.password ?? null,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
