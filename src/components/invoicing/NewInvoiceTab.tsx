@@ -1102,14 +1102,113 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               </Select>
             </div>
             {source === "online" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-3 rounded-md border p-3 bg-muted/20">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Shipping Address</div>
                 <div>
-                  <Label>Courier Name <span className="text-destructive">*</span></Label>
-                  <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
+                  <Label className="text-xs">Address Line 1 <span className="text-destructive">*</span></Label>
+                  <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
                 </div>
                 <div>
-                  <Label>AWB No. <span className="text-destructive">*</span></Label>
-                  <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+                  <Label className="text-xs">Address Line 2</Label>
+                  <Input value={addressLine2} onChange={e => setAddressLine2(e.target.value)} placeholder="Landmark, Area (optional)" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Pincode <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={shipPincode}
+                      onChange={e => setShipPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      maxLength={6}
+                      placeholder="110001"
+                    />
+                    {shipPincode.length === 6 && (
+                      <div className="mt-1 flex items-center gap-1 text-[11px]">
+                        {checkingPincode ? (
+                          <><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /><span className="text-muted-foreground">Checking...</span></>
+                        ) : serviceable === true ? (
+                          <><CheckCircle className="h-3 w-3 text-green-600" /><span className="text-green-600">Available</span></>
+                        ) : serviceable === false ? (
+                          <><XCircle className="h-3 w-3 text-destructive" /><span className="text-destructive">Not deliverable</span></>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs">City <span className="text-destructive">*</span></Label>
+                    <Input value={shipCity} onChange={e => setShipCity(e.target.value)} placeholder="City" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">State <span className="text-destructive">*</span></Label>
+                    <Select value={shipState} onValueChange={setShipState}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent className="z-[9999] max-h-60">
+                        {INDIAN_STATES.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {couriers.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                      <Truck className="h-3.5 w-3.5" /> Shipping Options
+                    </div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {couriers.slice(0, 5).map(c => (
+                        <label
+                          key={c.courier_company_id}
+                          className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors text-xs ${
+                            selectedCourier?.courier_company_id === c.courier_company_id
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-muted-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="invoice-courier"
+                              checked={selectedCourier?.courier_company_id === c.courier_company_id}
+                              onChange={() => { setSelectedCourier(c); setShippingCost(c.rate); }}
+                              className="accent-primary"
+                            />
+                            <div>
+                              <p className="font-medium">{c.courier_name}</p>
+                              <p className="text-[10px] text-muted-foreground">Est. {c.etd}</p>
+                            </div>
+                          </div>
+                          <span className="font-semibold">₹{c.rate}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleBookCourier}
+                      disabled={bookingCourier || !selectedCourier || !!awbNo}
+                    >
+                      {bookingCourier ? (
+                        <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Booking...</>
+                      ) : awbNo ? (
+                        <>✓ Booked</>
+                      ) : (
+                        <><Truck className="h-3.5 w-3.5 mr-1.5" /> Book Courier (₹{shippingCost})</>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t">
+                  <div>
+                    <Label className="text-xs">Courier Name <span className="text-destructive">*</span></Label>
+                    <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Auto-filled after booking" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">AWB No. <span className="text-destructive">*</span></Label>
+                    <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
+                  </div>
                 </div>
               </div>
             )}
