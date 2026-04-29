@@ -1,0 +1,1 @@
+UPDATE public.products SET name = TRIM(name), brand = TRIM(brand), category = TRIM(category) WHERE name <> TRIM(name) OR brand <> TRIM(brand) OR category <> TRIM(category);
