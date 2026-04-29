@@ -686,6 +686,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
+      setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode("");
+      setCouriers([]); setSelectedCourier(null); setShippingCost(0); setServiceable(null);
       clearDraft();
     } catch (err: any) {
       showMutationError("Error", err?.message ?? "Could not create invoice");
