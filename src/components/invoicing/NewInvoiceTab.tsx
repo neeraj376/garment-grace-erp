@@ -131,6 +131,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Shipping (online source) state
+  const [addressLine1, setAddressLine1] = useState(() => loadDraft()?.addressLine1 ?? "");
+  const [addressLine2, setAddressLine2] = useState(() => loadDraft()?.addressLine2 ?? "");
+  const [shipCity, setShipCity] = useState(() => loadDraft()?.shipCity ?? "");
+  const [shipState, setShipState] = useState(() => loadDraft()?.shipState ?? "");
+  const [shipPincode, setShipPincode] = useState(() => loadDraft()?.shipPincode ?? "");
+  const [checkingPincode, setCheckingPincode] = useState(false);
+  const [serviceable, setServiceable] = useState<boolean | null>(null);
+  const [couriers, setCouriers] = useState<CourierOption[]>([]);
+  const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [bookingCourier, setBookingCourier] = useState(false);
+
   const isAuthErrorMessage = (message: string) => /jwt|token|session|expired|refresh/i.test(message);
 
   const showMutationError = (title: string, message: string) => {
