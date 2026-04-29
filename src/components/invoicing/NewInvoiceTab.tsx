@@ -267,6 +267,161 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     });
   }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode]);
 
+  // Pincode serviceability check (only when source is online)
+  useEffect(() => {
+    if (source !== "online") {
+      setServiceable(null);
+      setCouriers([]);
+      setSelectedCourier(null);
+      setShippingCost(0);
+      return;
+    }
+    if (shipPincode.length !== 6 || !/^[1-9]\d{5}$/.test(shipPincode)) {
+      setServiceable(null);
+      setCouriers([]);
+      setSelectedCourier(null);
+      setShippingCost(0);
+      return;
+    }
+    const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
+    if (totalQty === 0) return;
+
+    const timer = setTimeout(async () => {
+      setCheckingPincode(true);
+      try {
+        const totalWeightKg = Math.max(0.5, totalQty * 0.5);
+        const { data, error } = await supabase.functions.invoke("shiprocket", {
+          body: {
+            action: "check_serviceability",
+            pickup_pincode: PICKUP_PINCODE,
+            delivery_pincode: shipPincode,
+            weight: totalWeightKg.toFixed(1),
+          },
+        });
+        if (error) throw error;
+        const available = data?.data?.available_courier_companies;
+        if (available && available.length > 0) {
+          setServiceable(true);
+          const sorted = available
+            .map((c: any) => ({
+              courier_company_id: c.courier_company_id,
+              courier_name: c.courier_name,
+              rate: c.rate,
+              etd: c.etd,
+              estimated_delivery_days: c.estimated_delivery_days,
+            }))
+            .sort((a: CourierOption, b: CourierOption) => a.rate - b.rate);
+          setCouriers(sorted);
+          setSelectedCourier(sorted[0]);
+          setShippingCost(sorted[0].rate);
+        } else {
+          setServiceable(false);
+          setCouriers([]);
+          setSelectedCourier(null);
+          setShippingCost(0);
+        }
+      } catch {
+        setServiceable(null);
+        setCouriers([]);
+      } finally {
+        setCheckingPincode(false);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [shipPincode, source, cart]);
+
+  const handleBookCourier = async () => {
+    if (!selectedCourier) {
+      toast({ title: "Select a courier", description: "Pick a shipping option first", variant: "destructive" });
+      return;
+    }
+    if (!customerName.trim() || !customerMobile.trim()) {
+      toast({ title: "Customer required", description: "Name and mobile are required", variant: "destructive" });
+      return;
+    }
+    if (!addressLine1.trim() || !shipCity.trim() || !shipState || !shipPincode.trim()) {
+      toast({ title: "Address required", description: "Fill the complete shipping address", variant: "destructive" });
+      return;
+    }
+    if (cart.length === 0) {
+      toast({ title: "Cart is empty", description: "Add products before booking", variant: "destructive" });
+      return;
+    }
+
+    setBookingCourier(true);
+    try {
+      const orderRef = `INV-PREBOOK-${Date.now().toString(36).toUpperCase()}`;
+      const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
+      const totalWeightKg = Math.max(0.5, totalQty * 0.5);
+      const nameParts = customerName.trim().split(/\s+/);
+      const billingFirst = nameParts[0] || "Customer";
+      const billingLast = nameParts.slice(1).join(" ") || "-";
+
+      const order_data = {
+        order_id: orderRef,
+        order_date: new Date().toISOString().slice(0, 19).replace("T", " "),
+        pickup_location: "Primary",
+        billing_customer_name: billingFirst,
+        billing_last_name: billingLast,
+        billing_address: addressLine1,
+        billing_address_2: addressLine2 || "",
+        billing_city: shipCity,
+        billing_pincode: shipPincode,
+        billing_state: shipState,
+        billing_country: "India",
+        billing_email: customerEmail || "noreply@originee-store.com",
+        billing_phone: customerMobile.replace(/\D/g, "").slice(-10),
+        shipping_is_billing: true,
+        order_items: cart.map(i => ({
+          name: i.name,
+          sku: i.sku,
+          units: i.quantity,
+          selling_price: i.unit_price,
+          discount: i.item_discount,
+          tax: i.tax_rate,
+          hsn: 0,
+        })),
+        payment_method: "Prepaid",
+        sub_total: cart.reduce((s, i) => s + getLineTotal(i), 0),
+        length: 25,
+        breadth: 20,
+        height: 5,
+        weight: Number(totalWeightKg.toFixed(1)),
+      };
+
+      const { data: created, error: createErr } = await supabase.functions.invoke("shiprocket", {
+        body: { action: "create_order", order_data },
+      });
+      if (createErr) throw createErr;
+      if (created?.status_code && created.status_code >= 400) {
+        throw new Error(created.message || "Shiprocket order creation failed");
+      }
+      const shipmentId = created?.shipment_id;
+      if (!shipmentId) throw new Error("No shipment_id returned");
+
+      const { data: awbRes, error: awbErr } = await supabase.functions.invoke("shiprocket", {
+        body: {
+          action: "generate_awb",
+          shipment_id: shipmentId,
+          courier_id: selectedCourier.courier_company_id,
+        },
+      });
+      if (awbErr) throw awbErr;
+      const awbData = awbRes?.response?.data;
+      const newAwb = awbData?.awb_code;
+      const newCourier = awbData?.courier_name || selectedCourier.courier_name;
+      if (!newAwb) throw new Error(awbRes?.message || "AWB not generated");
+
+      setCourierName(newCourier);
+      setAwbNo(newAwb);
+      toast({ title: "Courier booked!", description: `${newCourier} • AWB ${newAwb}` });
+    } catch (err: any) {
+      toast({ title: "Booking failed", description: err?.message || "Could not book courier", variant: "destructive" });
+    } finally {
+      setBookingCourier(false);
+    }
+  };
+
   useEffect(() => {
     if (!storeId) return;
     // Fetch only in-stock products (paginated to avoid 1000-row limit)
