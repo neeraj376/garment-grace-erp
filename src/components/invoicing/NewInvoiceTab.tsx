@@ -59,6 +59,7 @@ interface Employee {
   id: string;
   name: string;
   role: string;
+  email?: string | null;
 }
 
 interface Props {
@@ -457,12 +458,27 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setProducts(allProducts.map(p => ({ ...p, _stock: stockMap[p.id] ?? 0 })));
     };
     fetchAllProducts();
-    supabase
-      .from("employees")
-      .select("id, name, role")
-      .eq("store_id", storeId)
-      .eq("is_active", true)
-      .then(({ data }) => setEmployees((data as Employee[]) ?? []));
+    (async () => {
+      const { data: emps } = await supabase
+        .from("employees")
+        .select("id, name, role, email")
+        .eq("store_id", storeId)
+        .eq("is_active", true);
+      const list = (emps as any[]) ?? [];
+      setEmployees(list);
+
+      // Auto-select employee matching the logged-in user's email
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const loginEmail = user?.email?.trim().toLowerCase();
+        if (loginEmail) {
+          const match = list.find(e => (e.email || "").trim().toLowerCase() === loginEmail);
+          if (match) {
+            setSelectedEmployee(prev => (!prev || prev === "none") ? match.id : prev);
+          }
+        }
+      } catch {}
+    })();
   }, [storeId]);
 
   const addToCart = (product: any) => {
