@@ -582,8 +582,12 @@ export default function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-header">Inventory</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            <span className="font-semibold text-foreground">{filtered.length}</span> products · <span className="font-semibold text-foreground">{filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0).toLocaleString("en-IN")}</span> pieces in stock
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+            {loading ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading inventory…</>
+            ) : (
+              <><span className="font-semibold text-foreground">{filtered.length}</span> products · <span className="font-semibold text-foreground">{filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0).toLocaleString("en-IN")}</span> pieces in stock</>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
