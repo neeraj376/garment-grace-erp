@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.daily-employee-sales]
 verify_jwt = false
+
+[functions.send-order-alert]
+verify_jwt = false
