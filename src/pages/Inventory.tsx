@@ -72,45 +72,57 @@ export default function Inventory() {
   const [soldDialogOpen, setSoldDialogOpen] = useState(false);
   const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
   const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchProducts = async () => {
     if (!storeId) return;
-    // Fetch products WITHOUT embedded inventory_batches — large embedded arrays
-    // can cause partial pages (response size cap) and silently truncate the catalog
-    // for users with large stores.
-    let allProducts: any[] = [];
-    let from = 0;
+    setLoading(true);
+    try {
     const pageSize = 1000;
-    while (true) {
-      const { data: page, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .range(from, from + pageSize - 1);
-      if (error) { console.error("Inventory products fetch error:", error); break; }
-      if (!page || page.length === 0) break;
-      allProducts = allProducts.concat(page);
-      if (page.length < pageSize) break;
-      from += pageSize;
-    }
 
-    // Fetch all inventory batches for this store separately, also paginated.
-    let allBatches: any[] = [];
-    let bFrom = 0;
-    while (true) {
-      const { data: bPage, error: bErr } = await supabase
-        .from("inventory_batches")
-        .select("product_id, quantity, buying_price, received_at")
-        .eq("store_id", storeId)
-        .range(bFrom, bFrom + pageSize - 1);
-      if (bErr) { console.error("Inventory batches fetch error:", bErr); break; }
-      if (!bPage || bPage.length === 0) break;
-      allBatches = allBatches.concat(bPage);
-      if (bPage.length < pageSize) break;
-      bFrom += pageSize;
-    }
+    // Helper to fully paginate a query builder factory.
+    const fetchAll = async <T,>(makeQuery: (from: number, to: number) => any): Promise<T[]> => {
+      let all: T[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await makeQuery(from, from + pageSize - 1);
+        if (error) { console.error("[Inventory] fetch error:", error); break; }
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
+    };
+
+    // Fetch products, batches, and invoice items in parallel.
+    // For invoice_items we use an inner-join filter on invoices.store_id so
+    // we don't need to round-trip invoice IDs separately.
+    const [allProducts, allBatches, allItems] = await Promise.all([
+      fetchAll<any>((f, t) =>
+        supabase
+          .from("products")
+          .select("*")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .range(f, t)
+      ),
+      fetchAll<any>((f, t) =>
+        supabase
+          .from("inventory_batches")
+          .select("product_id, quantity, buying_price, received_at")
+          .eq("store_id", storeId)
+          .range(f, t)
+      ),
+      fetchAll<any>((f, t) =>
+        supabase
+          .from("invoice_items")
+          .select("product_id, quantity, returned_quantity, invoices!inner(store_id)")
+          .eq("invoices.store_id", storeId)
+          .range(f, t)
+      ),
+    ]);
 
     const batchesByProduct = new Map<string, { quantity: number; buying_price: number }[]>();
     const latestBatchDate = new Map<string, string>();
@@ -126,44 +138,11 @@ export default function Inventory() {
       }
     }
 
-    // Fetch sold quantities from invoice_items for this store's invoices.
-    // First get invoice IDs for the store, then sum quantities (minus returns) per product.
+    // Aggregate sold quantities from invoice_items (already filtered by store).
     const soldByProduct = new Map<string, number>();
-    let invIds: string[] = [];
-    let iFrom = 0;
-    while (true) {
-      const { data: invPage, error: invErr } = await supabase
-        .from("invoices")
-        .select("id")
-        .eq("store_id", storeId)
-        .range(iFrom, iFrom + pageSize - 1);
-      if (invErr) { console.error("Invoices fetch error:", invErr); break; }
-      if (!invPage || invPage.length === 0) break;
-      invIds = invIds.concat(invPage.map((i: any) => i.id));
-      if (invPage.length < pageSize) break;
-      iFrom += pageSize;
-    }
-    if (invIds.length > 0) {
-      const chunkSize = 500;
-      for (let i = 0; i < invIds.length; i += chunkSize) {
-        const chunk = invIds.slice(i, i + chunkSize);
-        let itFrom = 0;
-        while (true) {
-          const { data: items, error: itErr } = await supabase
-            .from("invoice_items")
-            .select("product_id, quantity, returned_quantity")
-            .in("invoice_id", chunk)
-            .range(itFrom, itFrom + pageSize - 1);
-          if (itErr) { console.error("Invoice items fetch error:", itErr); break; }
-          if (!items || items.length === 0) break;
-          for (const it of items) {
-            const sold = (it.quantity || 0) - (it.returned_quantity || 0);
-            soldByProduct.set(it.product_id, (soldByProduct.get(it.product_id) || 0) + sold);
-          }
-          if (items.length < pageSize) break;
-          itFrom += pageSize;
-        }
-      }
+    for (const it of allItems) {
+      const sold = (it.quantity || 0) - (it.returned_quantity || 0);
+      soldByProduct.set(it.product_id, (soldByProduct.get(it.product_id) || 0) + sold);
     }
 
     const mapped = allProducts.map((p: any) => {
@@ -177,6 +156,9 @@ export default function Inventory() {
       };
     });
     setProducts(mapped);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchProducts(); }, [storeId]);
@@ -600,8 +582,12 @@ export default function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-header">Inventory</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            <span className="font-semibold text-foreground">{filtered.length}</span> products · <span className="font-semibold text-foreground">{filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0).toLocaleString("en-IN")}</span> pieces in stock
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+            {loading ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading inventory…</>
+            ) : (
+              <><span className="font-semibold text-foreground">{filtered.length}</span> products · <span className="font-semibold text-foreground">{filtered.reduce((sum, p) => sum + (p.total_stock ?? 0), 0).toLocaleString("en-IN")}</span> pieces in stock</>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
