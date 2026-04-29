@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle } from "lucide-react";
 import InvoicePreviewDialog from "./InvoicePreviewDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,26 @@ const PAYMENT_OPTIONS: { value: string; label: string }[] = [
   { value: "upi", label: "UPI" },
   { value: "wallet", label: "Wallet" },
 ];
+
+const PICKUP_PINCODE = "110001";
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+];
+
+interface CourierOption {
+  courier_company_id: number;
+  courier_name: string;
+  rate: number;
+  etd: string;
+  estimated_delivery_days: number;
+}
 
 interface CartItem {
   product_id: string;
@@ -110,6 +130,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Shipping (online source) state
+  const [addressLine1, setAddressLine1] = useState(() => loadDraft()?.addressLine1 ?? "");
+  const [addressLine2, setAddressLine2] = useState(() => loadDraft()?.addressLine2 ?? "");
+  const [shipCity, setShipCity] = useState(() => loadDraft()?.shipCity ?? "");
+  const [shipState, setShipState] = useState(() => loadDraft()?.shipState ?? "");
+  const [shipPincode, setShipPincode] = useState(() => loadDraft()?.shipPincode ?? "");
+  const [checkingPincode, setCheckingPincode] = useState(false);
+  const [serviceable, setServiceable] = useState<boolean | null>(null);
+  const [couriers, setCouriers] = useState<CourierOption[]>([]);
+  const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [bookingCourier, setBookingCourier] = useState(false);
 
   const isAuthErrorMessage = (message: string) => /jwt|token|session|expired|refresh/i.test(message);
 
@@ -230,8 +263,164 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      addressLine1, addressLine2, shipCity, shipState, shipPincode,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode]);
+
+  // Pincode serviceability check (only when source is online)
+  useEffect(() => {
+    if (source !== "online") {
+      setServiceable(null);
+      setCouriers([]);
+      setSelectedCourier(null);
+      setShippingCost(0);
+      return;
+    }
+    if (shipPincode.length !== 6 || !/^[1-9]\d{5}$/.test(shipPincode)) {
+      setServiceable(null);
+      setCouriers([]);
+      setSelectedCourier(null);
+      setShippingCost(0);
+      return;
+    }
+    const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
+    if (totalQty === 0) return;
+
+    const timer = setTimeout(async () => {
+      setCheckingPincode(true);
+      try {
+        const totalWeightKg = Math.max(0.5, totalQty * 0.5);
+        const { data, error } = await supabase.functions.invoke("shiprocket", {
+          body: {
+            action: "check_serviceability",
+            pickup_pincode: PICKUP_PINCODE,
+            delivery_pincode: shipPincode,
+            weight: totalWeightKg.toFixed(1),
+          },
+        });
+        if (error) throw error;
+        const available = data?.data?.available_courier_companies;
+        if (available && available.length > 0) {
+          setServiceable(true);
+          const sorted = available
+            .map((c: any) => ({
+              courier_company_id: c.courier_company_id,
+              courier_name: c.courier_name,
+              rate: c.rate,
+              etd: c.etd,
+              estimated_delivery_days: c.estimated_delivery_days,
+            }))
+            .sort((a: CourierOption, b: CourierOption) => a.rate - b.rate);
+          setCouriers(sorted);
+          setSelectedCourier(sorted[0]);
+          setShippingCost(sorted[0].rate);
+        } else {
+          setServiceable(false);
+          setCouriers([]);
+          setSelectedCourier(null);
+          setShippingCost(0);
+        }
+      } catch {
+        setServiceable(null);
+        setCouriers([]);
+      } finally {
+        setCheckingPincode(false);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [shipPincode, source, cart]);
+
+  const handleBookCourier = async () => {
+    if (!selectedCourier) {
+      toast({ title: "Select a courier", description: "Pick a shipping option first", variant: "destructive" });
+      return;
+    }
+    if (!customerName.trim() || !customerMobile.trim()) {
+      toast({ title: "Customer required", description: "Name and mobile are required", variant: "destructive" });
+      return;
+    }
+    if (!addressLine1.trim() || !shipCity.trim() || !shipState || !shipPincode.trim()) {
+      toast({ title: "Address required", description: "Fill the complete shipping address", variant: "destructive" });
+      return;
+    }
+    if (cart.length === 0) {
+      toast({ title: "Cart is empty", description: "Add products before booking", variant: "destructive" });
+      return;
+    }
+
+    setBookingCourier(true);
+    try {
+      const orderRef = `INV-PREBOOK-${Date.now().toString(36).toUpperCase()}`;
+      const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
+      const totalWeightKg = Math.max(0.5, totalQty * 0.5);
+      const nameParts = customerName.trim().split(/\s+/);
+      const billingFirst = nameParts[0] || "Customer";
+      const billingLast = nameParts.slice(1).join(" ") || "-";
+
+      const order_data = {
+        order_id: orderRef,
+        order_date: new Date().toISOString().slice(0, 19).replace("T", " "),
+        pickup_location: "Primary",
+        billing_customer_name: billingFirst,
+        billing_last_name: billingLast,
+        billing_address: addressLine1,
+        billing_address_2: addressLine2 || "",
+        billing_city: shipCity,
+        billing_pincode: shipPincode,
+        billing_state: shipState,
+        billing_country: "India",
+        billing_email: customerEmail || "noreply@originee-store.com",
+        billing_phone: customerMobile.replace(/\D/g, "").slice(-10),
+        shipping_is_billing: true,
+        order_items: cart.map(i => ({
+          name: i.name,
+          sku: i.sku,
+          units: i.quantity,
+          selling_price: i.unit_price,
+          discount: i.item_discount,
+          tax: i.tax_rate,
+          hsn: 0,
+        })),
+        payment_method: "Prepaid",
+        sub_total: cart.reduce((s, i) => s + getLineTotal(i), 0),
+        length: 25,
+        breadth: 20,
+        height: 5,
+        weight: Number(totalWeightKg.toFixed(1)),
+      };
+
+      const { data: created, error: createErr } = await supabase.functions.invoke("shiprocket", {
+        body: { action: "create_order", order_data },
+      });
+      if (createErr) throw createErr;
+      if (created?.status_code && created.status_code >= 400) {
+        throw new Error(created.message || "Shiprocket order creation failed");
+      }
+      const shipmentId = created?.shipment_id;
+      if (!shipmentId) throw new Error("No shipment_id returned");
+
+      const { data: awbRes, error: awbErr } = await supabase.functions.invoke("shiprocket", {
+        body: {
+          action: "generate_awb",
+          shipment_id: shipmentId,
+          courier_id: selectedCourier.courier_company_id,
+        },
+      });
+      if (awbErr) throw awbErr;
+      const awbData = awbRes?.response?.data;
+      const newAwb = awbData?.awb_code;
+      const newCourier = awbData?.courier_name || selectedCourier.courier_name;
+      if (!newAwb) throw new Error(awbRes?.message || "AWB not generated");
+
+      setCourierName(newCourier);
+      setAwbNo(newAwb);
+      toast({ title: "Courier booked!", description: `${newCourier} • AWB ${newAwb}` });
+    } catch (err: any) {
+      toast({ title: "Booking failed", description: err?.message || "Could not book courier", variant: "destructive" });
+    } finally {
+      setBookingCourier(false);
+    }
+  };
 
   useEffect(() => {
     if (!storeId) return;
@@ -497,6 +686,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
+      setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode("");
+      setCouriers([]); setSelectedCourier(null); setShippingCost(0); setServiceable(null);
       clearDraft();
     } catch (err: any) {
       showMutationError("Error", err?.message ?? "Could not create invoice");
@@ -913,14 +1104,113 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               </Select>
             </div>
             {source === "online" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-3 rounded-md border p-3 bg-muted/20">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Shipping Address</div>
                 <div>
-                  <Label>Courier Name <span className="text-destructive">*</span></Label>
-                  <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
+                  <Label className="text-xs">Address Line 1 <span className="text-destructive">*</span></Label>
+                  <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
                 </div>
                 <div>
-                  <Label>AWB No. <span className="text-destructive">*</span></Label>
-                  <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+                  <Label className="text-xs">Address Line 2</Label>
+                  <Input value={addressLine2} onChange={e => setAddressLine2(e.target.value)} placeholder="Landmark, Area (optional)" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Pincode <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={shipPincode}
+                      onChange={e => setShipPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      maxLength={6}
+                      placeholder="110001"
+                    />
+                    {shipPincode.length === 6 && (
+                      <div className="mt-1 flex items-center gap-1 text-[11px]">
+                        {checkingPincode ? (
+                          <><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /><span className="text-muted-foreground">Checking...</span></>
+                        ) : serviceable === true ? (
+                          <><CheckCircle className="h-3 w-3 text-green-600" /><span className="text-green-600">Available</span></>
+                        ) : serviceable === false ? (
+                          <><XCircle className="h-3 w-3 text-destructive" /><span className="text-destructive">Not deliverable</span></>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs">City <span className="text-destructive">*</span></Label>
+                    <Input value={shipCity} onChange={e => setShipCity(e.target.value)} placeholder="City" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">State <span className="text-destructive">*</span></Label>
+                    <Select value={shipState} onValueChange={setShipState}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent className="z-[9999] max-h-60">
+                        {INDIAN_STATES.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {couriers.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                      <Truck className="h-3.5 w-3.5" /> Shipping Options
+                    </div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {couriers.slice(0, 5).map(c => (
+                        <label
+                          key={c.courier_company_id}
+                          className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors text-xs ${
+                            selectedCourier?.courier_company_id === c.courier_company_id
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-muted-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="invoice-courier"
+                              checked={selectedCourier?.courier_company_id === c.courier_company_id}
+                              onChange={() => { setSelectedCourier(c); setShippingCost(c.rate); }}
+                              className="accent-primary"
+                            />
+                            <div>
+                              <p className="font-medium">{c.courier_name}</p>
+                              <p className="text-[10px] text-muted-foreground">Est. {c.etd}</p>
+                            </div>
+                          </div>
+                          <span className="font-semibold">₹{c.rate}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleBookCourier}
+                      disabled={bookingCourier || !selectedCourier || !!awbNo}
+                    >
+                      {bookingCourier ? (
+                        <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Booking...</>
+                      ) : awbNo ? (
+                        <>✓ Booked</>
+                      ) : (
+                        <><Truck className="h-3.5 w-3.5 mr-1.5" /> Book Courier (₹{shippingCost})</>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t">
+                  <div>
+                    <Label className="text-xs">Courier Name <span className="text-destructive">*</span></Label>
+                    <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Auto-filled after booking" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">AWB No. <span className="text-destructive">*</span></Label>
+                    <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
+                  </div>
                 </div>
               </div>
             )}
