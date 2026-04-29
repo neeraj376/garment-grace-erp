@@ -12,29 +12,26 @@ const STORE_CACHE_PREFIX = "cached_store_id:";
 function cacheStoreId(userId: string, storeId: string | null) {
   try {
     const key = `${STORE_CACHE_PREFIX}${userId}`;
-
-    if (storeId) {
-      localStorage.setItem(key, storeId);
-    } else {
-      localStorage.removeItem(key);
-    }
+    if (storeId) localStorage.setItem(key, storeId);
+    else localStorage.removeItem(key);
   } catch {
-    // Ignore storage errors.
+    // ignore
   }
 }
 
+type Step = "email" | "credentials" | "otp";
+
 export default function Auth() {
-  const [step, setStep] = useState<"credentials" | "otp">("credentials");
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
+  const [isOtpOnly, setIsOtpOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const { toast } = useToast();
 
-  const startCountdown = useCallback(() => {
-    setCountdown(60);
-  }, []);
+  const startCountdown = useCallback(() => setCountdown(60), []);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -42,6 +39,44 @@ export default function Auth() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
+  // Step 1: user submits email — check whether this is an OTP-only employee
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("check-otp-only-user", {
+        body: { email },
+      });
+      if (error) throw error;
+
+      if (data?.otpOnly) {
+        // Skip password step entirely — send OTP and go straight to OTP entry
+        setIsOtpOnly(true);
+        const { error: otpError } = await supabase.functions.invoke("send-otp", {
+          body: { email },
+        });
+        if (otpError) throw otpError;
+
+        toast({
+          title: "OTP Sent",
+          description: "A 6-digit verification code has been sent to your email.",
+        });
+        setStep("otp");
+        startCountdown();
+      } else {
+        setIsOtpOnly(false);
+        setStep("credentials");
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2 (password users only): verify password and send OTP
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -67,11 +102,7 @@ export default function Auth() {
       setStep("otp");
       startCountdown();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -90,16 +121,20 @@ export default function Auth() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid OTP");
       }
 
+      // OTP-only users get their internal password from the verify response.
+      const effectivePassword: string =
+        verifyData?.otpOnly && verifyData?.otpOnlyPassword
+          ? verifyData.otpOnlyPassword
+          : password;
+
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password: effectivePassword,
       });
       if (signInError) throw signInError;
 
       const signedInUser = signInData.user;
-      if (!signedInUser) {
-        throw new Error("Could not restore your session");
-      }
+      if (!signedInUser) throw new Error("Could not restore your session");
 
       const nextStoreId = typeof verifyData?.storeId === "string" ? verifyData.storeId : null;
       cacheStoreId(signedInUser.id, nextStoreId);
@@ -107,11 +142,7 @@ export default function Auth() {
       window.location.replace(nextStoreId ? "/administrator" : "/administrator/onboarding");
       return;
     } catch (error: any) {
-      toast({
-        title: "Invalid OTP",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Invalid OTP", description: error.message, variant: "destructive" });
       setOtp("");
     } finally {
       setLoading(false);
@@ -121,9 +152,7 @@ export default function Auth() {
   const handleResendOtp = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("send-otp", {
-        body: { email },
-      });
+      const { error } = await supabase.functions.invoke("send-otp", { body: { email } });
       if (error) throw error;
       toast({ title: "OTP Resent", description: "Check your email for the new code." });
       startCountdown();
@@ -133,6 +162,13 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  const subTitle =
+    step === "email"
+      ? "Sign in to your store"
+      : step === "credentials"
+        ? "Enter your password"
+        : "Enter the verification code";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -144,13 +180,11 @@ export default function Auth() {
             </div>
           </div>
           <h1 className="text-2xl font-bold font-display">RetailERP</h1>
-          <p className="text-sm text-muted-foreground">
-            {step === "credentials" ? "Sign in to your store" : "Enter the verification code"}
-          </p>
+          <p className="text-sm text-muted-foreground">{subTitle}</p>
         </div>
 
-        {step === "credentials" ? (
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+        {step === "email" && (
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -163,7 +197,24 @@ export default function Auth() {
                   placeholder="you@example.com"
                   className="pl-9"
                   required
+                  autoFocus
                 />
+              </div>
+            </div>
+            <Button type="submit" className="w-full" disabled={loading || !email}>
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {loading ? "Checking..." : "Continue"}
+            </Button>
+          </form>
+        )}
+
+        {step === "credentials" && (
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input value={email} disabled className="pl-9" />
               </div>
             </div>
             <div className="space-y-2">
@@ -179,6 +230,7 @@ export default function Auth() {
                   className="pl-9"
                   required
                   minLength={6}
+                  autoFocus
                 />
               </div>
             </div>
@@ -186,8 +238,17 @@ export default function Auth() {
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               {loading ? "Verifying..." : "Continue"}
             </Button>
+            <button
+              type="button"
+              onClick={() => { setStep("email"); setPassword(""); }}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Back
+            </button>
           </form>
-        ) : (
+        )}
+
+        {step === "otp" && (
           <div className="space-y-6">
             <div className="flex justify-center">
               <div className="rounded-full bg-primary/10 p-4">
@@ -195,7 +256,8 @@ export default function Auth() {
               </div>
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              We've sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>
+              We've sent a 6-digit code to{" "}
+              <span className="font-medium text-foreground">{email}</span>
             </p>
             <div className="flex justify-center">
               <InputOTP maxLength={6} value={otp} onChange={setOtp} onComplete={handleOtpVerify}>
@@ -216,7 +278,7 @@ export default function Auth() {
             <div className="flex items-center justify-between">
               <button
                 onClick={() => {
-                  setStep("credentials");
+                  setStep(isOtpOnly ? "email" : "credentials");
                   setOtp("");
                 }}
                 className="text-sm text-muted-foreground hover:text-foreground"
