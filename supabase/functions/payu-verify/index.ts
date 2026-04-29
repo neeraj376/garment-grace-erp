@@ -86,6 +86,21 @@ serve(async (req) => {
           }
         }
       }
+
+      // Fire-and-forget order alert email
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        fetch(`${supabaseUrl}/functions/v1/send-order-alert`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({ order_id: orderId }),
+        }).catch((e) => console.error("alert email failed:", e));
+      } catch (e) {
+        console.error("alert email dispatch error:", e);
+      }
     } else {
       await supabase.from("orders").update({
         payment_status: "failed",
