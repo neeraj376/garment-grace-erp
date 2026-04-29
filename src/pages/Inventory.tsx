@@ -138,44 +138,11 @@ export default function Inventory() {
       }
     }
 
-    // Fetch sold quantities from invoice_items for this store's invoices.
-    // First get invoice IDs for the store, then sum quantities (minus returns) per product.
+    // Aggregate sold quantities from invoice_items (already filtered by store).
     const soldByProduct = new Map<string, number>();
-    let invIds: string[] = [];
-    let iFrom = 0;
-    while (true) {
-      const { data: invPage, error: invErr } = await supabase
-        .from("invoices")
-        .select("id")
-        .eq("store_id", storeId)
-        .range(iFrom, iFrom + pageSize - 1);
-      if (invErr) { console.error("Invoices fetch error:", invErr); break; }
-      if (!invPage || invPage.length === 0) break;
-      invIds = invIds.concat(invPage.map((i: any) => i.id));
-      if (invPage.length < pageSize) break;
-      iFrom += pageSize;
-    }
-    if (invIds.length > 0) {
-      const chunkSize = 500;
-      for (let i = 0; i < invIds.length; i += chunkSize) {
-        const chunk = invIds.slice(i, i + chunkSize);
-        let itFrom = 0;
-        while (true) {
-          const { data: items, error: itErr } = await supabase
-            .from("invoice_items")
-            .select("product_id, quantity, returned_quantity")
-            .in("invoice_id", chunk)
-            .range(itFrom, itFrom + pageSize - 1);
-          if (itErr) { console.error("Invoice items fetch error:", itErr); break; }
-          if (!items || items.length === 0) break;
-          for (const it of items) {
-            const sold = (it.quantity || 0) - (it.returned_quantity || 0);
-            soldByProduct.set(it.product_id, (soldByProduct.get(it.product_id) || 0) + sold);
-          }
-          if (items.length < pageSize) break;
-          itFrom += pageSize;
-        }
-      }
+    for (const it of allItems) {
+      const sold = (it.quantity || 0) - (it.returned_quantity || 0);
+      soldByProduct.set(it.product_id, (soldByProduct.get(it.product_id) || 0) + sold);
     }
 
     const mapped = allProducts.map((p: any) => {
@@ -189,6 +156,9 @@ export default function Inventory() {
       };
     });
     setProducts(mapped);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchProducts(); }, [storeId]);
