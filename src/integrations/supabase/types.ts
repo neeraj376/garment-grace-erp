@@ -144,6 +144,30 @@ export type Database = {
           },
         ]
       }
+      employee_auth_passwords: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          password: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          password: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          password?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           created_at: string
