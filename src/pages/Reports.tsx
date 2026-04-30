@@ -97,6 +97,34 @@ export default function Reports() {
       from += PAGE;
     }
 
+    // Fetch paid online orders in the same range — they are not in the invoices table
+    const orderData: any[] = [];
+    {
+      let oFrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("id, total_amount, subtotal, tax_amount, shipping_amount, payment_method, created_at, order_items(quantity, unit_price, tax_amount, total, product_id)")
+          .eq("store_id", storeId!)
+          .eq("payment_status", "paid")
+          .gte("created_at", start)
+          .lte("created_at", end)
+          .order("created_at", { ascending: true })
+          .range(oFrom, oFrom + PAGE - 1);
+        if (error) break;
+        const batch = data ?? [];
+        orderData.push(...batch);
+        if (batch.length < PAGE) break;
+        oFrom += PAGE;
+      }
+    }
+    // Add order item product IDs for cost lookup
+    orderData.forEach((o: any) => {
+      (o.order_items as any[])?.forEach((it: any) => {
+        if (it.product_id) productIds.add(it.product_id);
+      });
+    });
+
     // Collect product IDs and batch IDs
     const productIds = new Set<string>();
     const batchIds = new Set<string>();
