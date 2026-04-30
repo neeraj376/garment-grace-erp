@@ -361,7 +361,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const order_data = {
         order_id: orderRef,
         order_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-        pickup_location: "Primary",
+        pickup_location: "work",
         billing_customer_name: billingFirst,
         billing_last_name: billingLast,
         billing_address: addressLine1,
