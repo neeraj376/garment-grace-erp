@@ -205,7 +205,7 @@ export default function Inventory() {
 
       toast({ title: "Product added" });
       setDialogOpen(false);
-      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "" });
+      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "", description: "" });
       setNewProductPhotos([]);
       fetchProducts();
     } catch (err: any) {
