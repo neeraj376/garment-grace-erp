@@ -109,7 +109,7 @@ export default function ShopHome() {
       <section className="container mx-auto px-4 py-12">
         <h2 className="font-display text-2xl font-bold mb-6">Shop by Category</h2>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-          {HERO_CATEGORIES.map(({ name, Icon }) => (
+          {sortedCategories.map(({ name, Icon }) => (
             <Link
               key={name}
               to={`/category/${encodeURIComponent(name)}`}
