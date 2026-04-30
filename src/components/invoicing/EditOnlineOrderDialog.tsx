@@ -98,8 +98,6 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
     })();
   }, [order]);
 
-  if (!order) return null;
-
   const recalcRow = (row: OrderItemRow): OrderItemRow => {
     const gross = row.unit_price * row.quantity;
     const taxRate = row.tax_rate || 0;
@@ -167,6 +165,8 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
       )
       .slice(0, 8);
   }, [availableProducts, productSearch]);
+
+  if (!order) return null;
 
   const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
   const totalTax = items.reduce((s, it) => s + Number(it.tax_amount || 0), 0);
