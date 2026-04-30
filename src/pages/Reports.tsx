@@ -118,12 +118,6 @@ export default function Reports() {
         oFrom += PAGE;
       }
     }
-    // Add order item product IDs for cost lookup
-    orderData.forEach((o: any) => {
-      (o.order_items as any[])?.forEach((it: any) => {
-        if (it.product_id) productIds.add(it.product_id);
-      });
-    });
 
     // Collect product IDs and batch IDs
     const productIds = new Set<string>();
@@ -132,6 +126,12 @@ export default function Reports() {
       (inv.invoice_items as any[])?.forEach(item => {
         if (item.product_id) productIds.add(item.product_id);
         if (item.batch_id) batchIds.add(item.batch_id);
+      });
+    });
+    // Add order item product IDs for cost lookup
+    orderData.forEach((o: any) => {
+      (o.order_items as any[])?.forEach((it: any) => {
+        if (it.product_id) productIds.add(it.product_id);
       });
     });
 
