@@ -51,10 +51,21 @@ export default function Dashboard() {
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
-      const todaySales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOnline = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      // Today's online orders (paid only) — these aren't in invoices table
+      const { data: todayOrders } = await supabase
+        .from("orders")
+        .select("total_amount, payment_method, customer_id")
+        .eq("store_id", storeId)
+        .eq("payment_status", "paid")
+        .gte("created_at", startOfDay);
+
+      const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOrdersTotal = todayOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
+      const todaySales = todayInvSales + todayOrdersTotal;
+      const todayOnlineFromInv = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOnline = todayOnlineFromInv + todayOrdersTotal;
       const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOffline = todaySales - todayOnline - todayWholesale;
+      const todayOffline = todayInvSales - todayOnlineFromInv - todayWholesale;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
@@ -63,10 +74,21 @@ export default function Dashboard() {
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
-      const monthlySales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOnline = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      // Monthly online orders (paid)
+      const { data: monthOrders } = await supabase
+        .from("orders")
+        .select("total_amount, customer_id")
+        .eq("store_id", storeId)
+        .eq("payment_status", "paid")
+        .gte("created_at", startOfMonth);
+
+      const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthOrdersTotal = monthOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
+      const monthlySales = monthInvSales + monthOrdersTotal;
+      const monthlyOnlineFromInv = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyOnline = monthlyOnlineFromInv + monthOrdersTotal;
       const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOffline = monthlySales - monthlyOnline - monthlyWholesale;
+      const monthlyOffline = monthInvSales - monthlyOnlineFromInv - monthlyWholesale;
 
       // Daily average this month
       const dayOfMonth = today.getDate();
@@ -80,7 +102,9 @@ export default function Dashboard() {
         .gte("created_at", startOfMonth)
         .not("customer_id", "is", null);
 
-      const uniqueCustomerIds = new Set(monthlyCustomerInvoices?.map(i => i.customer_id));
+      const uniqueCustomerIds = new Set<string>();
+      monthlyCustomerInvoices?.forEach((i) => i.customer_id && uniqueCustomerIds.add(i.customer_id));
+      monthOrders?.forEach((o) => o.customer_id && uniqueCustomerIds.add(o.customer_id));
 
       // Total products
       const { count: productCount } = await supabase
@@ -142,17 +166,30 @@ export default function Dashboard() {
         .eq("store_id", storeId)
         .gte("created_at", weekStart);
 
+      const { data: weekOrders } = await supabase
+        .from("orders")
+        .select("total_amount, created_at")
+        .eq("store_id", storeId)
+        .eq("payment_status", "paid")
+        .gte("created_at", weekStart);
+
       const weeklyData = days.map((d) => {
         const dayStr = d.toLocaleDateString("en-US", { weekday: "short" });
         const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         const dayEnd = new Date(dayStart.getTime() + 86400000);
-        const sales = weekInvoices
+        const invSales = weekInvoices
           ?.filter((inv) => {
             const t = new Date(inv.created_at);
             return t >= dayStart && t < dayEnd;
           })
           .reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-        return { day: dayStr, sales };
+        const ordSales = weekOrders
+          ?.filter((o) => {
+            const t = new Date(o.created_at);
+            return t >= dayStart && t < dayEnd;
+          })
+          .reduce((sum, o) => sum + Number(o.total_amount || 0), 0) ?? 0;
+        return { day: dayStr, sales: invSales + ordSales };
       });
       setWeeklySales(weeklyData);
     };
