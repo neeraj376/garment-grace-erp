@@ -55,6 +55,15 @@ serve(async (req) => {
         break;
       }
 
+      case "list_pickup_locations": {
+        const res = await fetch(
+          `${SHIPROCKET_BASE}/settings/company/pickup`,
+          { headers }
+        );
+        result = await res.json();
+        break;
+      }
+
       case "create_order": {
         const res = await fetch(`${SHIPROCKET_BASE}/orders/create/adhoc`, {
           method: "POST",
