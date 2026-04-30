@@ -51,10 +51,21 @@ export default function Dashboard() {
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
-      const todaySales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOnline = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      // Today's online orders (paid only) — these aren't in invoices table
+      const { data: todayOrders } = await supabase
+        .from("orders")
+        .select("total_amount, payment_method, customer_id")
+        .eq("store_id", storeId)
+        .eq("payment_status", "paid")
+        .gte("created_at", startOfDay);
+
+      const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOrdersTotal = todayOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
+      const todaySales = todayInvSales + todayOrdersTotal;
+      const todayOnlineFromInv = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOnline = todayOnlineFromInv + todayOrdersTotal;
       const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOffline = todaySales - todayOnline - todayWholesale;
+      const todayOffline = todayInvSales - todayOnlineFromInv - todayWholesale;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
