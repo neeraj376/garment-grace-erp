@@ -66,6 +66,7 @@ export default function Inventory() {
   const [form, setForm] = useState({
     sku: "", name: "", category: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "",
+    description: "",
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
