@@ -166,6 +166,8 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
       .slice(0, 8);
   }, [availableProducts, productSearch]);
 
+  if (!order) return null;
+
   const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
   const totalTax = items.reduce((s, it) => s + Number(it.tax_amount || 0), 0);
   const total = subtotal + Number(shipping || 0) - Number(discount || 0);
