@@ -187,6 +187,7 @@ export default function Inventory() {
             tax_rate: parseFloat(form.tax_rate),
             buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
             photo_url: serializePhotoUrls(newProductPhotos),
+            description: form.description || null,
           })
         .select()
         .single();
