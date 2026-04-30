@@ -35,20 +35,26 @@ export default function ShopCategory() {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
-      const { data } = await supabase.rpc("get_in_stock_shop_products", {
-        p_store_id: STORE_ID,
-        p_category: selectedCategory === "all" ? null : selectedCategory,
-        p_limit: 5000,
-      });
-      setProducts((data ?? []).filter((p: any) => p.photo_url || p.video_url));
-      setLoading(false);
-
-      // Fetch categories from all in-stock products
+      // Always fetch all in-stock products, then filter client-side using flexible matchers.
+      // This handles cases where slug "Shorts" should also match DB category "Short".
       const { data: allData } = await supabase.rpc("get_in_stock_shop_products", {
         p_store_id: STORE_ID,
         p_limit: 5000,
       });
-      const unique = [...new Set((allData ?? []).map((d: any) => d.category).filter(Boolean))].sort() as string[];
+      const all = (allData ?? []).filter((p: any) => p.photo_url || p.video_url);
+
+      let result = all;
+      if (selectedCategory && selectedCategory !== "all") {
+        const matchers = SLUG_MATCHERS[selectedCategory] ?? [selectedCategory.toLowerCase()];
+        result = all.filter((p: any) => {
+          const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
+          return matchers.some((m) => hay.includes(m.toLowerCase()));
+        });
+      }
+      setProducts(result);
+      setLoading(false);
+
+      const unique = [...new Set(all.map((d: any) => d.category).filter(Boolean))].sort() as string[];
       setCategories(unique);
     };
     fetchProducts();
