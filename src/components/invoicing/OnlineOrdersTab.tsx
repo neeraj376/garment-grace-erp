@@ -545,6 +545,16 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         </div>
       )}
 
+      {/* Full edit dialog */}
+      <EditOnlineOrderDialog
+        order={fullEditOrder}
+        onClose={() => setFullEditOrder(null)}
+        onSaved={() => queryClient.invalidateQueries({ queryKey: ["online-orders"] })}
+      />
+
+      {/* Invoice view dialog */}
+      <OrderInvoiceDialog order={invoiceOrder} onClose={() => setInvoiceOrder(null)} />
+
       {/* Delete confirmation dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
