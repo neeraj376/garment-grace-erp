@@ -146,6 +146,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
           buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
           photo_url: serializePhotoUrls(photos),
           video_url: form.video_url || null,
+          description: form.description || null,
         })
         .eq("id", product.id);
 
