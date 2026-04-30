@@ -797,6 +797,7 @@ export type Database = {
           category: string | null
           color: string | null
           created_at: string
+          description: string | null
           hsn_code: string | null
           id: string
           is_active: boolean
@@ -819,6 +820,7 @@ export type Database = {
           category?: string | null
           color?: string | null
           created_at?: string
+          description?: string | null
           hsn_code?: string | null
           id?: string
           is_active?: boolean
@@ -841,6 +843,7 @@ export type Database = {
           category?: string | null
           color?: string | null
           created_at?: string
+          description?: string | null
           hsn_code?: string | null
           id?: string
           is_active?: boolean
@@ -1163,6 +1166,7 @@ export type Database = {
           category: string | null
           color: string | null
           created_at: string
+          description: string | null
           hsn_code: string | null
           id: string
           is_active: boolean
