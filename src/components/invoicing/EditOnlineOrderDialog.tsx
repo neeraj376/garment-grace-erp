@@ -219,13 +219,18 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
       }
 
       // 4) Update order
+      const newTracking = tracking.trim() || null;
+      const newCourier = courier.trim() || null;
+      const prevTracking = order.tracking_number || null;
+      const prevCourier = order.courier_name || null;
+
       const { error: ordErr } = await supabase
         .from("orders")
         .update({
           status,
           payment_status: paymentStatus,
-          tracking_number: tracking.trim() || null,
-          courier_name: courier.trim() || null,
+          tracking_number: newTracking,
+          courier_name: newCourier,
           shipping_amount: shipping,
           discount_amount: discount,
           subtotal,
@@ -237,6 +242,48 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
       if (ordErr) throw ordErr;
 
       toast.success("Order updated");
+
+      // 5) If courier + AWB are set and either changed, send WhatsApp tracking notification
+      const courierChanged = newCourier !== prevCourier || newTracking !== prevTracking;
+      if (newCourier && newTracking && courierChanged) {
+        const phone =
+          order.shipping_addresses?.phone ||
+          order.shop_customers?.phone ||
+          null;
+        const customerName =
+          order.shipping_addresses?.name ||
+          order.shop_customers?.name ||
+          "Customer";
+        if (phone) {
+          try {
+            const { data: waData, error: waErr } = await supabase.functions.invoke(
+              "send-whatsapp-invoice",
+              {
+                body: {
+                  templateName: "order_tracking_details",
+                  phone,
+                  customerName,
+                  invoiceNumber: order.order_number,
+                  courierName: newCourier,
+                  awbNo: newTracking,
+                },
+              }
+            );
+            if (waErr || waData?.success === false) {
+              toast.error(
+                `Tracking saved, but WhatsApp failed: ${waErr?.message || waData?.error || "Unknown error"}`
+              );
+            } else {
+              toast.success(`Tracking notification sent to ${phone}`);
+            }
+          } catch (waErr: any) {
+            toast.error(`Tracking saved, but WhatsApp failed: ${waErr?.message || "Unknown"}`);
+          }
+        } else {
+          toast.message("No customer phone on file — skipped WhatsApp notification");
+        }
+      }
+
       onSaved();
       onClose();
     } catch (err: any) {
