@@ -394,11 +394,29 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         body: { action: "create_order", order_data },
       });
       if (createErr) throw createErr;
+
+      // Surface Shiprocket validation errors clearly
       if (created?.status_code && created.status_code >= 400) {
-        throw new Error(created.message || "Shiprocket order creation failed");
+        const detail = created?.errors
+          ? Object.entries(created.errors).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ")
+          : created.message || "Shiprocket order creation failed";
+        throw new Error(detail);
       }
-      const shipmentId = created?.shipment_id;
-      if (!shipmentId) throw new Error("No shipment_id returned");
+      if (created?.message && !created?.shipment_id && !created?.order_id) {
+        const detail = created?.errors
+          ? Object.entries(created.errors).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ")
+          : created.message;
+        throw new Error(detail);
+      }
+
+      const shipmentId = created?.shipment_id || created?.payload?.shipment_id;
+      if (!shipmentId || shipmentId === 0) {
+        console.error("Shiprocket create_order response:", created);
+        const hint = created?.errors
+          ? Object.entries(created.errors).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ")
+          : (created?.message || "Check that pickup location 'Primary' exists in your Shiprocket account and address fields are valid.");
+        throw new Error(`No shipment_id returned. ${hint}`);
+      }
 
       const { data: awbRes, error: awbErr } = await supabase.functions.invoke("shiprocket", {
         body: {
