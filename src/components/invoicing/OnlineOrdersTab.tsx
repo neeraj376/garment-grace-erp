@@ -10,10 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2 } from "lucide-react";
+import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import EditOnlineOrderDialog from "./EditOnlineOrderDialog";
+import OrderInvoiceDialog from "./OrderInvoiceDialog";
 
 interface OnlineOrdersTabProps {
   storeId: string | null;
@@ -64,6 +66,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [search, setSearch] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [fullEditOrder, setFullEditOrder] = useState<any>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [editStatus, setEditStatus] = useState("");
   const [editAwb, setEditAwb] = useState("");
   const [saving, setSaving] = useState(false);
