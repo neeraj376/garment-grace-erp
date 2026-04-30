@@ -12,27 +12,33 @@ interface OrderInvoiceDialogProps {
 
 export default function OrderInvoiceDialog({ order, onClose }: OrderInvoiceDialogProps) {
   const [store, setStore] = useState<any>(null);
+  const [productDetails, setProductDetails] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!order?.store_id) return;
     setLoading(true);
-    supabase
-      .from("stores")
-      .select("name, address, phone, email, gst_number, logo_url")
-      .eq("id", order.store_id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setStore(data);
-        setLoading(false);
-      });
-  }, [order?.store_id]);
+    const ids = (order.order_items || []).map((i: any) => i.product_id).filter(Boolean);
+    Promise.all([
+      supabase.from("stores").select("name, address, phone, email, gst_number, logo_url").eq("id", order.store_id).maybeSingle(),
+      ids.length
+        ? supabase.from("products").select("id, name, sku, photo_url, color, size, category, subcategory, brand, mrp, hsn_code, tax_rate").in("id", ids)
+        : Promise.resolve({ data: [] as any[] }),
+    ]).then(([storeRes, prodRes]: any) => {
+      setStore(storeRes.data);
+      const map: Record<string, any> = {};
+      (prodRes.data || []).forEach((p: any) => { map[p.id] = p; });
+      setProductDetails(map);
+      setLoading(false);
+    });
+  }, [order?.id, order?.store_id]);
 
   if (!order) return null;
 
   const addr = order.shipping_addresses;
   const cust = order.shop_customers;
   const items = order.order_items || [];
+  const totalQty = items.reduce((s: number, it: any) => s + Number(it.quantity || 0), 0);
 
   const handlePrint = () => {
     const node = document.getElementById("order-invoice-print");
