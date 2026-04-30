@@ -98,8 +98,6 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
     })();
   }, [order]);
 
-  if (!order) return null;
-
   const recalcRow = (row: OrderItemRow): OrderItemRow => {
     const gross = row.unit_price * row.quantity;
     const taxRate = row.tax_rate || 0;
