@@ -103,6 +103,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       tax_rate: String(product.tax_rate),
       buying_price: product.buying_price ? String(product.buying_price) : "",
       video_url: product.video_url,
+      description: product.description || "",
     });
   }
 
