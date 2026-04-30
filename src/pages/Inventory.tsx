@@ -554,13 +554,12 @@ export default function Inventory() {
     setFilterMissingBuyingPrice(false);
   };
 
+  const searchWords = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const filtered = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      (p.brand || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.category || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.color || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.size || "").toLowerCase().includes(search.toLowerCase());
+    const searchableText = [
+      p.name, p.sku, p.brand, p.category, (p as any).subcategory, p.color, p.size,
+    ].filter(Boolean).join(" ").toLowerCase();
+    const matchesSearch = searchWords.length === 0 || searchWords.every(w => searchableText.includes(w));
     const matchesCategory = filterCategory === "__all__" || p.category === filterCategory;
     const matchesBrand = filterBrand === "__all__" || p.brand === filterBrand;
     const matchesSize = filterSize === "__all__" || p.size === filterSize;
