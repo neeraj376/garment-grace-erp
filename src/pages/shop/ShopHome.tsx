@@ -45,27 +45,41 @@ const ShortsIcon = () => (
   </svg>
 );
 
-const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element }[] = [
-  { name: "Jeans", Icon: JeansIcon },
-  { name: "T-shirt", Icon: TshirtIcon },
-  { name: "Jacket", Icon: JacketIcon },
-  { name: "Hoodie", Icon: HoodieIcon },
-  { name: "Trousers", Icon: TrousersIcon },
-  { name: "Shorts", Icon: ShortsIcon },
+const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[] }[] = [
+  { name: "Jeans", Icon: JeansIcon, matchers: ["jean"] },
+  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee"] },
+  { name: "Jacket", Icon: JacketIcon, matchers: ["jacket"] },
+  { name: "Hoodie", Icon: HoodieIcon, matchers: ["hoodie", "sweatshirt"] },
+  { name: "Trousers", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino"] },
+  { name: "Shorts", Icon: ShortsIcon, matchers: ["short"] },
 ];
 
 export default function ShopHome() {
   const [featured, setFeatured] = useState<any[]>([]);
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
+  const [sortedCategories, setSortedCategories] = useState(HERO_CATEGORIES);
 
   useEffect(() => {
     const fetchProducts = async () => {
       const { data: featuredData } = await supabase.rpc("get_in_stock_shop_products", {
         p_store_id: STORE_ID,
-        p_limit: 50,
+        p_limit: 5000,
       });
-      const allProducts = (featuredData ?? []).filter((p: any) => p.photo_url || p.video_url);
-      const grouped = groupVariants(allProducts);
+      const allInStock = featuredData ?? [];
+
+      // Count in-stock products per hero category
+      const counts = HERO_CATEGORIES.map((cat) => {
+        const count = allInStock.filter((p: any) => {
+          const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
+          return cat.matchers.some((m) => hay.includes(m));
+        }).length;
+        return { ...cat, count };
+      });
+      counts.sort((a, b) => b.count - a.count);
+      setSortedCategories(counts);
+
+      const withMedia = allInStock.filter((p: any) => p.photo_url || p.video_url);
+      const grouped = groupVariants(withMedia);
       setFeatured(grouped.filter((g) => g.primary.photo_url).slice(0, 8));
       setNewArrivals(grouped.slice(0, 8));
     };
@@ -95,7 +109,7 @@ export default function ShopHome() {
       <section className="container mx-auto px-4 py-12">
         <h2 className="font-display text-2xl font-bold mb-6">Shop by Category</h2>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-          {HERO_CATEGORIES.map(({ name, Icon }) => (
+          {sortedCategories.map(({ name, Icon }) => (
             <Link
               key={name}
               to={`/category/${encodeURIComponent(name)}`}
