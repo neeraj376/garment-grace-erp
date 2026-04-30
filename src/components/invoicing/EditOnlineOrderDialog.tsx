@@ -88,7 +88,7 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
       for (let i = 0; i < idArr.length; i += batchSize) {
         const { data } = await supabase
           .from("products")
-          .select("id, sku, name, selling_price, tax_rate, color, size")
+          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
           .eq("store_id", order.store_id)
           .eq("is_active", true)
           .in("id", idArr.slice(i, i + batchSize));
