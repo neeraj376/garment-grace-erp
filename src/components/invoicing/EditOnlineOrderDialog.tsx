@@ -158,12 +158,13 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
   const filteredProducts = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
     if (!q) return [];
-    return availableProducts
-      .filter((p) =>
-        p.name?.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q)
-      )
-      .slice(0, 8);
+    const words = q.split(/\s+/).filter(Boolean);
+    return availableProducts.filter((p) => {
+      const searchableText = [
+        p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return words.every((w) => searchableText.includes(w));
+    });
   }, [availableProducts, productSearch]);
 
   if (!order) return null;
