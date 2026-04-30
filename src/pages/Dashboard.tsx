@@ -74,10 +74,21 @@ export default function Dashboard() {
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
-      const monthlySales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOnline = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      // Monthly online orders (paid)
+      const { data: monthOrders } = await supabase
+        .from("orders")
+        .select("total_amount, customer_id")
+        .eq("store_id", storeId)
+        .eq("payment_status", "paid")
+        .gte("created_at", startOfMonth);
+
+      const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthOrdersTotal = monthOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
+      const monthlySales = monthInvSales + monthOrdersTotal;
+      const monthlyOnlineFromInv = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyOnline = monthlyOnlineFromInv + monthOrdersTotal;
       const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOffline = monthlySales - monthlyOnline - monthlyWholesale;
+      const monthlyOffline = monthInvSales - monthlyOnlineFromInv - monthlyWholesale;
 
       // Daily average this month
       const dayOfMonth = today.getDate();
