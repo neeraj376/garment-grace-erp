@@ -397,7 +397,23 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                           <Button
                             size="icon"
                             variant="ghost"
-                            title="Update Status / AWB"
+                            title="Edit Order"
+                            onClick={(e) => { e.stopPropagation(); setFullEditOrder(order); }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="View Invoice"
+                            onClick={(e) => { e.stopPropagation(); setInvoiceOrder(order); }}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Quick Status / AWB"
                             onClick={(e) => handleOpenEdit(order, e)}
                           >
                             <Truck className="h-4 w-4" />
