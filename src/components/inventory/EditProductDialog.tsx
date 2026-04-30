@@ -34,6 +34,7 @@ interface Product {
   is_active: boolean;
   total_stock?: number;
   buying_price?: number | null;
+  description?: string | null;
 }
 
 interface EditProductDialogProps {
