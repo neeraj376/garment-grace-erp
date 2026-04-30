@@ -225,6 +225,11 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
             <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({ ...form, buying_price: e.target.value })} /></div>
           </div>
 
+          <div>
+            <Label>Description</Label>
+            <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Write a description about the product..." rows={3} />
+          </div>
+
           {/* Media Section */}
           <div className="border-t pt-3 space-y-3">
             <p className="text-sm font-medium">Product Media</p>
