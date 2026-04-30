@@ -190,13 +190,27 @@ export default function Reports() {
       });
     });
 
+    // Add online order revenue + cost
+    orderData.forEach((o: any) => {
+      revenue += Number(o.total_amount || 0);
+      tax += Number(o.tax_amount || 0);
+      (o.order_items as any[])?.forEach((item: any) => {
+        const unitCost = buyingPriceMap[item.product_id] ?? 0;
+        cost += unitCost * item.quantity;
+      });
+    });
+
     setSummary({ revenue, cost, tax, profit: revenue - cost - tax });
 
-    // Payment method split
+    // Payment method split (invoices + online orders)
     const paymentMap: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const method = (inv.payment_method || "other").toLowerCase();
       paymentMap[method] = (paymentMap[method] || 0) + collected(inv);
+    });
+    orderData.forEach((o: any) => {
+      const method = (o.payment_method || "online").toLowerCase();
+      paymentMap[method] = (paymentMap[method] || 0) + Number(o.total_amount || 0);
     });
     setPaymentSplit(
       Object.entries(paymentMap)
@@ -204,12 +218,15 @@ export default function Reports() {
         .sort((a, b) => b.value - a.value)
     );
 
-    // Online vs Offline split
+    // Online vs Offline split (invoices + online orders)
     const sourceMap: Record<string, number> = {};
     (invData ?? []).forEach(inv => {
       const src = (inv.source || "offline").toLowerCase();
       const label = src === "online" ? "Online" : src === "wholesale" ? "Wholesale" : "Offline";
       sourceMap[label] = (sourceMap[label] || 0) + collected(inv);
+    });
+    orderData.forEach((o: any) => {
+      sourceMap["Online"] = (sourceMap["Online"] || 0) + Number(o.total_amount || 0);
     });
     setSourceSplit(
       Object.entries(sourceMap)
@@ -221,6 +238,10 @@ export default function Reports() {
     (invData ?? []).forEach(inv => {
       const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
       grouped[day] = (grouped[day] || 0) + collected(inv);
+    });
+    orderData.forEach((o: any) => {
+      const day = new Date(o.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+      grouped[day] = (grouped[day] || 0) + Number(o.total_amount || 0);
     });
     setSalesData(Object.entries(grouped).map(([date, amount]) => ({ date, amount })));
 
