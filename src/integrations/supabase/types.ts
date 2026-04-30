@@ -1191,6 +1191,10 @@ export type Database = {
         }
       }
       get_product_stock: { Args: { p_product_id: string }; Returns: number }
+      shop_customer_in_user_store: {
+        Args: { _customer_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
