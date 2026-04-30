@@ -662,6 +662,10 @@ export default function Inventory() {
                       <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
                       <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>
                     </div>
+                    <div>
+                      <Label>Description</Label>
+                      <Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Write a description about the product..." rows={3} />
+                    </div>
                     <div className="border-t pt-3 space-y-3">
                       <PhotoUploader photos={newProductPhotos} onChange={setNewProductPhotos} storeId={storeId!} />
                     </div>
