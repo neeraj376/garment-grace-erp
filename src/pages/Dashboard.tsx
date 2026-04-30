@@ -102,7 +102,9 @@ export default function Dashboard() {
         .gte("created_at", startOfMonth)
         .not("customer_id", "is", null);
 
-      const uniqueCustomerIds = new Set(monthlyCustomerInvoices?.map(i => i.customer_id));
+      const uniqueCustomerIds = new Set<string>();
+      monthlyCustomerInvoices?.forEach((i) => i.customer_id && uniqueCustomerIds.add(i.customer_id));
+      monthOrders?.forEach((o) => o.customer_id && uniqueCustomerIds.add(o.customer_id));
 
       // Total products
       const { count: productCount } = await supabase
@@ -164,17 +166,30 @@ export default function Dashboard() {
         .eq("store_id", storeId)
         .gte("created_at", weekStart);
 
+      const { data: weekOrders } = await supabase
+        .from("orders")
+        .select("total_amount, created_at")
+        .eq("store_id", storeId)
+        .eq("payment_status", "paid")
+        .gte("created_at", weekStart);
+
       const weeklyData = days.map((d) => {
         const dayStr = d.toLocaleDateString("en-US", { weekday: "short" });
         const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         const dayEnd = new Date(dayStart.getTime() + 86400000);
-        const sales = weekInvoices
+        const invSales = weekInvoices
           ?.filter((inv) => {
             const t = new Date(inv.created_at);
             return t >= dayStart && t < dayEnd;
           })
           .reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-        return { day: dayStr, sales };
+        const ordSales = weekOrders
+          ?.filter((o) => {
+            const t = new Date(o.created_at);
+            return t >= dayStart && t < dayEnd;
+          })
+          .reduce((sum, o) => sum + Number(o.total_amount || 0), 0) ?? 0;
+        return { day: dayStr, sales: invSales + ordSales };
       });
       setWeeklySales(weeklyData);
     };
