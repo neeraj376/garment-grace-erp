@@ -88,7 +88,7 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
       for (let i = 0; i < idArr.length; i += batchSize) {
         const { data } = await supabase
           .from("products")
-          .select("id, sku, name, selling_price, tax_rate, color, size")
+          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
           .eq("store_id", order.store_id)
           .eq("is_active", true)
           .in("id", idArr.slice(i, i + batchSize));
@@ -158,12 +158,13 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
   const filteredProducts = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
     if (!q) return [];
-    return availableProducts
-      .filter((p) =>
-        p.name?.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q)
-      )
-      .slice(0, 8);
+    const words = q.split(/\s+/).filter(Boolean);
+    return availableProducts.filter((p) => {
+      const searchableText = [
+        p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return words.every((w) => searchableText.includes(w));
+    });
   }, [availableProducts, productSearch]);
 
   if (!order) return null;
