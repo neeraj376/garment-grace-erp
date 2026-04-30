@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -66,6 +67,7 @@ export default function Inventory() {
   const [form, setForm] = useState({
     sku: "", name: "", category: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "",
+    description: "",
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
@@ -186,6 +188,7 @@ export default function Inventory() {
             tax_rate: parseFloat(form.tax_rate),
             buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
             photo_url: serializePhotoUrls(newProductPhotos),
+            description: form.description || null,
           })
         .select()
         .single();
@@ -203,7 +206,7 @@ export default function Inventory() {
 
       toast({ title: "Product added" });
       setDialogOpen(false);
-      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "" });
+      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "", description: "" });
       setNewProductPhotos([]);
       fetchProducts();
     } catch (err: any) {
@@ -659,6 +662,10 @@ export default function Inventory() {
                       <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} required /></div>
                       <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
                       <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>
+                    </div>
+                    <div>
+                      <Label>Description</Label>
+                      <Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Write a description about the product..." rows={3} />
                     </div>
                     <div className="border-t pt-3 space-y-3">
                       <PhotoUploader photos={newProductPhotos} onChange={setNewProductPhotos} storeId={storeId!} />

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Video, X, Loader2 } from "lucide-react";
@@ -33,6 +34,7 @@ interface Product {
   is_active: boolean;
   total_stock?: number;
   buying_price?: number | null;
+  description?: string | null;
 }
 
 interface EditProductDialogProps {
@@ -58,6 +60,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "5", buying_price: "",
     video_url: "" as string | null,
+    description: "",
   });
   const [suggestions, setSuggestions] = useState<{categories: string[]; subcategories: string[]; brands: string[]; sizes: string[]; colors: string[]}>({categories: [], subcategories: [], brands: [], sizes: [], colors: []});
 
@@ -100,6 +103,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       tax_rate: String(product.tax_rate),
       buying_price: product.buying_price ? String(product.buying_price) : "",
       video_url: product.video_url,
+      description: product.description || "",
     });
   }
 
@@ -142,6 +146,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
           buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
           photo_url: serializePhotoUrls(photos),
           video_url: form.video_url || null,
+          description: form.description || null,
         })
         .eq("id", product.id);
 
@@ -218,6 +223,11 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
             <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({ ...form, mrp: e.target.value })} /></div>
             <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({ ...form, tax_rate: e.target.value })} /></div>
             <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({ ...form, buying_price: e.target.value })} /></div>
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Write a description about the product..." rows={3} />
           </div>
 
           {/* Media Section */}
