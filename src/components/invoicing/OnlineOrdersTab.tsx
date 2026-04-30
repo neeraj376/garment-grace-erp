@@ -87,7 +87,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           *,
           order_items (
             id, product_id, quantity, unit_price, tax_amount, total,
-            products:product_id ( name, sku, photo_url )
+            products:product_id ( name, sku, photo_url, tax_rate )
           ),
           shipping_addresses:shipping_address_id ( name, phone, address_line1, address_line2, city, state, pincode ),
           shop_customers:customer_id ( name, phone, email )
