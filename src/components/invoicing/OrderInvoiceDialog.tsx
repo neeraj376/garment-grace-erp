@@ -119,7 +119,10 @@ export default function OrderInvoiceDialog({ order, onClose }: OrderInvoiceDialo
               <thead>
                 <tr className="bg-muted">
                   <th className="border p-2 text-left">#</th>
-                  <th className="border p-2 text-left">Item</th>
+                  <th className="border p-2 text-left">Image</th>
+                  <th className="border p-2 text-left">Item Details</th>
+                  <th className="border p-2 text-left">HSN</th>
+                  <th className="border p-2 text-right">MRP</th>
                   <th className="border p-2 text-right">Qty</th>
                   <th className="border p-2 text-right">Unit Price</th>
                   <th className="border p-2 text-right">Tax</th>
@@ -127,20 +130,45 @@ export default function OrderInvoiceDialog({ order, onClose }: OrderInvoiceDialo
                 </tr>
               </thead>
               <tbody>
-                {items.map((it: any, idx: number) => (
-                  <tr key={it.id}>
-                    <td className="border p-2">{idx + 1}</td>
-                    <td className="border p-2">
-                      {it.products?.name || it.product_id}
-                      {it.products?.sku && <div className="text-[10px] text-muted-foreground">SKU: {it.products.sku}</div>}
-                    </td>
-                    <td className="border p-2 text-right">{it.quantity}</td>
-                    <td className="border p-2 text-right">₹{Number(it.unit_price).toFixed(2)}</td>
-                    <td className="border p-2 text-right">₹{Number(it.tax_amount || 0).toFixed(2)}</td>
-                    <td className="border p-2 text-right">₹{Number(it.total).toFixed(2)}</td>
-                  </tr>
-                ))}
+                {items.map((it: any, idx: number) => {
+                  const p = productDetails[it.product_id] || it.products || {};
+                  const variantBits = [p.color, p.size].filter(Boolean).join(" / ");
+                  const catBits = [p.brand, p.category, p.subcategory].filter(Boolean).join(" • ");
+                  return (
+                    <tr key={it.id} className="align-top">
+                      <td className="border p-2">{idx + 1}</td>
+                      <td className="border p-2">
+                        {p.photo_url ? (
+                          <img src={p.photo_url} alt={p.name} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 4 }} />
+                        ) : (
+                          <div style={{ width: 48, height: 48, background: "#f3f4f6", borderRadius: 4 }} />
+                        )}
+                      </td>
+                      <td className="border p-2">
+                        <div className="font-medium">{p.name || it.product_id}</div>
+                        {p.sku && <div className="text-[10px] text-muted-foreground">SKU: {p.sku}</div>}
+                        {variantBits && <div className="text-[10px]"><strong>Variant:</strong> {variantBits}</div>}
+                        {catBits && <div className="text-[10px] text-muted-foreground">{catBits}</div>}
+                      </td>
+                      <td className="border p-2 text-[10px]">{p.hsn_code || "—"}</td>
+                      <td className="border p-2 text-right">{p.mrp ? `₹${Number(p.mrp).toFixed(2)}` : "—"}</td>
+                      <td className="border p-2 text-right font-medium">{it.quantity}</td>
+                      <td className="border p-2 text-right">₹{Number(it.unit_price).toFixed(2)}</td>
+                      <td className="border p-2 text-right">₹{Number(it.tax_amount || 0).toFixed(2)}</td>
+                      <td className="border p-2 text-right font-semibold">₹{Number(it.total).toFixed(2)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
+              <tfoot>
+                <tr className="bg-muted/50 font-semibold">
+                  <td className="border p-2" colSpan={5}>Total Items: {items.length} • Total Qty: {totalQty}</td>
+                  <td className="border p-2 text-right">{totalQty}</td>
+                  <td className="border p-2"></td>
+                  <td className="border p-2 text-right">₹{Number(order.tax_amount || 0).toFixed(2)}</td>
+                  <td className="border p-2 text-right">₹{items.reduce((s: number, it: any) => s + Number(it.total || 0), 0).toFixed(2)}</td>
+                </tr>
+              </tfoot>
             </table>
 
             {/* Totals */}
