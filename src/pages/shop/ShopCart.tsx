@@ -92,12 +92,12 @@ export default function ShopCart() {
           <h3 className="font-display text-lg font-bold mb-4">Order Summary</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">Subtotal (incl. GST)</span>
               <span className="font-medium">₹{subtotal.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">GST (included)</span>
-              <span className="font-medium">₹{Math.round(taxTotal).toLocaleString()}</span>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">GST included in price</span>
+              <span className="text-muted-foreground">₹{Math.round(taxTotal).toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
