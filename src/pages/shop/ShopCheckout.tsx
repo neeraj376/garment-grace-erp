@@ -409,12 +409,12 @@ export default function ShopCheckout() {
               </div>
               <div className="border-t border-border pt-2 space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">Subtotal (incl. GST)</span>
                   <span>₹{subtotal.toLocaleString("en-IN")}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Incl. GST</span>
-                  <span>₹{Math.round(taxTotal).toLocaleString("en-IN")}</span>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">GST included in price</span>
+                  <span className="text-muted-foreground">₹{Math.round(taxTotal).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
