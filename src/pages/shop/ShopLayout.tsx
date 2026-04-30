@@ -12,8 +12,20 @@ export default function ShopLayout() {
   return (
     <div className="min-h-screen bg-background">
 
+      {/* Announcement Banner */}
+      <div className="sticky top-0 z-[60] bg-primary text-primary-foreground text-xs sm:text-sm font-medium overflow-hidden">
+        <div className="whitespace-nowrap py-2 animate-marquee">
+          <span className="inline-block px-8">
+            We deal in original brand surplus and rejections • NO COD, NO RETURN, NO EXCHANGE, NO REFUND POLICY • We encourage every customer to physically visit the store, try the product and then buy it.
+          </span>
+          <span className="inline-block px-8">
+            We deal in original brand surplus and rejections • NO COD, NO RETURN, NO EXCHANGE, NO REFUND POLICY • We encourage every customer to physically visit the store, try the product and then buy it.
+          </span>
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[34px] sm:top-[36px] z-50 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <Link to="/" className="font-display text-xl font-bold text-foreground tracking-tight shrink-0">
             Originee
