@@ -456,6 +456,38 @@ export default function SubUserManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Email — {emailUserName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {currentEmail && (
+              <div>
+                <Label>Current Email</Label>
+                <Input value={currentEmail} disabled />
+              </div>
+            )}
+            <div>
+              <Label>New Email</Label>
+              <Input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="staff@example.com"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                After updating, the OTP and login emails will be sent to the new address.
+              </p>
+            </div>
+            <Button onClick={handleUpdateEmail} className="w-full" disabled={updatingEmail}>
+              {updatingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+              Update Email
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
