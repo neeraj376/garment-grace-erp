@@ -127,12 +127,25 @@ export default function SubUserManager() {
       .eq("store_id", storeId)
       .in("user_id", userIds);
 
+    // Fetch emails via edge function (admin only has access to auth users)
+    let emailMap: Record<string, string> = {};
+    try {
+      const { data: emailData } = await supabase.functions.invoke("list-sub-user-emails");
+      if (emailData?.emails) {
+        emailMap = Object.fromEntries(
+          emailData.emails.map((e: { user_id: string; email: string }) => [e.user_id, e.email])
+        );
+      }
+    } catch (err) {
+      console.error("Failed to load sub-user emails", err);
+    }
+
     const users: SubUser[] = profiles.map((p) => {
       const perm = perms?.find((pm) => pm.user_id === p.user_id);
       return {
         user_id: p.user_id,
         full_name: p.full_name,
-        email: "",
+        email: emailMap[p.user_id] ?? "",
         can_invoicing: perm?.can_invoicing ?? false,
         can_inventory: perm?.can_inventory ?? false,
         can_photos: perm?.can_photos ?? false,
