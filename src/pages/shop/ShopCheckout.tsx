@@ -74,9 +74,11 @@ export default function ShopCheckout() {
     const timer = setTimeout(async () => {
       setCheckingPincode(true);
       try {
-        // Calculate total weight: 500g (0.5kg) per item
+        // Calculate total weight: 300g per item, 0.5kg minimum, +20% buffer
+        // for volumetric/handling differences vs Shiprocket actual billing.
         const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-        const totalWeightKg = Math.max(0.5, totalQuantity * 0.5);
+        const baseWeightKg = Math.max(0.5, totalQuantity * 0.3);
+        const totalWeightKg = baseWeightKg * 1.2;
 
         const { data, error } = await supabase.functions.invoke("shiprocket", {
           body: {
@@ -96,7 +98,8 @@ export default function ShopCheckout() {
             .map((c: any) => ({
               courier_company_id: c.courier_company_id,
               courier_name: c.courier_name,
-              rate: c.rate,
+              // Apply 18% GST on top of Shiprocket's quoted rate
+              rate: Math.round(Number(c.rate) * 1.18),
               etd: c.etd,
               estimated_delivery_days: c.estimated_delivery_days,
             }))
