@@ -362,11 +362,27 @@ export default function SubUserManager() {
             {subUsers.map((u) => (
               <div key={u.user_id} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{u.full_name || "Staff"}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{u.full_name || "Staff"}</p>
+                    {u.email && (
+                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                    )}
                     <Badge variant="outline" className="text-xs mt-1">Staff</Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEmailUserId(u.user_id);
+                        setEmailUserName(u.full_name || "Staff");
+                        setCurrentEmail(u.email || "");
+                        setNewEmail(u.email || "");
+                        setEmailDialogOpen(true);
+                      }}
+                    >
+                      <Mail className="h-4 w-4 mr-1" /> Change Email
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
