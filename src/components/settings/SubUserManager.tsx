@@ -78,6 +78,12 @@ export default function SubUserManager() {
   const [pwUserName, setPwUserName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [resettingPw, setResettingPw] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailUserId, setEmailUserId] = useState("");
+  const [emailUserName, setEmailUserName] = useState("");
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [updatingEmail, setUpdatingEmail] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
