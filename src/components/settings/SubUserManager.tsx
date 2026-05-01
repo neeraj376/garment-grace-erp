@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Loader2, Trash2, KeyRound } from "lucide-react";
+import { UserPlus, Loader2, Trash2, KeyRound, Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -78,6 +78,12 @@ export default function SubUserManager() {
   const [pwUserName, setPwUserName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [resettingPw, setResettingPw] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailUserId, setEmailUserId] = useState("");
+  const [emailUserName, setEmailUserName] = useState("");
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [updatingEmail, setUpdatingEmail] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -121,12 +127,25 @@ export default function SubUserManager() {
       .eq("store_id", storeId)
       .in("user_id", userIds);
 
+    // Fetch emails via edge function (admin only has access to auth users)
+    let emailMap: Record<string, string> = {};
+    try {
+      const { data: emailData } = await supabase.functions.invoke("list-sub-user-emails");
+      if (emailData?.emails) {
+        emailMap = Object.fromEntries(
+          emailData.emails.map((e: { user_id: string; email: string }) => [e.user_id, e.email])
+        );
+      }
+    } catch (err) {
+      console.error("Failed to load sub-user emails", err);
+    }
+
     const users: SubUser[] = profiles.map((p) => {
       const perm = perms?.find((pm) => pm.user_id === p.user_id);
       return {
         user_id: p.user_id,
         full_name: p.full_name,
-        email: "",
+        email: emailMap[p.user_id] ?? "",
         can_invoicing: perm?.can_invoicing ?? false,
         can_inventory: perm?.can_inventory ?? false,
         can_photos: perm?.can_photos ?? false,
@@ -230,7 +249,37 @@ export default function SubUserManager() {
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
-      setResettingPw(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast({ title: "Error", description: "Enter a valid email address", variant: "destructive" });
+      return;
+    }
+    if (trimmed === currentEmail.toLowerCase()) {
+      toast({ title: "No change", description: "New email is the same as current." });
+      return;
+    }
+    setUpdatingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-sub-user-email", {
+        body: { userId: emailUserId, newEmail: trimmed },
+      });
+      if (error) throw new Error(await getFunctionErrorMessage(error));
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: "Email updated",
+        description: `OTP and login emails will now go to ${trimmed}.`,
+      });
+      setEmailDialogOpen(false);
+      setNewEmail("");
+      fetchSubUsers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setUpdatingEmail(false);
     }
   };
 
@@ -313,11 +362,27 @@ export default function SubUserManager() {
             {subUsers.map((u) => (
               <div key={u.user_id} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{u.full_name || "Staff"}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{u.full_name || "Staff"}</p>
+                    {u.email && (
+                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                    )}
                     <Badge variant="outline" className="text-xs mt-1">Staff</Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEmailUserId(u.user_id);
+                        setEmailUserName(u.full_name || "Staff");
+                        setCurrentEmail(u.email || "");
+                        setNewEmail(u.email || "");
+                        setEmailDialogOpen(true);
+                      }}
+                    >
+                      <Mail className="h-4 w-4 mr-1" /> Change Email
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -387,6 +452,38 @@ export default function SubUserManager() {
             <Button onClick={handleResetPassword} className="w-full" disabled={resettingPw}>
               {resettingPw ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <KeyRound className="h-4 w-4 mr-2" />}
               Update Password
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Email — {emailUserName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {currentEmail && (
+              <div>
+                <Label>Current Email</Label>
+                <Input value={currentEmail} disabled />
+              </div>
+            )}
+            <div>
+              <Label>New Email</Label>
+              <Input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="staff@example.com"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                After updating, the OTP and login emails will be sent to the new address.
+              </p>
+            </div>
+            <Button onClick={handleUpdateEmail} className="w-full" disabled={updatingEmail}>
+              {updatingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+              Update Email
             </Button>
           </div>
         </DialogContent>
