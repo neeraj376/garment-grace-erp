@@ -249,7 +249,37 @@ export default function SubUserManager() {
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
-      setResettingPw(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast({ title: "Error", description: "Enter a valid email address", variant: "destructive" });
+      return;
+    }
+    if (trimmed === currentEmail.toLowerCase()) {
+      toast({ title: "No change", description: "New email is the same as current." });
+      return;
+    }
+    setUpdatingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-sub-user-email", {
+        body: { userId: emailUserId, newEmail: trimmed },
+      });
+      if (error) throw new Error(await getFunctionErrorMessage(error));
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: "Email updated",
+        description: `OTP and login emails will now go to ${trimmed}.`,
+      });
+      setEmailDialogOpen(false);
+      setNewEmail("");
+      fetchSubUsers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setUpdatingEmail(false);
     }
   };
 
