@@ -387,9 +387,19 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                       </TableCell>
                       <TableCell className="text-sm">
                         {order.tracking_number ? (
-                          <span className="font-mono">{order.tracking_number}</span>
+                          <div>
+                            <div className="font-mono text-xs">AWB: {order.tracking_number}</div>
+                            {order.courier_name && (
+                              <div className="text-[11px] text-muted-foreground">{order.courier_name}</div>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-muted-foreground">{order.courier_name || "—"}</span>
+                          <div>
+                            <div className="font-mono text-xs text-muted-foreground">AWB: —</div>
+                            {order.courier_name && (
+                              <div className="text-[11px] text-muted-foreground">{order.courier_name}</div>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
