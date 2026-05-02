@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText } from "lucide-react";
+import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText, MessageCircle, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -72,6 +72,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [editAwb, setEditAwb] = useState("");
   const [editCourier, setEditCourier] = useState("");
   const [saving, setSaving] = useState(false);
+  const [resending, setResending] = useState<"wa" | "email" | null>(null);
   const [labelOrder, setLabelOrder] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -196,6 +197,83 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
       toast.error(err.message || "Failed to update order");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const buildTrackingUrl = (courier: string, awb: string) => {
+    const c = (courier || "").toLowerCase();
+    const a = encodeURIComponent(awb || "");
+    if (!a) return "";
+    if (c.includes("delhivery")) return `https://www.delhivery.com/track-v2/package/${a}`;
+    if (c.includes("bluedart")) return `https://www.bluedart.com/tracking?trackingNumber=${a}`;
+    if (c.includes("dtdc")) return `https://www.dtdc.in/trace.asp?strCnno=${a}`;
+    if (c.includes("ekart") || c.includes("ecom")) return `https://ekartlogistics.com/shipmenttrack/${a}`;
+    if (c.includes("xpressbees")) return `https://www.xpressbees.com/track?awb=${a}`;
+    if (c.includes("shadowfax")) return `https://shadowfax.in/tracking/?awb=${a}`;
+    return `https://shiprocket.co/tracking/${a}`;
+  };
+
+  const handleResendWhatsApp = async () => {
+    if (!editingOrder) return;
+    const courier = editCourier.trim() || editingOrder.courier_name || "";
+    const awb = editAwb.trim() || editingOrder.tracking_number || "";
+    if (!courier || !awb) { toast.error("Courier and AWB are required to send tracking."); return; }
+    const phone = editingOrder.shipping_addresses?.phone || editingOrder.shop_customers?.phone || null;
+    if (!phone) { toast.error("No customer phone on file."); return; }
+    const customerName = editingOrder.shipping_addresses?.name || editingOrder.shop_customers?.name || "Customer";
+    setResending("wa");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          templateName: "order_tracking_details",
+          phone,
+          customerName,
+          invoiceNumber: editingOrder.order_number,
+          courierName: courier,
+          awbNo: awb,
+        },
+      });
+      if (error || data?.success === false) {
+        toast.error(`WhatsApp failed: ${error?.message || data?.error || "Unknown error"}`);
+      } else {
+        toast.success(`WhatsApp tracking re-sent to ${phone}`);
+      }
+    } catch (err: any) {
+      toast.error(`WhatsApp failed: ${err?.message || "Unknown"}`);
+    } finally {
+      setResending(null);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!editingOrder) return;
+    const courier = editCourier.trim() || editingOrder.courier_name || "";
+    const awb = editAwb.trim() || editingOrder.tracking_number || "";
+    if (!courier || !awb) { toast.error("Courier and AWB are required to send tracking."); return; }
+    const email = editingOrder.shop_customers?.email;
+    if (!email) { toast.error("No customer email on file."); return; }
+    const customerName = editingOrder.shipping_addresses?.name || editingOrder.shop_customers?.name || "Customer";
+    setResending("email");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-tracking-email", {
+        body: {
+          to: email,
+          customerName,
+          orderNumber: editingOrder.order_number,
+          courierName: courier,
+          awbNo: awb,
+          trackingUrl: buildTrackingUrl(courier, awb),
+        },
+      });
+      if (error || data?.success === false) {
+        toast.error(`Email failed: ${error?.message || data?.error || "Unknown error"}`);
+      } else {
+        toast.success(`Tracking email sent to ${email}`);
+      }
+    } catch (err: any) {
+      toast.error(`Email failed: ${err?.message || "Unknown"}`);
+    } finally {
+      setResending(null);
     }
   };
 
@@ -599,6 +677,51 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               When both Courier and AWB are filled (or changed), a WhatsApp tracking
               update is sent automatically to the customer.
             </p>
+
+            {(editingOrder?.tracking_number || editingOrder?.courier_name || (editAwb && editCourier)) && (
+              <div className="border-t pt-3 space-y-2">
+                <Label className="text-xs text-muted-foreground">Resend tracking details</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResendWhatsApp}
+                    disabled={resending !== null}
+                    className="gap-1.5"
+                  >
+                    {resending === "wa" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                    )}
+                    Resend WhatsApp
+                  </Button>
+                  {editingOrder?.shop_customers?.email ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSendEmail}
+                      disabled={resending !== null}
+                      className="gap-1.5"
+                      title={`Send to ${editingOrder.shop_customers.email}`}
+                    >
+                      {resending === "email" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
+                      Email Tracking
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground self-center">
+                      No email on file — email option unavailable
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingOrder(null)}>Cancel</Button>
