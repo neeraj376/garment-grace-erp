@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, ArrowLeft, Minus, Plus } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Minus, Plus, MessageCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { parsePhotoUrls } from "@/lib/photoUtils";
@@ -317,6 +317,30 @@ export default function ShopProduct() {
               </Button>
             </div>
           )}
+
+          {/* WhatsApp chat about this product */}
+          <a
+            href={(() => {
+              const lines = [
+                `Hi! I'm interested in this product:`,
+                ``,
+                `*${product.name}*`,
+                product.brand ? `Brand: ${product.brand}` : null,
+                product.sku ? `SKU: ${product.sku}` : null,
+                selectedColor ? `Color: ${selectedColor}` : null,
+                selectedSize ? `Size: ${selectedSize}` : null,
+                `Price: ₹${product.selling_price.toLocaleString()}`,
+                ``,
+                `Link: ${typeof window !== "undefined" ? window.location.href : ""}`,
+              ].filter(Boolean).join("\n");
+              return `https://wa.me/918882866833?text=${encodeURIComponent(lines)}`;
+            })()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center justify-center gap-2 h-11 rounded-lg border border-[#25D366] bg-[#25D366] text-white hover:bg-[#1ebe5d] transition-colors text-sm font-medium px-4"
+          >
+            <MessageCircle className="h-4 w-4" /> Chat on WhatsApp about this product
+          </a>
         </div>
       </div>
     </div>
