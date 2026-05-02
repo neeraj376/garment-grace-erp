@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink } from "lucide-react";
+import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink, Film } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import EditProductDialog from "@/components/inventory/EditProductDialog";
 import { normalizeCategory, normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
+import { extractVideoThumbnail } from "@/lib/videoThumbnail";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Product {
