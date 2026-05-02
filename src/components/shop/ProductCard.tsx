@@ -13,6 +13,7 @@ interface Product {
   brand: string | null;
   size: string | null;
   color: string | null;
+  video_url?: string | null;
 }
 
 interface ProductCardProps {
@@ -50,6 +51,21 @@ export default function ProductCard({ product, colors, sizes, minPrice, maxPrice
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
+          />
+        ) : product.video_url ? (
+          <video
+            src={product.video_url}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            muted
+            playsInline
+            preload="metadata"
+            // #t=0.1 hint to render first frame as poster on most browsers
+            // (Safari/iOS especially needs the fragment to paint a frame)
+            poster=""
+            onLoadedMetadata={(e) => {
+              const v = e.currentTarget;
+              try { v.currentTime = Math.min(0.1, (v.duration || 1) * 0.05); } catch {}
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-4xl">

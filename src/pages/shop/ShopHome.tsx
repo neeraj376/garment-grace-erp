@@ -80,7 +80,7 @@ export default function ShopHome() {
 
       const withMedia = allInStock.filter((p: any) => p.photo_url || p.video_url);
       const grouped = groupVariants(withMedia);
-      setFeatured(grouped.filter((g) => g.primary.photo_url).slice(0, 8));
+      setFeatured(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 8));
       setNewArrivals(grouped.slice(0, 8));
     };
     fetchProducts();
