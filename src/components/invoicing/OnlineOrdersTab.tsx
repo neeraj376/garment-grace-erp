@@ -200,6 +200,83 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }
   };
 
+  const buildTrackingUrl = (courier: string, awb: string) => {
+    const c = (courier || "").toLowerCase();
+    const a = encodeURIComponent(awb || "");
+    if (!a) return "";
+    if (c.includes("delhivery")) return `https://www.delhivery.com/track-v2/package/${a}`;
+    if (c.includes("bluedart")) return `https://www.bluedart.com/tracking?trackingNumber=${a}`;
+    if (c.includes("dtdc")) return `https://www.dtdc.in/trace.asp?strCnno=${a}`;
+    if (c.includes("ekart") || c.includes("ecom")) return `https://ekartlogistics.com/shipmenttrack/${a}`;
+    if (c.includes("xpressbees")) return `https://www.xpressbees.com/track?awb=${a}`;
+    if (c.includes("shadowfax")) return `https://shadowfax.in/tracking/?awb=${a}`;
+    return `https://shiprocket.co/tracking/${a}`;
+  };
+
+  const handleResendWhatsApp = async () => {
+    if (!editingOrder) return;
+    const courier = editCourier.trim() || editingOrder.courier_name || "";
+    const awb = editAwb.trim() || editingOrder.tracking_number || "";
+    if (!courier || !awb) { toast.error("Courier and AWB are required to send tracking."); return; }
+    const phone = editingOrder.shipping_addresses?.phone || editingOrder.shop_customers?.phone || null;
+    if (!phone) { toast.error("No customer phone on file."); return; }
+    const customerName = editingOrder.shipping_addresses?.name || editingOrder.shop_customers?.name || "Customer";
+    setResending("wa");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          templateName: "order_tracking_details",
+          phone,
+          customerName,
+          invoiceNumber: editingOrder.order_number,
+          courierName: courier,
+          awbNo: awb,
+        },
+      });
+      if (error || data?.success === false) {
+        toast.error(`WhatsApp failed: ${error?.message || data?.error || "Unknown error"}`);
+      } else {
+        toast.success(`WhatsApp tracking re-sent to ${phone}`);
+      }
+    } catch (err: any) {
+      toast.error(`WhatsApp failed: ${err?.message || "Unknown"}`);
+    } finally {
+      setResending(null);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!editingOrder) return;
+    const courier = editCourier.trim() || editingOrder.courier_name || "";
+    const awb = editAwb.trim() || editingOrder.tracking_number || "";
+    if (!courier || !awb) { toast.error("Courier and AWB are required to send tracking."); return; }
+    const email = editingOrder.shop_customers?.email;
+    if (!email) { toast.error("No customer email on file."); return; }
+    const customerName = editingOrder.shipping_addresses?.name || editingOrder.shop_customers?.name || "Customer";
+    setResending("email");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-tracking-email", {
+        body: {
+          to: email,
+          customerName,
+          orderNumber: editingOrder.order_number,
+          courierName: courier,
+          awbNo: awb,
+          trackingUrl: buildTrackingUrl(courier, awb),
+        },
+      });
+      if (error || data?.success === false) {
+        toast.error(`Email failed: ${error?.message || data?.error || "Unknown error"}`);
+      } else {
+        toast.success(`Tracking email sent to ${email}`);
+      }
+    } catch (err: any) {
+      toast.error(`Email failed: ${err?.message || "Unknown"}`);
+    } finally {
+      setResending(null);
+    }
+  };
+
   const handlePrintLabel = (order: any, e: React.MouseEvent) => {
     e.stopPropagation();
     setLabelOrder(order);
