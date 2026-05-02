@@ -12,6 +12,7 @@ import MediaSourceDialog from "@/components/inventory/MediaSourceDialog";
 import WebcamCaptureDialog from "@/components/inventory/WebcamCaptureDialog";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 import { normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
+import { extractVideoThumbnail } from "@/lib/videoThumbnail";
 
 const isMobileDevice = () =>
   typeof navigator !== "undefined" &&
@@ -115,8 +116,26 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
       const { error } = await supabase.storage.from("product-media").upload(path, file, { upsert: true });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from("product-media").getPublicUrl(path);
-      setForm(f => ({ ...f, video_url: urlData.publicUrl }));
+      const videoUrl = urlData.publicUrl;
+      setForm(f => ({ ...f, video_url: videoUrl }));
       toast({ title: "Video uploaded" });
+
+      // Auto-generate a thumbnail image if the product has no photos yet
+      if (photos.length === 0) {
+        try {
+          const thumbBlob = await extractVideoThumbnail(videoUrl);
+          const thumbPath = `${storeId}/${product?.id || "new"}-thumb-${Date.now()}.jpg`;
+          const { error: thumbErr } = await supabase.storage
+            .from("product-media")
+            .upload(thumbPath, thumbBlob, { upsert: true, contentType: "image/jpeg" });
+          if (thumbErr) throw thumbErr;
+          const { data: thumbUrlData } = supabase.storage.from("product-media").getPublicUrl(thumbPath);
+          setPhotos([thumbUrlData.publicUrl]);
+          toast({ title: "Thumbnail generated from video" });
+        } catch (thumbErr: any) {
+          console.warn("Thumbnail generation failed:", thumbErr);
+        }
+      }
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {

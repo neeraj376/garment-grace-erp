@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink } from "lucide-react";
+import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink, Film } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import EditProductDialog from "@/components/inventory/EditProductDialog";
 import { normalizeCategory, normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
 import PhotoUploader from "@/components/inventory/PhotoUploader";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
+import { extractVideoThumbnail } from "@/lib/videoThumbnail";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Product {
@@ -75,6 +76,49 @@ export default function Inventory() {
   const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
   const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
   const [loading, setLoading] = useState(true);
+  const [thumbProgress, setThumbProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const generateMissingThumbnails = async () => {
+    if (!storeId) return;
+    const candidates = products.filter(
+      (p) => p.video_url && parsePhotoUrls(p.photo_url).length === 0
+    );
+    if (candidates.length === 0) {
+      toast({ title: "All video products already have thumbnails" });
+      return;
+    }
+    setThumbProgress({ current: 0, total: candidates.length });
+    let ok = 0;
+    let failed = 0;
+    for (let i = 0; i < candidates.length; i++) {
+      const p = candidates[i];
+      try {
+        const thumbBlob = await extractVideoThumbnail(p.video_url!);
+        const thumbPath = `${storeId}/${p.id}-thumb-${Date.now()}.jpg`;
+        const { error: upErr } = await supabase.storage
+          .from("product-media")
+          .upload(thumbPath, thumbBlob, { upsert: true, contentType: "image/jpeg" });
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("product-media").getPublicUrl(thumbPath);
+        const { error: updErr } = await supabase
+          .from("products")
+          .update({ photo_url: serializePhotoUrls([urlData.publicUrl]) })
+          .eq("id", p.id);
+        if (updErr) throw updErr;
+        ok++;
+      } catch (e) {
+        console.warn("Thumbnail failed for", p.sku, e);
+        failed++;
+      }
+      setThumbProgress({ current: i + 1, total: candidates.length });
+    }
+    setThumbProgress(null);
+    toast({
+      title: "Thumbnails generated",
+      description: `Created ${ok} · Failed ${failed}`,
+    });
+    fetchProducts();
+  };
 
   const fetchProducts = async () => {
     if (!storeId) return;
@@ -592,10 +636,19 @@ export default function Inventory() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={handleDownloadCSV}>
             <Download className="h-4 w-4 mr-2" /> Export CSV
           </Button>
+          {canUpload && (
+            <Button variant="outline" onClick={generateMissingThumbnails} disabled={!!thumbProgress}>
+              {thumbProgress ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Thumbs {thumbProgress.current}/{thumbProgress.total}</>
+              ) : (
+                <><Film className="h-4 w-4 mr-2" /> Generate Video Thumbs</>
+              )}
+            </Button>
+          )}
           {canUpload && (
             <>
               <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
