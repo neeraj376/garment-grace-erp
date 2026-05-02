@@ -677,6 +677,51 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               When both Courier and AWB are filled (or changed), a WhatsApp tracking
               update is sent automatically to the customer.
             </p>
+
+            {(editingOrder?.tracking_number || editingOrder?.courier_name || (editAwb && editCourier)) && (
+              <div className="border-t pt-3 space-y-2">
+                <Label className="text-xs text-muted-foreground">Resend tracking details</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResendWhatsApp}
+                    disabled={resending !== null}
+                    className="gap-1.5"
+                  >
+                    {resending === "wa" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                    )}
+                    Resend WhatsApp
+                  </Button>
+                  {editingOrder?.shop_customers?.email ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSendEmail}
+                      disabled={resending !== null}
+                      className="gap-1.5"
+                      title={`Send to ${editingOrder.shop_customers.email}`}
+                    >
+                      {resending === "email" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
+                      Email Tracking
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground self-center">
+                      No email on file — email option unavailable
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingOrder(null)}>Cancel</Button>
