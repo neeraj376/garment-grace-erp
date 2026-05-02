@@ -13,6 +13,7 @@ interface Product {
   brand: string | null;
   size: string | null;
   color: string | null;
+  video_url?: string | null;
 }
 
 interface ProductCardProps {
