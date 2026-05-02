@@ -636,10 +636,19 @@ export default function Inventory() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={handleDownloadCSV}>
             <Download className="h-4 w-4 mr-2" /> Export CSV
           </Button>
+          {canUpload && (
+            <Button variant="outline" onClick={generateMissingThumbnails} disabled={!!thumbProgress}>
+              {thumbProgress ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Thumbs {thumbProgress.current}/{thumbProgress.total}</>
+              ) : (
+                <><Film className="h-4 w-4 mr-2" /> Generate Video Thumbs</>
+              )}
+            </Button>
+          )}
           {canUpload && (
             <>
               <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
