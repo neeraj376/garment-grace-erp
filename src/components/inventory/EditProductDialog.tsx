@@ -12,6 +12,7 @@ import MediaSourceDialog from "@/components/inventory/MediaSourceDialog";
 import WebcamCaptureDialog from "@/components/inventory/WebcamCaptureDialog";
 import { parsePhotoUrls, serializePhotoUrls } from "@/lib/photoUtils";
 import { normalizeCategoryWithMappings, loadCategoryMappings } from "@/lib/categoryUtils";
+import { extractVideoThumbnail } from "@/lib/videoThumbnail";
 
 const isMobileDevice = () =>
   typeof navigator !== "undefined" &&
