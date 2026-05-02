@@ -70,6 +70,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [editStatus, setEditStatus] = useState("");
   const [editAwb, setEditAwb] = useState("");
+  const [editCourier, setEditCourier] = useState("");
   const [saving, setSaving] = useState(false);
   const [labelOrder, setLabelOrder] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -122,14 +123,21 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     setEditingOrder(order);
     setEditStatus(order.status);
     setEditAwb(order.tracking_number || "");
+    setEditCourier(order.courier_name || "");
   };
 
   const handleSaveOrder = async () => {
     if (!editingOrder) return;
     setSaving(true);
     try {
+      const newAwb = editAwb.trim();
+      const newCourier = editCourier.trim();
+      const prevAwb = editingOrder.tracking_number || "";
+      const prevCourier = editingOrder.courier_name || "";
+
       const updates: any = { status: editStatus };
-      if (editAwb.trim()) updates.tracking_number = editAwb.trim();
+      if (newAwb) updates.tracking_number = newAwb;
+      updates.courier_name = newCourier || null;
 
       const { error } = await supabase
         .from("orders")
@@ -138,6 +146,50 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
 
       if (error) throw error;
       toast.success("Order updated");
+
+      // If courier + AWB are set and either changed, send WhatsApp tracking notification
+      const changed = newAwb !== prevAwb || newCourier !== prevCourier;
+      if (newAwb && newCourier && changed) {
+        const phone =
+          editingOrder.shipping_addresses?.phone ||
+          editingOrder.shop_customers?.phone ||
+          null;
+        const customerName =
+          editingOrder.shipping_addresses?.name ||
+          editingOrder.shop_customers?.name ||
+          "Customer";
+        if (phone) {
+          try {
+            const { data: waData, error: waErr } = await supabase.functions.invoke(
+              "send-whatsapp-invoice",
+              {
+                body: {
+                  templateName: "order_tracking_details",
+                  phone,
+                  customerName,
+                  invoiceNumber: editingOrder.order_number,
+                  courierName: newCourier,
+                  awbNo: newAwb,
+                },
+              }
+            );
+            if (waErr || waData?.success === false) {
+              toast.error(
+                `Tracking saved, but WhatsApp failed: ${waErr?.message || waData?.error || "Unknown error"}`
+              );
+            } else {
+              toast.success(`Tracking notification sent to ${phone}`);
+            }
+          } catch (waErr: any) {
+            toast.error(`Tracking saved, but WhatsApp failed: ${waErr?.message || "Unknown"}`);
+          }
+        } else {
+          toast.message("No customer phone on file — skipped WhatsApp notification");
+        }
+      } else if ((newAwb || newCourier) && !(newAwb && newCourier)) {
+        toast.message("Add both Courier and AWB to send a tracking WhatsApp.");
+      }
+
       queryClient.invalidateQueries({ queryKey: ["online-orders"] });
       setEditingOrder(null);
     } catch (err: any) {
@@ -528,6 +580,14 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Courier Name</Label>
+              <Input
+                value={editCourier}
+                onChange={(e) => setEditCourier(e.target.value)}
+                placeholder="e.g. Delhivery, Bluedart"
+              />
+            </div>
+            <div className="space-y-2">
               <Label>AWB / Tracking Number</Label>
               <Input
                 value={editAwb}
@@ -535,6 +595,10 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 placeholder="Enter AWB or tracking number"
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              When both Courier and AWB are filled (or changed), a WhatsApp tracking
+              update is sent automatically to the customer.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingOrder(null)}>Cancel</Button>
