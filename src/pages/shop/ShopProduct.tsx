@@ -102,10 +102,13 @@ export default function ShopProduct() {
   }, [siblings, selectedColor, selectedSize, product, allColors.length, allSizes.length]);
 
   // Sync displayed product to matched variant (so price/photos/stock follow selection).
+  // When the variant has a video, jump straight to the video so the size-picker
+  // acts as a "load this size's video" control.
   useEffect(() => {
     if (matchedVariant && matchedVariant.id !== product?.id) {
       setProduct(matchedVariant);
-      setActiveMedia(0);
+      const photoCount = parsePhotoUrls(matchedVariant.photo_url ?? null).length;
+      setActiveMedia(matchedVariant.video_url ? photoCount : 0);
     }
   }, [matchedVariant, product?.id]);
 
