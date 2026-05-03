@@ -446,7 +446,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     // Fetch only in-stock products (paginated to avoid 1000-row limit)
     const fetchAllProducts = async () => {
       // First get IDs of products that have stock > 0
-      const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: storeId });
+      const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: storeId }).limit(100000);
       if (!inStockIds || inStockIds.length === 0) {
         setProducts([]);
         return;
