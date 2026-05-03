@@ -75,9 +75,25 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
     // Fetch products available for replacement / addition
     (async () => {
       if (!order.store_id) return;
-      const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", {
-        p_store_id: order.store_id,
-      });
+      const inStockIdSet = new Set<string>();
+      const inventoryPageSize = 1000;
+      for (let from = 0; ; from += inventoryPageSize) {
+        const { data: batchRows, error } = await supabase
+          .from("inventory_batches")
+          .select("product_id")
+          .eq("store_id", order.store_id)
+          .gt("quantity", 0)
+          .range(from, from + inventoryPageSize - 1);
+
+        if (error) {
+          console.error("Failed to fetch in-stock product ids", error);
+          break;
+        }
+
+        (batchRows || []).forEach(row => row.product_id && inStockIdSet.add(row.product_id));
+        if (!batchRows || batchRows.length < inventoryPageSize) break;
+      }
+      const inStockIds = Array.from(inStockIdSet);
       const idsToFetch = new Set<string>(inStockIds || []);
       // Always include product ids already on this order so user can see them
       (order.order_items || []).forEach((it: any) => idsToFetch.add(it.product_id));
