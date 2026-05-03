@@ -119,6 +119,25 @@ export default function ShopProduct() {
         (allColors.length === 0 || s.color === selectedColor) &&
         (stockMap[s.id] ?? 0) > 0
     );
+  // Independent of color — used by the top size strip so that picking a size
+  // never gets blocked because the currently-selected color isn't made in it.
+  const sizeHasAnyStock = (size: string) =>
+    siblings.some((s) => s.size === size && (stockMap[s.id] ?? 0) > 0);
+
+  // When a size is picked from the top strip, switch the selected color to one
+  // that actually exists in that size (preferring in-stock and current color).
+  const handleSelectSizeTop = (size: string) => {
+    setSelectedSize(size);
+    const sameColor = siblings.find(
+      (s) => s.size === size && s.color === selectedColor
+    );
+    if (sameColor && (stockMap[sameColor.id] ?? 0) > 0) return;
+    const inStock = siblings.find(
+      (s) => s.size === size && (stockMap[s.id] ?? 0) > 0
+    );
+    const pick = inStock ?? siblings.find((s) => s.size === size);
+    if (pick && pick.color) setSelectedColor(pick.color);
+  };
 
   const currentStock = product ? (stockMap[product.id] ?? 0) : 0;
   const outOfStock = currentStock <= 0;
