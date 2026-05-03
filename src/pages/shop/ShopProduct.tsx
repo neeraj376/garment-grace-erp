@@ -152,9 +152,38 @@ export default function ShopProduct() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
+
+      {/* Top size strip — pick a size to load its video */}
+      {allSizes.length > 0 && (
+        <div className="mb-5 p-3 rounded-xl border border-border bg-card">
+          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+            Select size {selectedSize ? <span className="text-foreground normal-case">· {selectedSize}</span> : null}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {allSizes.map((s) => {
+              const inStock = sizeHasStockForColor(s);
+              const isSelected = selectedSize === s;
+              return (
+                <button
+                  key={`top-${s}`}
+                  onClick={() => setSelectedSize(s)}
+                  disabled={!inStock}
+                  className={`min-w-[44px] h-10 px-3 rounded-lg border text-sm font-medium transition-all ${
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:border-foreground/40"
+                  } ${!inStock ? "opacity-40 line-through cursor-not-allowed" : ""}`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Media */}
