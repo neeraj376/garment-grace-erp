@@ -152,9 +152,38 @@ export default function ShopProduct() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
+
+      {/* Top size strip — pick a size to load its video */}
+      {allSizes.length > 0 && (
+        <div className="mb-5 p-3 rounded-xl border border-border bg-card">
+          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+            Select size {selectedSize ? <span className="text-foreground normal-case">· {selectedSize}</span> : null}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {allSizes.map((s) => {
+              const inStock = sizeHasStockForColor(s);
+              const isSelected = selectedSize === s;
+              return (
+                <button
+                  key={`top-${s}`}
+                  onClick={() => setSelectedSize(s)}
+                  disabled={!inStock}
+                  className={`min-w-[44px] h-10 px-3 rounded-lg border text-sm font-medium transition-all ${
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:border-foreground/40"
+                  } ${!inStock ? "opacity-40 line-through cursor-not-allowed" : ""}`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Media */}
@@ -343,6 +372,55 @@ export default function ShopProduct() {
           </a>
         </div>
       </div>
+
+      {/* All product videos by size */}
+      {(() => {
+        const videoSibs = siblings.filter((s) => s.video_url && (allColors.length === 0 || s.color === selectedColor));
+        // Dedup by video_url, keep first size label per url
+        const seen = new Set<string>();
+        const items = videoSibs.filter((s) => {
+          if (seen.has(s.video_url)) return false;
+          seen.add(s.video_url);
+          return true;
+        });
+        if (items.length === 0) return null;
+        return (
+          <section className="mt-10">
+            <h2 className="font-display text-xl font-bold text-foreground mb-4">
+              All videos {selectedColor ? <span className="text-muted-foreground font-normal text-base">· {selectedColor}</span> : null}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {items.map((s) => (
+                <div key={s.id} className="rounded-xl overflow-hidden border border-border bg-card">
+                  <div className="aspect-[3/4] bg-muted relative">
+                    <video
+                      src={s.video_url}
+                      controls
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-cover"
+                    />
+                    {s.size && (
+                      <span className="absolute top-2 left-2 px-2 py-1 rounded-md bg-background/90 backdrop-blur text-xs font-bold text-foreground border border-border">
+                        Size: {s.size}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2 text-center">
+                    <p className="text-sm font-medium text-foreground">
+                      {s.size ? `Size ${s.size}` : "Video"}
+                    </p>
+                    {(stockMap[s.id] ?? 0) <= 0 && (
+                      <p className="text-[10px] text-destructive">Out of stock</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 }
