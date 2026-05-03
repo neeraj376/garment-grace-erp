@@ -478,7 +478,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         const idBatch = inStockIds.slice(i, i + batchSize);
         const { data } = await supabase
           .from("products")
-          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size")
+          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
           .eq("store_id", storeId)
           .eq("is_active", true)
           .in("id", idBatch);
@@ -518,6 +518,39 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       } catch {}
     })();
   }, [storeId]);
+
+  useEffect(() => {
+    const query = searchProduct.trim();
+    if (!storeId || query.length < 3) return;
+
+    const timeout = setTimeout(async () => {
+      const existingIds = new Set(products.map(p => p.id));
+      const { data } = await supabase
+        .from("products")
+        .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .or(`sku.ilike.%${query}%,name.ilike.%${query}%`)
+        .limit(20);
+
+      const missing = (data || []).filter(p => !existingIds.has(p.id));
+      if (missing.length === 0) return;
+
+      const withStock = await Promise.all(
+        missing.map(async (p) => {
+          const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
+          return { ...p, _stock: typeof stock === "number" ? stock : 0 };
+        })
+      );
+
+      const inStockMatches = withStock.filter(p => p._stock > 0);
+      if (inStockMatches.length > 0) {
+        setProducts(prev => [...prev, ...inStockMatches.filter(p => !prev.some(existing => existing.id === p.id))]);
+      }
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [products, searchProduct, storeId]);
 
   const addToCart = (product: any) => {
     const existing = cart.find(i => i.product_id === product.id);
