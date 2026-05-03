@@ -443,10 +443,28 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   useEffect(() => {
     if (!storeId) return;
-    // Fetch only in-stock products (paginated to avoid 1000-row limit)
+    // Fetch only in-stock products (page inventory rows; RPC responses are capped at 1000)
     const fetchAllProducts = async () => {
-      // First get IDs of products that have stock > 0
-      const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: storeId }).limit(100000);
+      const inStockIdSet = new Set<string>();
+      const inventoryPageSize = 1000;
+      for (let from = 0; ; from += inventoryPageSize) {
+        const { data: batchRows, error } = await supabase
+          .from("inventory_batches")
+          .select("product_id")
+          .eq("store_id", storeId)
+          .gt("quantity", 0)
+          .range(from, from + inventoryPageSize - 1);
+
+        if (error) {
+          console.error("Failed to fetch in-stock product ids", error);
+          break;
+        }
+
+        (batchRows || []).forEach(row => row.product_id && inStockIdSet.add(row.product_id));
+        if (!batchRows || batchRows.length < inventoryPageSize) break;
+      }
+
+      const inStockIds = Array.from(inStockIdSet);
       if (!inStockIds || inStockIds.length === 0) {
         setProducts([]);
         return;
