@@ -524,7 +524,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (!storeId || query.length < 3) return;
 
     const timeout = setTimeout(async () => {
-      const existingIds = new Set(products.map(p => p.id));
       const { data } = await supabase
         .from("products")
         .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
@@ -533,11 +532,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         .or(`sku.ilike.%${query}%,name.ilike.%${query}%`)
         .limit(20);
 
-      const missing = (data || []).filter(p => !existingIds.has(p.id));
-      if (missing.length === 0) return;
+      if (!data || data.length === 0) return;
 
       const withStock = await Promise.all(
-        missing.map(async (p) => {
+        data.map(async (p) => {
           const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
           return { ...p, _stock: typeof stock === "number" ? stock : 0 };
         })
@@ -550,7 +548,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }, 250);
 
     return () => clearTimeout(timeout);
-  }, [products, searchProduct, storeId]);
+  }, [searchProduct, storeId]);
 
   const addToCart = (product: any) => {
     const existing = cart.find(i => i.product_id === product.id);
