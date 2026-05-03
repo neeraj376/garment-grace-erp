@@ -54,19 +54,41 @@ const ShortsIcon = () => (
   </svg>
 );
 
+const ShirtIcon2 = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M4 6l4-3 2 2h4l2-2 4 3-2 3-2-1v13H8V8L6 9 4 6z" />
+    <path d="M10 5l2 2 2-2" />
+  </svg>
+);
+const BlazerIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M5 5l3-2 4 5 4-5 3 2-2 4v12H7V9L5 5z" />
+    <path d="M12 8v13" />
+    <path d="M9 14h2" />
+  </svg>
+);
+const UnderwearIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
+    <path d="M3 7h18l-1 4c-2 0-4 1-5 4-1-2-2-3-3-3s-2 1-3 3c-1-3-3-4-5-4L3 7z" />
+  </svg>
+);
+
 const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[] }[] = [
+  { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"] },
+  { name: "Blazzer", Icon: BlazerIcon, matchers: ["blazzer", "blazer"] },
   { name: "Jeans", Icon: JeansIcon, matchers: ["jean"] },
-  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee"] },
+  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee "] },
   { name: "Jacket", Icon: JacketIcon, matchers: ["jacket"] },
   { name: "Hoodie", Icon: HoodieIcon, matchers: ["hoodie", "sweatshirt"] },
-  { name: "Trousers", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino"] },
+  { name: "Lowers", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower"] },
   { name: "Shorts", Icon: ShortsIcon, matchers: ["short"] },
+  { name: "Underwear", Icon: UnderwearIcon, matchers: ["underwear", "brief", "boxer"] },
 ];
 
 export default function ShopHome() {
   const [featured, setFeatured] = useState<any[]>([]);
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
-  const [sortedCategories, setSortedCategories] = useState(HERO_CATEGORIES);
+  const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -84,8 +106,8 @@ export default function ShopHome() {
         }).length;
         return { ...cat, count };
       });
-      counts.sort((a, b) => b.count - a.count);
-      setSortedCategories(counts);
+      const visible = counts.filter((c) => c.count > 0).sort((a, b) => b.count - a.count);
+      setSortedCategories(visible);
 
       const withMedia = allInStock.filter((p: any) => p.photo_url || p.video_url);
       const grouped = groupVariants(withMedia);
