@@ -124,8 +124,29 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           .eq("is_active", true);
         setEmployees(emps || []);
 
-        // Fetch in-stock products for adding new items
-        const { data: inStockIds } = await supabase.rpc("get_in_stock_product_ids", { p_store_id: inv.store_id });
+        // Fetch in-stock products for adding new items (page inventory rows; RPC responses are capped at 1000)
+        const inStockIdSet = new Set<string>();
+        const inventoryPageSize = 1000;
+        for (let i = 0; ; i += inventoryPageSize) {
+          const { data: batchRows, error } = await supabase
+            .from("inventory_batches")
+            .select("product_id")
+            .eq("store_id", inv.store_id)
+            .gt("quantity", 0)
+            .order("created_at", { ascending: true })
+            .order("id", { ascending: true })
+            .range(i, i + inventoryPageSize - 1);
+
+          if (error) {
+            console.error("Failed to fetch in-stock product ids", error);
+            break;
+          }
+
+          (batchRows || []).forEach(row => row.product_id && inStockIdSet.add(row.product_id));
+          if (!batchRows || batchRows.length < inventoryPageSize) break;
+        }
+
+        const inStockIds = Array.from(inStockIdSet);
         if (inStockIds && inStockIds.length > 0) {
           let allProds: any[] = [];
           const batchSize = 200;
