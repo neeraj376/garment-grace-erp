@@ -1,0 +1,1 @@
+UPDATE products SET photo_url = 'https://kwbbkvfudrzznrhoumej.supabase.co/storage/v1/object/public/product-media/8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6/gaastra-shirt-thumb-1730000000.jpg' WHERE name ILIKE 'Gaastra Shirt%' AND video_url LIKE '%gaastra-shirt-video-1730000000.mp4%' AND photo_url IS NULL;
