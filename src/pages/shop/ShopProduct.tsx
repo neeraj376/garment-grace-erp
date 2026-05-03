@@ -372,6 +372,55 @@ export default function ShopProduct() {
           </a>
         </div>
       </div>
+
+      {/* All product videos by size */}
+      {(() => {
+        const videoSibs = siblings.filter((s) => s.video_url && (allColors.length === 0 || s.color === selectedColor));
+        // Dedup by video_url, keep first size label per url
+        const seen = new Set<string>();
+        const items = videoSibs.filter((s) => {
+          if (seen.has(s.video_url)) return false;
+          seen.add(s.video_url);
+          return true;
+        });
+        if (items.length === 0) return null;
+        return (
+          <section className="mt-10">
+            <h2 className="font-display text-xl font-bold text-foreground mb-4">
+              All videos {selectedColor ? <span className="text-muted-foreground font-normal text-base">· {selectedColor}</span> : null}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {items.map((s) => (
+                <div key={s.id} className="rounded-xl overflow-hidden border border-border bg-card">
+                  <div className="aspect-[3/4] bg-muted relative">
+                    <video
+                      src={s.video_url}
+                      controls
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-cover"
+                    />
+                    {s.size && (
+                      <span className="absolute top-2 left-2 px-2 py-1 rounded-md bg-background/90 backdrop-blur text-xs font-bold text-foreground border border-border">
+                        Size: {s.size}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2 text-center">
+                    <p className="text-sm font-medium text-foreground">
+                      {s.size ? `Size ${s.size}` : "Video"}
+                    </p>
+                    {(stockMap[s.id] ?? 0) <= 0 && (
+                      <p className="text-[10px] text-destructive">Out of stock</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 }
