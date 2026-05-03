@@ -119,6 +119,25 @@ export default function ShopProduct() {
         (allColors.length === 0 || s.color === selectedColor) &&
         (stockMap[s.id] ?? 0) > 0
     );
+  // Independent of color — used by the top size strip so that picking a size
+  // never gets blocked because the currently-selected color isn't made in it.
+  const sizeHasAnyStock = (size: string) =>
+    siblings.some((s) => s.size === size && (stockMap[s.id] ?? 0) > 0);
+
+  // When a size is picked from the top strip, switch the selected color to one
+  // that actually exists in that size (preferring in-stock and current color).
+  const handleSelectSizeTop = (size: string) => {
+    setSelectedSize(size);
+    const sameColor = siblings.find(
+      (s) => s.size === size && s.color === selectedColor
+    );
+    if (sameColor && (stockMap[sameColor.id] ?? 0) > 0) return;
+    const inStock = siblings.find(
+      (s) => s.size === size && (stockMap[s.id] ?? 0) > 0
+    );
+    const pick = inStock ?? siblings.find((s) => s.size === size);
+    if (pick && pick.color) setSelectedColor(pick.color);
+  };
 
   const currentStock = product ? (stockMap[product.id] ?? 0) : 0;
   const outOfStock = currentStock <= 0;
@@ -164,12 +183,12 @@ export default function ShopProduct() {
           </p>
           <div className="flex flex-wrap gap-2">
             {allSizes.map((s) => {
-              const inStock = sizeHasStockForColor(s);
+              const inStock = sizeHasAnyStock(s);
               const isSelected = selectedSize === s;
               return (
                 <button
                   key={`top-${s}`}
-                  onClick={() => setSelectedSize(s)}
+                  onClick={() => handleSelectSizeTop(s)}
                   disabled={!inStock}
                   className={`min-w-[44px] h-10 px-3 rounded-lg border text-sm font-medium transition-all ${
                     isSelected
@@ -375,8 +394,8 @@ export default function ShopProduct() {
 
       {/* All product videos by size */}
       {(() => {
-        const videoSibs = siblings.filter((s) => s.video_url && (allColors.length === 0 || s.color === selectedColor));
-        // Dedup by video_url, keep first size label per url
+        const videoSibs = siblings.filter((s) => s.video_url);
+        // Dedup by video_url
         const seen = new Set<string>();
         const items = videoSibs.filter((s) => {
           if (seen.has(s.video_url)) return false;
@@ -387,19 +406,29 @@ export default function ShopProduct() {
         return (
           <section className="mt-10">
             <h2 className="font-display text-xl font-bold text-foreground mb-4">
-              All videos {selectedColor ? <span className="text-muted-foreground font-normal text-base">· {selectedColor}</span> : null}
+              All videos <span className="text-muted-foreground font-normal text-base">· {items.length}</span>
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {items.map((s) => (
-                <div key={s.id} className="rounded-xl overflow-hidden border border-border bg-card">
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    if (s.size) setSelectedSize(s.size);
+                    if (s.color) setSelectedColor(s.color);
+                    if (typeof window !== "undefined") {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                  }}
+                  className="text-left rounded-xl overflow-hidden border border-border bg-card hover:border-primary transition-colors"
+                >
                   <div className="aspect-[3/4] bg-muted relative">
                     <video
                       src={s.video_url}
-                      controls
                       muted
                       playsInline
                       preload="metadata"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                     />
                     {s.size && (
                       <span className="absolute top-2 left-2 px-2 py-1 rounded-md bg-background/90 backdrop-blur text-xs font-bold text-foreground border border-border">
@@ -408,14 +437,17 @@ export default function ShopProduct() {
                     )}
                   </div>
                   <div className="p-2 text-center">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-semibold text-foreground">
                       {s.size ? `Size ${s.size}` : "Video"}
                     </p>
+                    {s.color && (
+                      <p className="text-xs text-muted-foreground truncate">{s.color}</p>
+                    )}
                     {(stockMap[s.id] ?? 0) <= 0 && (
-                      <p className="text-[10px] text-destructive">Out of stock</p>
+                      <p className="text-[10px] text-destructive mt-0.5">Out of stock</p>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>
