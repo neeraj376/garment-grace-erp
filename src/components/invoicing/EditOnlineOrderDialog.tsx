@@ -83,6 +83,8 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
           .select("product_id")
           .eq("store_id", order.store_id)
           .gt("quantity", 0)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
           .range(from, from + inventoryPageSize - 1);
 
         if (error) {
