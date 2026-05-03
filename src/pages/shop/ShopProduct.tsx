@@ -183,12 +183,12 @@ export default function ShopProduct() {
           </p>
           <div className="flex flex-wrap gap-2">
             {allSizes.map((s) => {
-              const inStock = sizeHasStockForColor(s);
+              const inStock = sizeHasAnyStock(s);
               const isSelected = selectedSize === s;
               return (
                 <button
                   key={`top-${s}`}
-                  onClick={() => setSelectedSize(s)}
+                  onClick={() => handleSelectSizeTop(s)}
                   disabled={!inStock}
                   className={`min-w-[44px] h-10 px-3 rounded-lg border text-sm font-medium transition-all ${
                     isSelected
