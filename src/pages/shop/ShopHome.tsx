@@ -35,13 +35,22 @@ const HoodieIcon = () => (
 );
 const TrousersIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M5 3h14v4l-2 14h-4l-1-11-1 11H7L5 7V3z" />
+    {/* waistband */}
+    <path d="M5 4h14v3H5z" />
+    {/* left leg */}
+    <path d="M5 7l1 14h4l1-14" />
+    {/* right leg */}
+    <path d="M19 7l-1 14h-4l-1-14" />
   </svg>
 );
 const ShortsIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M5 4h14v4l-1 8h-5l-1-7-1 7H6L5 8V4z" />
-    <path d="M5 8h14" />
+    {/* waistband */}
+    <path d="M5 5h14v3H5z" />
+    {/* left leg (short) */}
+    <path d="M5 8l1 8h4l1-8" />
+    {/* right leg (short) */}
+    <path d="M19 8l-1 8h-4l-1-8" />
   </svg>
 );
 
