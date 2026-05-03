@@ -106,8 +106,8 @@ export default function ShopHome() {
         }).length;
         return { ...cat, count };
       });
-      counts.sort((a, b) => b.count - a.count);
-      setSortedCategories(counts);
+      const visible = counts.filter((c) => c.count > 0).sort((a, b) => b.count - a.count);
+      setSortedCategories(visible);
 
       const withMedia = allInStock.filter((p: any) => p.photo_url || p.video_url);
       const grouped = groupVariants(withMedia);
