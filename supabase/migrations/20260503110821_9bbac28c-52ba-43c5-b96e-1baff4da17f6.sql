@@ -1,0 +1,10 @@
+UPDATE products
+SET video_url = 'https://kwbbkvfudrzznrhoumej.supabase.co/storage/v1/object/public/product-media/8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6/mens-blazzer-video-1730000002.mp4',
+    photo_url = COALESCE(photo_url, 'https://kwbbkvfudrzznrhoumej.supabase.co/storage/v1/object/public/product-media/8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6/mens-blazzer-thumb-1730000002.jpg')
+WHERE sku IN (
+  'SKU-1777780525306-44','SKU-1777780524851-43','SKU-1777780524389-42','SKU-1777780523925-41',
+  'SKU-1777780523465-40','SKU-1777780523004-39','SKU-1777780522546-38','SKU-1777780522084-37',
+  'SKU-1777780521609-36','SKU-1777780521102-35','SKU-1777780520646-34','SKU-1777780520186-33',
+  'SKU-1777780519714-32','SKU-1777780519244-31','SKU-1777780518775-30','SKU-1777780518316-29',
+  'SKU-1777780517865-28','SKU-1777780517402-27','SKU-1777780516937-26'
+);
