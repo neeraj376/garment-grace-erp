@@ -88,7 +88,7 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string
 export default function ShopHome() {
   const [featured, setFeatured] = useState<any[]>([]);
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
-  const [sortedCategories, setSortedCategories] = useState(HERO_CATEGORIES);
+  const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
