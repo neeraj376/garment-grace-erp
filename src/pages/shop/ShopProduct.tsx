@@ -28,6 +28,8 @@ export default function ShopProduct() {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
+      setStockLoaded(false);
+      setStockMap({});
       const { data: base } = await supabase
         .from("products")
         .select("*")
@@ -37,6 +39,7 @@ export default function ShopProduct() {
       if (!base) {
         setProduct(null);
         setLoading(false);
+        setStockLoaded(true);
         return;
       }
       setProduct(base);
@@ -61,7 +64,10 @@ export default function ShopProduct() {
       const list = sibs.length ? sibs : [base];
       setSiblings(list);
 
-      // Stock for each sibling.
+      // Page can render now — stock will fill in shortly.
+      setLoading(false);
+
+      // Stock for each sibling. Treat missing as unknown (not 0) until resolved.
       const stocks: Record<string, number> = {};
       await Promise.all(
         list.map(async (s) => {
@@ -70,7 +76,7 @@ export default function ShopProduct() {
         })
       );
       setStockMap(stocks);
-      setLoading(false);
+      setStockLoaded(true);
     };
     fetchAll();
   }, [id]);
