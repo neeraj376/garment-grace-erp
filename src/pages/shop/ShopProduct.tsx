@@ -15,6 +15,7 @@ export default function ShopProduct() {
   const [product, setProduct] = useState<any>(null);
   const [siblings, setSiblings] = useState<any[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, number>>({});
+  const [stockLoaded, setStockLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeMedia, setActiveMedia] = useState(0);
@@ -27,6 +28,8 @@ export default function ShopProduct() {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
+      setStockLoaded(false);
+      setStockMap({});
       const { data: base } = await supabase
         .from("products")
         .select("*")
@@ -36,6 +39,7 @@ export default function ShopProduct() {
       if (!base) {
         setProduct(null);
         setLoading(false);
+        setStockLoaded(true);
         return;
       }
       setProduct(base);
@@ -60,7 +64,10 @@ export default function ShopProduct() {
       const list = sibs.length ? sibs : [base];
       setSiblings(list);
 
-      // Stock for each sibling.
+      // Page can render now — stock will fill in shortly.
+      setLoading(false);
+
+      // Stock for each sibling. Treat missing as unknown (not 0) until resolved.
       const stocks: Record<string, number> = {};
       await Promise.all(
         list.map(async (s) => {
@@ -69,7 +76,7 @@ export default function ShopProduct() {
         })
       );
       setStockMap(stocks);
-      setLoading(false);
+      setStockLoaded(true);
     };
     fetchAll();
   }, [id]);
@@ -112,20 +119,25 @@ export default function ShopProduct() {
     }
   }, [matchedVariant, product?.id]);
 
-  // Stock helpers per color and (color, size).
+  // Stock helpers. Until stock has loaded, treat variants as "available" so
+  // we don't flash Out of Stock / strike-throughs during the fetch window.
+  // Once loaded, missing entries correctly mean 0.
+  const stockOf = (sid: string): number =>
+    stockLoaded ? (stockMap[sid] ?? 0) : Number.POSITIVE_INFINITY;
+
   const colorHasStock = (color: string) =>
-    siblings.some((s) => s.color === color && (stockMap[s.id] ?? 0) > 0);
+    siblings.some((s) => s.color === color && stockOf(s.id) > 0);
   const sizeHasStockForColor = (size: string) =>
     siblings.some(
       (s) =>
         s.size === size &&
         (allColors.length === 0 || s.color === selectedColor) &&
-        (stockMap[s.id] ?? 0) > 0
+        stockOf(s.id) > 0
     );
   // Independent of color — used by the top size strip so that picking a size
   // never gets blocked because the currently-selected color isn't made in it.
   const sizeHasAnyStock = (size: string) =>
-    siblings.some((s) => s.size === size && (stockMap[s.id] ?? 0) > 0);
+    siblings.some((s) => s.size === size && stockOf(s.id) > 0);
 
   // When a size is picked from the top strip, switch the selected color to one
   // that actually exists in that size (preferring in-stock and current color).
@@ -134,16 +146,20 @@ export default function ShopProduct() {
     const sameColor = siblings.find(
       (s) => s.size === size && s.color === selectedColor
     );
-    if (sameColor && (stockMap[sameColor.id] ?? 0) > 0) return;
+    if (sameColor && stockOf(sameColor.id) > 0) return;
     const inStock = siblings.find(
-      (s) => s.size === size && (stockMap[s.id] ?? 0) > 0
+      (s) => s.size === size && stockOf(s.id) > 0
     );
     const pick = inStock ?? siblings.find((s) => s.size === size);
     if (pick && pick.color) setSelectedColor(pick.color);
   };
 
-  const currentStock = product ? (stockMap[product.id] ?? 0) : 0;
-  const outOfStock = currentStock <= 0;
+  // While stock is still loading, we don't know — assume in stock to avoid
+  // a false OOS flash. Once loaded, an absent entry truly means 0.
+  const currentStock = product
+    ? (stockLoaded ? (stockMap[product.id] ?? 0) : 1)
+    : 0;
+  const outOfStock = stockLoaded && currentStock <= 0;
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -446,7 +462,7 @@ export default function ShopProduct() {
                     {s.color && (
                       <p className="text-xs text-muted-foreground truncate">{s.color}</p>
                     )}
-                    {(stockMap[s.id] ?? 0) <= 0 && (
+                    {stockLoaded && (stockMap[s.id] ?? 0) <= 0 && (
                       <p className="text-[10px] text-destructive mt-0.5">Out of stock</p>
                     )}
                   </div>
