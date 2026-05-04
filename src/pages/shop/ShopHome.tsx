@@ -121,7 +121,7 @@ export default function ShopHome() {
     <div>
       {/* Hero */}
       <section className="relative bg-foreground text-background overflow-hidden">
-        <div className="container mx-auto px-4 py-20 md:py-28 text-center">
+        <div className="container mx-auto px-4 py-10 md:py-14 text-center">
           <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight mb-4">
             Elevate Your Style
           </h1>
