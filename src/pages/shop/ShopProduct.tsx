@@ -15,6 +15,7 @@ export default function ShopProduct() {
   const [product, setProduct] = useState<any>(null);
   const [siblings, setSiblings] = useState<any[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, number>>({});
+  const [stockLoaded, setStockLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeMedia, setActiveMedia] = useState(0);
