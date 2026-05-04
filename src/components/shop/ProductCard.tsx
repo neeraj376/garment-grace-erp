@@ -44,23 +44,21 @@ export default function ProductCard({ product, colors, sizes, minPrice, maxPrice
       to={`/product/${product.id}`}
       className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-200"
     >
-      <div className="aspect-[3/4] bg-muted relative overflow-hidden">
+      <div className="aspect-[3/4] bg-gradient-to-b from-muted/40 to-muted relative overflow-hidden">
         {firstPhoto ? (
           <img
             src={firstPhoto}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
         ) : product.video_url ? (
           <video
             src={product.video_url}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
             muted
             playsInline
             preload="metadata"
-            // #t=0.1 hint to render first frame as poster on most browsers
-            // (Safari/iOS especially needs the fragment to paint a frame)
             poster=""
             onLoadedMetadata={(e) => {
               const v = e.currentTarget;
