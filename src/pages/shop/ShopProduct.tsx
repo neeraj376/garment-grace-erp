@@ -7,7 +7,7 @@ import { ShoppingBag, ArrowLeft, Minus, Plus, MessageCircle } from "lucide-react
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { parsePhotoUrls } from "@/lib/photoUtils";
-import { colorToHex, sortSizes } from "@/lib/variantUtils";
+import { colorToHex, sortSizes, variantGroupKey } from "@/lib/variantUtils";
 
 export default function ShopProduct() {
   const { id } = useParams<{ id: string }>();
