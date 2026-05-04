@@ -43,8 +43,30 @@ const normalize = (s: string | null | undefined): string => {
     .join(" ");
 };
 
-const groupKey = (p: { name: string; brand: string | null; category?: string | null }) =>
-  `${normalize(p.brand)}|${normalize(p.name)}`;
+// Strip the variant's own size/color tokens out of the name so that products
+// like "Oakley Blue Large" and "Oakley Blue Medium" collapse into one group.
+const stripVariantTokens = (
+  name: string,
+  size: string | null | undefined,
+  color: string | null | undefined,
+): string => {
+  let n = normalize(name);
+  for (const tok of [size, color]) {
+    const t = normalize(tok);
+    if (!t) continue;
+    // remove whole-word matches of each token (handles multi-word colors too)
+    const re = new RegExp(`(^|\\s)${t.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}(\\s|$)`, "g");
+    n = n.replace(re, " ");
+  }
+  return n.replace(/\s+/g, " ").trim();
+};
+
+const groupKey = (p: {
+  name: string;
+  brand: string | null;
+  size?: string | null;
+  color?: string | null;
+}) => `${normalize(p.brand)}|${stripVariantTokens(p.name, p.size, p.color)}`;
 
 export function groupVariants(products: VariantProduct[]): VariantGroup[] {
   const map = new Map<string, VariantProduct[]>();
