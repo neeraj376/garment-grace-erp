@@ -462,7 +462,7 @@ export default function ShopProduct() {
                     {s.color && (
                       <p className="text-xs text-muted-foreground truncate">{s.color}</p>
                     )}
-                    {(stockMap[s.id] ?? 0) <= 0 && (
+                    {stockLoaded && (stockMap[s.id] ?? 0) <= 0 && (
                       <p className="text-[10px] text-destructive mt-0.5">Out of stock</p>
                     )}
                   </div>
