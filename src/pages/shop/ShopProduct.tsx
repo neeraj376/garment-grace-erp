@@ -339,6 +339,95 @@ export default function ShopProduct() {
             </div>
           )}
 
+          {/* Variant matrix: every size × color combo, with OOS cells disabled */}
+          {allSizes.length > 0 && allColors.length > 0 && (
+            <div className="mt-5">
+              <p className="text-sm font-medium text-foreground mb-2">
+                Availability
+                <span className="text-muted-foreground font-normal"> · pick a size & color</span>
+              </p>
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="p-2 text-left font-medium text-muted-foreground">Size \ Color</th>
+                      {allColors.map((c) => {
+                        const hex = colorToHex(c);
+                        return (
+                          <th key={c} className="p-2 font-medium text-foreground">
+                            <div className="flex flex-col items-center gap-1">
+                              <span
+                                className="inline-block w-4 h-4 rounded-full border border-border"
+                                style={{ backgroundColor: hex ?? "hsl(var(--muted))" }}
+                                title={c}
+                              />
+                              <span className="text-[10px] text-muted-foreground truncate max-w-[60px]">{c}</span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allSizes.map((s) => (
+                      <tr key={s} className="border-t border-border">
+                        <td className="p-2 font-medium text-foreground">{s}</td>
+                        {allColors.map((c) => {
+                          const variant = siblings.find(
+                            (v) => v.size === s && v.color === c
+                          );
+                          const stock = variant ? stockOf(variant.id) : 0;
+                          const exists = !!variant;
+                          const inStock = exists && stock > 0;
+                          const isSelected =
+                            selectedSize === s && selectedColor === c;
+                          return (
+                            <td key={c} className="p-1 text-center">
+                              <button
+                                type="button"
+                                disabled={!inStock}
+                                onClick={() => {
+                                  setSelectedSize(s);
+                                  setSelectedColor(c);
+                                }}
+                                title={
+                                  !exists
+                                    ? "Not available"
+                                    : !inStock
+                                    ? "Out of stock"
+                                    : `In stock${
+                                        stockLoaded && Number.isFinite(stock)
+                                          ? `: ${stock}`
+                                          : ""
+                                      }`
+                                }
+                                className={`w-full min-w-[44px] h-9 rounded-md border text-xs font-medium transition-all ${
+                                  isSelected
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : inStock
+                                    ? "border-border bg-background text-foreground hover:border-foreground/40"
+                                    : "border-border bg-muted text-muted-foreground line-through cursor-not-allowed opacity-50"
+                                }`}
+                              >
+                                {!exists
+                                  ? "—"
+                                  : !stockLoaded
+                                  ? "…"
+                                  : inStock
+                                  ? stock
+                                  : "0"}
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           <div className="border-t border-border my-5 pt-4 space-y-3">
             {product.category && (
               <div className="flex gap-2 text-sm">
