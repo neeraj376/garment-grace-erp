@@ -61,12 +61,14 @@ const stripVariantTokens = (
   return n.replace(/\s+/g, " ").trim();
 };
 
-const groupKey = (p: {
+export const variantGroupKey = (p: {
   name: string;
   brand: string | null;
   size?: string | null;
   color?: string | null;
 }) => `${normalize(p.brand)}|${stripVariantTokens(p.name, p.size, p.color)}`;
+
+const groupKey = variantGroupKey;
 
 export function groupVariants(products: VariantProduct[]): VariantGroup[] {
   const map = new Map<string, VariantProduct[]>();

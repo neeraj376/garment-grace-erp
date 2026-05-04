@@ -7,7 +7,7 @@ import { ShoppingBag, ArrowLeft, Minus, Plus, MessageCircle } from "lucide-react
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { parsePhotoUrls } from "@/lib/photoUtils";
-import { colorToHex, sortSizes } from "@/lib/variantUtils";
+import { colorToHex, sortSizes, variantGroupKey } from "@/lib/variantUtils";
 
 export default function ShopProduct() {
   const { id } = useParams<{ id: string }>();
@@ -47,20 +47,17 @@ export default function ShopProduct() {
       setSelectedSize(base.size ?? null);
       setActiveMedia(0);
 
-      // Fetch siblings: same store + active, then match by trimmed/lowercased
-      // name (and brand when present). This is tolerant of stray whitespace
-      // or casing differences from manual data entry / CSV imports.
-      const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
-      const baseName = norm(base.name);
-      const baseBrand = norm(base.brand);
+      // Fetch siblings: same store + active, then group by the same fuzzy key
+      // used on the catalog (strips size/color tokens out of the name) so
+      // products like "Oakley Blue Large" / "Oakley Red Medium" all collapse
+      // into one variant group with full size + color matrices.
+      const baseKey = variantGroupKey(base);
       const { data: allActive } = await supabase
         .from("products")
         .select("*")
         .eq("store_id", base.store_id)
         .eq("is_active", true);
-      const sibs = (allActive ?? []).filter(
-        (p) => norm(p.name) === baseName && norm(p.brand) === baseBrand
-      );
+      const sibs = (allActive ?? []).filter((p) => variantGroupKey(p) === baseKey);
       const list = sibs.length ? sibs : [base];
       setSiblings(list);
 
