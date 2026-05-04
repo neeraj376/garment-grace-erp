@@ -52,12 +52,33 @@ export default function ShopProduct() {
       // products like "Oakley Blue Large" / "Oakley Red Medium" all collapse
       // into one variant group with full size + color matrices.
       const baseKey = variantGroupKey(base);
-      const { data: allActive } = await supabase
-        .from("products")
-        .select("*")
-        .eq("store_id", base.store_id)
-        .eq("is_active", true);
-      const sibs = (allActive ?? []).filter((p) => variantGroupKey(p) === baseKey);
+      // Narrow server-side by brand when present (huge catalogs blow past the
+      // default 1000-row cap otherwise). Fall back to a paginated full scan.
+      let allActive: any[] = [];
+      if (base.brand) {
+        const { data } = await supabase
+          .from("products")
+          .select("*")
+          .eq("store_id", base.store_id)
+          .eq("is_active", true)
+          .ilike("brand", base.brand)
+          .limit(2000);
+        allActive = data ?? [];
+      } else {
+        const pageSize = 1000;
+        for (let from = 0; from < 10000; from += pageSize) {
+          const { data } = await supabase
+            .from("products")
+            .select("*")
+            .eq("store_id", base.store_id)
+            .eq("is_active", true)
+            .range(from, from + pageSize - 1);
+          if (!data || data.length === 0) break;
+          allActive = allActive.concat(data);
+          if (data.length < pageSize) break;
+        }
+      }
+      const sibs = allActive.filter((p) => variantGroupKey(p) === baseKey);
       const list = sibs.length ? sibs : [base];
       setSiblings(list);
 
