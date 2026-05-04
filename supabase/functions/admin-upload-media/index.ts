@@ -9,10 +9,20 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { path, base64, contentType } = await req.json();
-    if (!path || !base64) return new Response(JSON.stringify({ error: "missing" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const body = await req.json();
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    if (body.action === "sign") {
+      const { path } = body;
+      const { data, error } = await supabase.storage.from("product-media").createSignedUploadUrl(path, { upsert: true });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from("product-media").getPublicUrl(path);
+      return new Response(JSON.stringify({ ...data, publicUrl: pub.publicUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // small base64 upload fallback
+    const { path, base64, contentType } = body;
+    const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
     const { error } = await supabase.storage.from("product-media").upload(path, bin, { upsert: true, contentType: contentType || "application/octet-stream" });
     if (error) throw error;
     const { data } = supabase.storage.from("product-media").getPublicUrl(path);
