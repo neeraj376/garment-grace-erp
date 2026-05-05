@@ -80,7 +80,7 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string
   { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee "] },
   { name: "Jacket", Icon: JacketIcon, matchers: ["jacket"] },
   { name: "Hoodie", Icon: HoodieIcon, matchers: ["hoodie", "sweatshirt"] },
-  { name: "Lowers", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower"] },
+  { name: "Pants", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower", "jogger"] },
   { name: "Shorts", Icon: ShortsIcon, matchers: ["short"] },
   { name: "Underwear", Icon: UnderwearIcon, matchers: ["underwear", "brief", "boxer"] },
 ];
