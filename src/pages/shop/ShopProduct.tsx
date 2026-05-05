@@ -318,7 +318,7 @@ export default function ShopProduct() {
                 Color: <span className="text-muted-foreground font-normal">{selectedColor}</span>
               </p>
               <div className="flex flex-wrap gap-2">
-                {allColors.map((c) => {
+                {visibleColors.map((c) => {
                   const hex = colorToHex(c);
                   const inStock = colorHasStock(c);
                   const isSelected = selectedColor === c;
