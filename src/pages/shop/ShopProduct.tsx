@@ -108,6 +108,19 @@ export default function ShopProduct() {
     () => sortSizes(Array.from(new Set(siblings.map((s) => s.size).filter(Boolean))) as string[]),
     [siblings]
   );
+  // Colors restricted to those that exist in the currently selected size.
+  const visibleColors = useMemo(() => {
+    if (!selectedSize) return allColors;
+    const filtered = Array.from(
+      new Set(
+        siblings
+          .filter((s) => s.size === selectedSize)
+          .map((s) => s.color)
+          .filter(Boolean)
+      )
+    ) as string[];
+    return filtered.length ? filtered : allColors;
+  }, [siblings, selectedSize, allColors]);
 
   // Find the variant matching the current color+size selection.
   const matchedVariant = useMemo(() => {
