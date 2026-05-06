@@ -33,7 +33,7 @@ interface InvoiceData {
     tax_amount: number;
     total: number;
     discount: number;
-    product: { name: string; sku: string } | null;
+    product: { name: string; sku: string; color: string | null; size: string | null; category: string | null; subcategory: string | null } | null;
   }[];
 }
 
