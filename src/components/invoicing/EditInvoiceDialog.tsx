@@ -399,17 +399,25 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
             {/* Invoice Details */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="wallet">Wallet</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Payment Methods</Label>
+                <div className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
+                  {PAYMENT_OPTIONS.map(opt => {
+                    const checked = paymentMethods.includes(opt.value);
+                    return (
+                      <label key={opt.value} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setPaymentMethods(prev =>
+                              v ? Array.from(new Set([...prev, opt.value])) : prev.filter(p => p !== opt.value)
+                            );
+                          }}
+                        />
+                        {opt.label}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label>Source</Label>
