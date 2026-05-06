@@ -150,6 +150,13 @@ export default function InvoicePublic() {
                   <td className="py-2">
                     <p className="font-medium">{item.product?.name || "Unknown"}</p>
                     <p className="text-xs text-gray-400">{item.product?.sku}</p>
+                    {(item.product?.color || item.product?.size) && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {item.product?.color && <span>Color: {item.product.color}</span>}
+                        {item.product?.color && item.product?.size && <span> • </span>}
+                        {item.product?.size && <span>Size: {item.product.size}</span>}
+                      </p>
+                    )}
                   </td>
                   <td className="py-2 text-center">{item.quantity}</td>
                   <td className="py-2 text-right">₹{Number(item.unit_price).toLocaleString("en-IN")}</td>
