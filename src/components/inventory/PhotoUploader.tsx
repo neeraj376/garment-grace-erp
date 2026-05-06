@@ -28,7 +28,7 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
   const [statusLabel, setStatusLabel] = useState<string>("");
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
   const [webcamOpen, setWebcamOpen] = useState(false);
-  const [aiCleanup, setAiCleanup] = useState(true);
+  const aiCleanup = true; // Always-on rule: every uploaded photo gets AI background cleanup
 
   const handleUpload = async (file: File) => {
     if (photos.length >= MAX_PHOTOS) {
