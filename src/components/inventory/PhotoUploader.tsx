@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ImagePlus, X, Loader2, Sparkles } from "lucide-react";
 import { MAX_PHOTOS } from "@/lib/photoUtils";
