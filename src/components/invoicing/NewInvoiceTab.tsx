@@ -309,7 +309,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             .map((c: any) => ({
               courier_company_id: c.courier_company_id,
               courier_name: c.courier_name,
-              rate: c.rate,
+              // Apply 18% GST on top of Shiprocket's quoted rate (matches storefront)
+              rate: Math.round(Number(c.rate) * 1.18),
               etd: c.etd,
               estimated_delivery_days: c.estimated_delivery_days,
             }))
