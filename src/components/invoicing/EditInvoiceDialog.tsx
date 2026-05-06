@@ -65,7 +65,9 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [loading, setLoading] = useState(true);
 
   // Invoice fields
-  const [paymentMethod, setPaymentMethod] = useState(invoice.payment_method);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(
+    (invoice.payment_method || "").split(",").map(s => s.trim()).filter(Boolean)
+  );
   const [source, setSource] = useState(invoice.source);
   const [courierName, setCourierName] = useState(invoice.courier_name || "");
   const [awbNo, setAwbNo] = useState(invoice.awb_no || "");
