@@ -33,7 +33,7 @@ interface InvoiceData {
     tax_amount: number;
     total: number;
     discount: number;
-    product: { name: string; sku: string } | null;
+    product: { name: string; sku: string; color: string | null; size: string | null; category: string | null; subcategory: string | null } | null;
   }[];
 }
 
@@ -55,7 +55,7 @@ export default function InvoicePublic() {
             stores!invoices_store_id_fkey(name, address, phone, email, gst_number, logo_url),
             customers!invoices_customer_id_fkey(name, mobile),
             invoice_items(quantity, unit_price, tax_amount, total, discount,
-              products!invoice_items_product_id_fkey(name, sku)
+              products!invoice_items_product_id_fkey(name, sku, color, size, category, subcategory)
             )
           `)
           .eq("id", id)
@@ -150,6 +150,13 @@ export default function InvoicePublic() {
                   <td className="py-2">
                     <p className="font-medium">{item.product?.name || "Unknown"}</p>
                     <p className="text-xs text-gray-400">{item.product?.sku}</p>
+                    {(item.product?.color || item.product?.size) && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {item.product?.color && <span>Color: {item.product.color}</span>}
+                        {item.product?.color && item.product?.size && <span> • </span>}
+                        {item.product?.size && <span>Size: {item.product.size}</span>}
+                      </p>
+                    )}
                   </td>
                   <td className="py-2 text-center">{item.quantity}</td>
                   <td className="py-2 text-right">₹{Number(item.unit_price).toLocaleString("en-IN")}</td>

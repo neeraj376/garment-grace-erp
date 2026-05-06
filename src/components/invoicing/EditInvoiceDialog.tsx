@@ -49,6 +49,10 @@ interface InvoiceItem {
   product_name?: string;
   product_sku?: string;
   tax_rate?: number;
+  color?: string | null;
+  size?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
   isNew?: boolean;
 }
 
@@ -106,7 +110,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         const productIds = [...new Set(itemsData.map(i => i.product_id))];
         const { data: products } = await supabase
           .from("products")
-          .select("id, name, sku, tax_rate")
+          .select("id, name, sku, tax_rate, color, size, category, subcategory")
           .in("id", productIds);
 
         const productMap: Record<string, any> = {};
@@ -117,6 +121,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           product_name: productMap[i.product_id]?.name || "Unknown",
           product_sku: productMap[i.product_id]?.sku || "",
           tax_rate: productMap[i.product_id]?.tax_rate || 5,
+          color: productMap[i.product_id]?.color || null,
+          size: productMap[i.product_id]?.size || null,
+          category: productMap[i.product_id]?.category || null,
+          subcategory: productMap[i.product_id]?.subcategory || null,
         })));
       }
 
@@ -224,6 +232,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         product_name: product.name,
         product_sku: product.sku,
         tax_rate: taxRate,
+        color: product.color || null,
+        size: product.size || null,
+        category: product.category || null,
+        subcategory: product.subcategory || null,
         isNew: true,
       }]);
     }
@@ -529,6 +541,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                           {item.product_sku}
                           {item.isNew && <span className="ml-1 text-primary font-medium">(new)</span>}
                         </div>
+                        {(item.color || item.size || item.category || item.subcategory) && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.category && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{item.category}</span>}
+                            {item.subcategory && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{item.subcategory}</span>}
+                            {item.color && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">Color: {item.color}</span>}
+                            {item.size && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">Size: {item.size}</span>}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Input
