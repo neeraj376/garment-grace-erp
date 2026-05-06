@@ -79,7 +79,7 @@ serve(async (req) => {
       name: WHATSAPP_TEMPLATE_NAME,
       languageCode: "en",
       bodyValues: isTrackingTemplate
-        ? [customerName || "Customer", invoiceNumber || "N/A", courierName, awbNo]
+        ? [courierName, awbNo]
         : [customerName || "Customer", invoiceNumber || "N/A", `₹${totalAmount || "0"}`],
     };
 
