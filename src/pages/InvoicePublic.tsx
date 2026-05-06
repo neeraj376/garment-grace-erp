@@ -47,31 +47,14 @@ export default function InvoicePublic() {
     if (!id) return;
     (async () => {
       try {
-        const { data, error: fetchErr } = await supabase
-          .from("invoices")
-          .select(`
-            id, invoice_number, created_at, subtotal, tax_amount, discount_amount,
-            total_amount, payment_method, source, courier_name, awb_no, notes,
-            stores!invoices_store_id_fkey(name, address, phone, email, gst_number, logo_url),
-            customers!invoices_customer_id_fkey(name, mobile),
-            invoice_items(quantity, unit_price, tax_amount, total, discount,
-              products!invoice_items_product_id_fkey(name, sku, color, size, category, subcategory)
-            )
-          `)
-          .eq("id", id)
-          .single();
+        const { data, error: fetchErr } = await supabase.rpc("get_public_invoice", {
+          p_invoice_id: id,
+        });
 
         if (fetchErr) throw fetchErr;
+        if (!data) throw new Error("not found");
 
-        setInvoice({
-          ...data,
-          store: data.stores as any,
-          customer: data.customers as any,
-          items: (data.invoice_items as any[]).map((item: any) => ({
-            ...item,
-            product: item.products,
-          })),
-        });
+        setInvoice(data as unknown as InvoiceData);
       } catch (err: any) {
         setError("Invoice not found or access denied.");
       } finally {

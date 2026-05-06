@@ -1191,6 +1191,7 @@ export type Database = {
         }
       }
       get_product_stock: { Args: { p_product_id: string }; Returns: number }
+      get_public_invoice: { Args: { p_invoice_id: string }; Returns: Json }
       shop_customer_in_user_store: {
         Args: { _customer_id: string }
         Returns: boolean
