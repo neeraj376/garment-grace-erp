@@ -9,8 +9,6 @@ const corsHeaders = {
 
 const PROMPT = "Professional ecommerce product photo: remove the existing background completely, place the garment on a clean pure white studio backdrop, enhance the lighting to be soft and even, boost color accuracy and fabric detail, sharpen edges, no shadows except a subtle natural ground shadow, centered composition, retail catalog quality. Keep the garment exactly as-is — do not change its color, shape, pattern or details.";
 
-const PROMPT = "Professional ecommerce product photo: remove the existing background completely, place the garment on a clean pure white studio backdrop, enhance the lighting to be soft and even, boost color accuracy and fabric detail, sharpen edges, no shadows except a subtle natural ground shadow, centered composition, retail catalog quality. Keep the garment exactly as-is — do not change its color, shape, pattern or details.";
-
 function firstPhotoUrl(raw: string): string {
   if (!raw) return raw;
   const s = raw.trim();
