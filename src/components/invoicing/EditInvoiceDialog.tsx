@@ -232,6 +232,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         product_name: product.name,
         product_sku: product.sku,
         tax_rate: taxRate,
+        color: product.color || null,
+        size: product.size || null,
+        category: product.category || null,
+        subcategory: product.subcategory || null,
         isNew: true,
       }]);
     }
