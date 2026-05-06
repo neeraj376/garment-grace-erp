@@ -290,7 +290,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const timer = setTimeout(async () => {
       setCheckingPincode(true);
       try {
-        const totalWeightKg = Math.max(0.5, totalQty * 0.5);
+        // Match storefront formula: 300g/item, 0.5kg minimum, +20% buffer
+        const baseWeightKg = Math.max(0.5, totalQty * 0.3);
+        const totalWeightKg = baseWeightKg * 1.2;
         const { data, error } = await supabase.functions.invoke("shiprocket", {
           body: {
             action: "check_serviceability",
@@ -307,7 +309,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             .map((c: any) => ({
               courier_company_id: c.courier_company_id,
               courier_name: c.courier_name,
-              rate: c.rate,
+              // Apply 18% GST on top of Shiprocket's quoted rate (matches storefront)
+              rate: Math.round(Number(c.rate) * 1.18),
               etd: c.etd,
               estimated_delivery_days: c.estimated_delivery_days,
             }))
