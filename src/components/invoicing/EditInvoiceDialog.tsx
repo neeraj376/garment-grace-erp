@@ -9,6 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const PAYMENT_OPTIONS: { value: string; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "upi", label: "UPI" },
+  { value: "card", label: "Card" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "wallet", label: "Wallet" },
+];
 
 interface Invoice {
   id: string;
@@ -56,7 +65,9 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [loading, setLoading] = useState(true);
 
   // Invoice fields
-  const [paymentMethod, setPaymentMethod] = useState(invoice.payment_method);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(
+    (invoice.payment_method || "").split(",").map(s => s.trim()).filter(Boolean)
+  );
   const [source, setSource] = useState(invoice.source);
   const [courierName, setCourierName] = useState(invoice.courier_name || "");
   const [awbNo, setAwbNo] = useState(invoice.awb_no || "");
@@ -294,7 +305,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       const { error } = await supabase
         .from("invoices")
         .update({
-          payment_method: paymentMethod,
+          payment_method: paymentMethods.join(","),
           source,
           courier_name: source === "online" ? normalizedCourierName : null,
           awb_no: source === "online" ? normalizedAwbNo : null,
@@ -388,17 +399,25 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
             {/* Invoice Details */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="wallet">Wallet</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Payment Methods</Label>
+                <div className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
+                  {PAYMENT_OPTIONS.map(opt => {
+                    const checked = paymentMethods.includes(opt.value);
+                    return (
+                      <label key={opt.value} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setPaymentMethods(prev =>
+                              v ? Array.from(new Set([...prev, opt.value])) : prev.filter(p => p !== opt.value)
+                            );
+                          }}
+                        />
+                        {opt.label}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label>Source</Label>
