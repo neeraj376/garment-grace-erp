@@ -9,6 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const PAYMENT_OPTIONS: { value: string; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "upi", label: "UPI" },
+  { value: "card", label: "Card" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "wallet", label: "Wallet" },
+];
 
 interface Invoice {
   id: string;
