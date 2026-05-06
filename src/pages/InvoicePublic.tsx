@@ -55,7 +55,7 @@ export default function InvoicePublic() {
             stores!invoices_store_id_fkey(name, address, phone, email, gst_number, logo_url),
             customers!invoices_customer_id_fkey(name, mobile),
             invoice_items(quantity, unit_price, tax_amount, total, discount,
-              products!invoice_items_product_id_fkey(name, sku)
+              products!invoice_items_product_id_fkey(name, sku, color, size, category, subcategory)
             )
           `)
           .eq("id", id)
