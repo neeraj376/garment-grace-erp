@@ -49,6 +49,10 @@ interface InvoiceItem {
   product_name?: string;
   product_sku?: string;
   tax_rate?: number;
+  color?: string | null;
+  size?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
   isNew?: boolean;
 }
 
