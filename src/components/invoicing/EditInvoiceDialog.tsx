@@ -541,6 +541,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                           {item.product_sku}
                           {item.isNew && <span className="ml-1 text-primary font-medium">(new)</span>}
                         </div>
+                        {(item.color || item.size || item.category || item.subcategory) && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.category && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{item.category}</span>}
+                            {item.subcategory && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{item.subcategory}</span>}
+                            {item.color && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">Color: {item.color}</span>}
+                            {item.size && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">Size: {item.size}</span>}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Input
