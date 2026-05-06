@@ -110,7 +110,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         const productIds = [...new Set(itemsData.map(i => i.product_id))];
         const { data: products } = await supabase
           .from("products")
-          .select("id, name, sku, tax_rate")
+          .select("id, name, sku, tax_rate, color, size, category, subcategory")
           .in("id", productIds);
 
         const productMap: Record<string, any> = {};
@@ -121,6 +121,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           product_name: productMap[i.product_id]?.name || "Unknown",
           product_sku: productMap[i.product_id]?.sku || "",
           tax_rate: productMap[i.product_id]?.tax_rate || 5,
+          color: productMap[i.product_id]?.color || null,
+          size: productMap[i.product_id]?.size || null,
+          category: productMap[i.product_id]?.category || null,
+          subcategory: productMap[i.product_id]?.subcategory || null,
         })));
       }
 
