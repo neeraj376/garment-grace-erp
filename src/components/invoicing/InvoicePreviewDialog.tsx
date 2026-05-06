@@ -134,6 +134,16 @@ export default function InvoicePreviewDialog({
                     {item.name}
                     <br />
                     <span style={{ fontSize: 11, color: "#888" }}>{item.sku}</span>
+                    {(item.color || item.size) && (
+                      <>
+                        <br />
+                        <span style={{ fontSize: 11, color: "#666" }}>
+                          {item.color && <>Color: {item.color}</>}
+                          {item.color && item.size && " • "}
+                          {item.size && <>Size: {item.size}</>}
+                        </span>
+                      </>
+                    )}
                   </td>
                   <td style={{ padding: "8px 12px", textAlign: "center", fontSize: 13 }}>{item.quantity}</td>
                   <td style={{ padding: "8px 12px", textAlign: "right", fontSize: 13 }}>₹{item.unit_price.toLocaleString("en-IN")}</td>
