@@ -305,7 +305,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       const { error } = await supabase
         .from("invoices")
         .update({
-          payment_method: paymentMethod,
+          payment_method: paymentMethods.join(","),
           source,
           courier_name: source === "online" ? normalizedCourierName : null,
           awb_no: source === "online" ? normalizedAwbNo : null,
