@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ImagePlus, X, Loader2, Sparkles } from "lucide-react";
 import { MAX_PHOTOS } from "@/lib/photoUtils";
@@ -29,7 +28,7 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
   const [statusLabel, setStatusLabel] = useState<string>("");
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
   const [webcamOpen, setWebcamOpen] = useState(false);
-  const [aiCleanup, setAiCleanup] = useState(true);
+  const aiCleanup = true; // Always-on rule: every uploaded photo gets AI background cleanup
 
   const handleUpload = async (file: File) => {
     if (photos.length >= MAX_PHOTOS) {
@@ -113,17 +112,9 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
         <Label className="text-xs text-muted-foreground">
           Product Images ({photos.length}/{MAX_PHOTOS})
         </Label>
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-3 w-3 text-muted-foreground" />
-          <Label htmlFor="ai-cleanup-toggle" className="text-xs text-muted-foreground cursor-pointer">
-            Auto AI cleanup
-          </Label>
-          <Switch
-            id="ai-cleanup-toggle"
-            checked={aiCleanup}
-            onCheckedChange={setAiCleanup}
-            disabled={uploading}
-          />
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Sparkles className="h-3 w-3" />
+          <span>AI cleanup auto-applied</span>
         </div>
       </div>
       <div className="flex flex-wrap gap-2 mt-1">
