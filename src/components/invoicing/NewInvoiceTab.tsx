@@ -561,14 +561,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (existing) {
       setCart(cart.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
     } else {
-      const price = Number(product.selling_price);
+      const basePrice = Number(product.selling_price);
+      const price = storefrontPricing ? Math.round(basePrice * STOREFRONT_MARKUP) : basePrice;
       setCart([...cart, {
         product_id: product.id,
         name: product.name,
         sku: product.sku,
         quantity: 1,
         unit_price: price,
-        original_price: price,
+        original_price: basePrice,
         tax_rate: Number(product.tax_rate),
         item_discount: 0,
         category: product.category || undefined,
