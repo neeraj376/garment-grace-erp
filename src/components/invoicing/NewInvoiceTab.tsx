@@ -1003,6 +1003,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Top action bar */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="py-3 px-4 flex items-center justify-between gap-3 flex-wrap">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={storefrontPricing}
+              onCheckedChange={(c) => handleToggleStorefrontPricing(!!c)}
+            />
+            <span className="font-semibold text-sm">Storefront Originee</span>
+          </label>
+        </CardContent>
+      </Card>
+
       {/* Held Invoices Bar */}
       {heldInvoices.length > 0 && (
         <Card className="border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
