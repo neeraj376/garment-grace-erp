@@ -259,10 +259,25 @@ export default function ShopProduct() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Media */}
         <div className="space-y-3">
-          <div className="aspect-[3/4] bg-muted rounded-xl overflow-hidden">
+          <div className="aspect-[3/4] bg-muted rounded-xl overflow-hidden relative group">
             {current ? (
               current.type === "image" ? (
-                <img src={current.url} alt={product.name} className="w-full h-full object-cover" />
+                <>
+                  <img
+                    src={current.url}
+                    alt={product.name}
+                    className="w-full h-full object-cover cursor-zoom-in"
+                    onClick={() => setZoomOpen(true)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setZoomOpen(true)}
+                    aria-label="Zoom image"
+                    className="absolute bottom-2 right-2 h-9 w-9 rounded-full bg-background/85 backdrop-blur border border-border flex items-center justify-center shadow-sm hover:bg-background transition"
+                  >
+                    <ZoomIn className="h-4 w-4 text-foreground" />
+                  </button>
+                </>
               ) : (
                 <video src={current.url} controls playsInline className="w-full h-full object-cover" />
               )
