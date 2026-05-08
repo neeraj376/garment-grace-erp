@@ -1032,7 +1032,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
         <Card>
-          <CardHeader><CardTitle className="section-title">Products</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="section-title">Products</CardTitle>
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <Checkbox
+                  checked={storefrontPricing}
+                  onCheckedChange={(c) => handleToggleStorefrontPricing(!!c)}
+                />
+                <span className="font-medium">Storefront pricing</span>
+                <span className="text-xs text-muted-foreground">(+12%)</span>
+              </label>
+            </div>
+          </CardHeader>
           <CardContent>
             <Input
               placeholder="Search products to add..."
