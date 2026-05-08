@@ -131,6 +131,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [storefrontPricing, setStorefrontPricing] = useState<boolean>(() => loadDraft()?.storefrontPricing ?? false);
+
+  const STOREFRONT_MARKUP = 1.12;
 
   // Shipping (online source) state
   const [addressLine1, setAddressLine1] = useState(() => loadDraft()?.addressLine1 ?? "");
