@@ -1040,7 +1040,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   checked={storefrontPricing}
                   onCheckedChange={(c) => handleToggleStorefrontPricing(!!c)}
                 />
-                <span className="font-medium">Storefront pricing</span>
+                <span className="font-medium">Storefront Originee</span>
                 <span className="text-xs text-muted-foreground">(+12%)</span>
               </label>
             </div>
