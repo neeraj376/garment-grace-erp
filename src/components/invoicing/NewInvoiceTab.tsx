@@ -267,9 +267,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
-      addressLine1, addressLine2, shipCity, shipState, shipPincode,
+      addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
+
+  const handleToggleStorefrontPricing = (checked: boolean) => {
+    setStorefrontPricing(checked);
+    setCart(prev => prev.map(item => ({
+      ...item,
+      unit_price: checked
+        ? Math.round(item.original_price * STOREFRONT_MARKUP)
+        : item.original_price,
+    })));
+  };
 
   // Pincode serviceability check (only when source is online)
   useEffect(() => {
