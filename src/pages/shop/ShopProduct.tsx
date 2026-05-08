@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, ArrowLeft, Minus, Plus, MessageCircle } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Minus, Plus, MessageCircle, ZoomIn } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { parsePhotoUrls } from "@/lib/photoUtils";
 import { colorToHex, sortSizes, variantGroupKey } from "@/lib/variantUtils";
+import ImageZoomDialog from "@/components/shop/ImageZoomDialog";
 
 export default function ShopProduct() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ export default function ShopProduct() {
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeMedia, setActiveMedia] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const { addToCart } = useCart();
@@ -257,10 +259,25 @@ export default function ShopProduct() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Media */}
         <div className="space-y-3">
-          <div className="aspect-[3/4] bg-muted rounded-xl overflow-hidden">
+          <div className="aspect-[3/4] bg-muted rounded-xl overflow-hidden relative group">
             {current ? (
               current.type === "image" ? (
-                <img src={current.url} alt={product.name} className="w-full h-full object-cover" />
+                <>
+                  <img
+                    src={current.url}
+                    alt={product.name}
+                    className="w-full h-full object-cover cursor-zoom-in"
+                    onClick={() => setZoomOpen(true)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setZoomOpen(true)}
+                    aria-label="Zoom image"
+                    className="absolute bottom-2 right-2 h-9 w-9 rounded-full bg-background/85 backdrop-blur border border-border flex items-center justify-center shadow-sm hover:bg-background transition"
+                  >
+                    <ZoomIn className="h-4 w-4 text-foreground" />
+                  </button>
+                </>
               ) : (
                 <video src={current.url} controls playsInline className="w-full h-full object-cover" />
               )
@@ -504,6 +521,14 @@ export default function ShopProduct() {
           </section>
         );
       })()}
+
+      <ImageZoomDialog
+        open={zoomOpen}
+        onOpenChange={setZoomOpen}
+        images={photos}
+        startIndex={current?.type === "image" ? activeMedia : 0}
+        alt={product.name}
+      />
     </div>
   );
 }
