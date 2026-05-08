@@ -521,6 +521,14 @@ export default function ShopProduct() {
           </section>
         );
       })()}
+
+      <ImageZoomDialog
+        open={zoomOpen}
+        onOpenChange={setZoomOpen}
+        images={photos}
+        startIndex={current?.type === "image" ? activeMedia : 0}
+        alt={product.name}
+      />
     </div>
   );
 }
