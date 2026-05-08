@@ -131,6 +131,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [storefrontPricing, setStorefrontPricing] = useState<boolean>(() => loadDraft()?.storefrontPricing ?? false);
+
+  const STOREFRONT_MARKUP = 1.12;
 
   // Shipping (online source) state
   const [addressLine1, setAddressLine1] = useState(() => loadDraft()?.addressLine1 ?? "");
@@ -264,9 +267,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
-      addressLine1, addressLine2, shipCity, shipState, shipPincode,
+      addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
+
+  const handleToggleStorefrontPricing = (checked: boolean) => {
+    setStorefrontPricing(checked);
+    setCart(prev => prev.map(item => ({
+      ...item,
+      unit_price: checked
+        ? Math.round(item.original_price * STOREFRONT_MARKUP)
+        : item.original_price,
+    })));
+  };
 
   // Pincode serviceability check (only when source is online)
   useEffect(() => {
@@ -558,14 +571,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (existing) {
       setCart(cart.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
     } else {
-      const price = Number(product.selling_price);
+      const basePrice = Number(product.selling_price);
+      const price = storefrontPricing ? Math.round(basePrice * STOREFRONT_MARKUP) : basePrice;
       setCart([...cart, {
         product_id: product.id,
         name: product.name,
         sku: product.sku,
         quantity: 1,
         unit_price: price,
-        original_price: price,
+        original_price: basePrice,
         tax_rate: Number(product.tax_rate),
         item_discount: 0,
         category: product.category || undefined,
@@ -1018,7 +1032,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
         <Card>
-          <CardHeader><CardTitle className="section-title">Products</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="section-title">Products</CardTitle>
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <Checkbox
+                  checked={storefrontPricing}
+                  onCheckedChange={(c) => handleToggleStorefrontPricing(!!c)}
+                />
+                <span className="font-medium">Storefront pricing</span>
+                <span className="text-xs text-muted-foreground">(+12%)</span>
+              </label>
+            </div>
+          </CardHeader>
           <CardContent>
             <Input
               placeholder="Search products to add..."
