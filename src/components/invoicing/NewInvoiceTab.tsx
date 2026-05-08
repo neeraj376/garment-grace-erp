@@ -1062,7 +1062,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   >
                     <div className="flex justify-between items-start">
                       <span className="font-medium">{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
-                      <span className="font-semibold whitespace-nowrap ml-2">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                      <span className="font-semibold whitespace-nowrap ml-2">₹{(storefrontPricing ? Math.round(Number(p.selling_price) * STOREFRONT_MARKUP) : Number(p.selling_price)).toLocaleString("en-IN")}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {p.category && <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.category}</span>}
