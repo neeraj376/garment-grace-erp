@@ -1003,6 +1003,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Top action bar */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="py-3 px-4 flex items-center justify-between gap-3 flex-wrap">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={storefrontPricing}
+              onCheckedChange={(c) => handleToggleStorefrontPricing(!!c)}
+            />
+            <span className="font-semibold text-sm">Storefront Originee</span>
+          </label>
+        </CardContent>
+      </Card>
+
       {/* Held Invoices Bar */}
       {heldInvoices.length > 0 && (
         <Card className="border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
@@ -1062,7 +1075,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   >
                     <div className="flex justify-between items-start">
                       <span className="font-medium">{p.name} <span className="text-muted-foreground">({p.sku})</span></span>
-                      <span className="font-semibold whitespace-nowrap ml-2">₹{Number(p.selling_price).toLocaleString("en-IN")}</span>
+                      <span className="font-semibold whitespace-nowrap ml-2">₹{(storefrontPricing ? Math.round(Number(p.selling_price) * STOREFRONT_MARKUP) : Number(p.selling_price)).toLocaleString("en-IN")}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {p.category && <span className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{p.category}</span>}
