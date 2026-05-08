@@ -8,6 +8,7 @@ import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { parsePhotoUrls } from "@/lib/photoUtils";
 import { colorToHex, sortSizes, variantGroupKey } from "@/lib/variantUtils";
+import ImageZoomDialog from "@/components/shop/ImageZoomDialog";
 
 export default function ShopProduct() {
   const { id } = useParams<{ id: string }>();
