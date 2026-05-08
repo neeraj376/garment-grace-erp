@@ -20,6 +20,7 @@ export default function ShopProduct() {
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeMedia, setActiveMedia] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const { addToCart } = useCart();
