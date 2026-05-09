@@ -132,8 +132,7 @@ export default function ShopHome() {
       const visible = counts.filter((c) => c.count > 0).sort((a, b) => b.count - a.count);
       setSortedCategories(visible);
 
-      const withMedia = allInStock.filter((p: any) => p.photo_url || p.video_url);
-      const grouped = groupVariants(withMedia);
+      const grouped = groupVariants(withMediaAll);
       setFeatured(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 8));
       setNewArrivals(grouped.slice(0, 8));
     };
