@@ -46,6 +46,7 @@ export default function Reports() {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [summary, setSummary] = useState({ revenue: 0, cost: 0, tax: 0, profit: 0 });
   const [employeeSales, setEmployeeSales] = useState<EmployeeSales[]>([]);
+  const [employeeKeys, setEmployeeKeys] = useState<string[]>([]);
   const [paymentSplit, setPaymentSplit] = useState<PaymentSplit[]>([]);
   const [sourceSplit, setSourceSplit] = useState<PaymentSplit[]>([]);
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
@@ -234,23 +235,41 @@ export default function Reports() {
         .sort((a, b) => b.value - a.value)
     );
 
-    const grouped: Record<string, number> = {};
-    (invData ?? []).forEach(inv => {
-      const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-      grouped[day] = (grouped[day] || 0) + collected(inv);
-    });
-    orderData.forEach((o: any) => {
-      const day = new Date(o.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-      grouped[day] = (grouped[day] || 0) + Number(o.total_amount || 0);
-    });
-    setSalesData(Object.entries(grouped).map(([date, amount]) => ({ date, amount })));
-
-    // Employee sales breakdown
+    // Fetch employees first so we can attribute sales by name in the trend
     const { data: employees } = await supabase
       .from("employees")
       .select("id, name, role")
       .eq("store_id", storeId!);
 
+    const empNameById: Record<string, string> = {};
+    (employees ?? []).forEach((e: any) => { empNameById[e.id] = e.name; });
+
+    // Build trend grouped by date with per-employee breakdown
+    const trendMap: Record<string, Record<string, number>> = {};
+    const empKeysInUse = new Set<string>();
+    const bump = (date: string, key: string, amt: number) => {
+      if (!trendMap[date]) trendMap[date] = { total: 0 };
+      trendMap[date][key] = (trendMap[date][key] || 0) + amt;
+      trendMap[date].total = (trendMap[date].total || 0) + amt;
+      empKeysInUse.add(key);
+    };
+
+    (invData ?? []).forEach(inv => {
+      const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+      const empKey = inv.employee_id && empNameById[inv.employee_id] ? empNameById[inv.employee_id] : "Unassigned";
+      bump(day, empKey, collected(inv));
+    });
+    orderData.forEach((o: any) => {
+      const day = new Date(o.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+      bump(day, "Online", Number(o.total_amount || 0));
+    });
+
+    setSalesData(
+      Object.entries(trendMap).map(([date, vals]) => ({ date, ...vals }))
+    );
+    setEmployeeKeys(Array.from(empKeysInUse));
+
+    // Employee sales breakdown table
     const empMap: Record<string, EmployeeSales> = {};
     (employees ?? []).forEach((e: any) => {
       empMap[e.id] = { id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0 };
@@ -408,7 +427,14 @@ export default function Reports() {
                       <XAxis dataKey="date" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
                       <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
                       <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                      <Line type="monotone" dataKey="amount" stroke="hsl(221, 83%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Line type="monotone" dataKey="total" name="Total" stroke="hsl(221, 83%, 53%)" strokeWidth={2.5} dot={{ r: 3 }} />
+                      {employeeKeys.map((emp, i) => {
+                        const palette = ["hsl(142, 71%, 45%)", "hsl(262, 83%, 58%)", "hsl(24, 95%, 53%)", "hsl(340, 82%, 52%)", "hsl(190, 80%, 45%)", "hsl(48, 90%, 50%)", "hsl(0, 0%, 50%)", "hsl(280, 65%, 60%)"];
+                        return (
+                          <Line key={emp} type="monotone" dataKey={emp} name={emp} stroke={palette[i % palette.length]} strokeWidth={1.5} dot={{ r: 2 }} connectNulls />
+                        );
+                      })}
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
