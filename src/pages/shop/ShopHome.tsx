@@ -153,7 +153,7 @@ export default function ShopHome() {
             <CarouselContent>
               {banners.map((b) => (
                 <CarouselItem key={b.id}>
-                  <div className="relative w-full aspect-[16/9] md:aspect-[21/9] max-h-[600px]">
+                  <div className="relative w-full aspect-[16/9] md:aspect-[21/9] max-h-[300px]">
                     <img
                       src={b.image_url}
                       alt={b.headline ?? "Banner"}
