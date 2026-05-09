@@ -74,8 +74,8 @@ const UnderwearIcon = () => (
   </svg>
 );
 
-const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[] }[] = [
-  { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"] },
+const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[]; exclusions?: string[] }[] = [
+  { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"], exclusions: ["t-shirt", "tshirt", "t shirt", "t-shirts"] },
   { name: "Blazzer", Icon: BlazerIcon, matchers: ["blazzer", "blazer"] },
   { name: "Jeans", Icon: JeansIcon, matchers: ["jean"] },
   { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee "] },
