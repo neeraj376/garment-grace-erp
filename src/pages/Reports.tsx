@@ -427,7 +427,14 @@ export default function Reports() {
                       <XAxis dataKey="date" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
                       <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
                       <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                      <Line type="monotone" dataKey="amount" stroke="hsl(221, 83%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Line type="monotone" dataKey="total" name="Total" stroke="hsl(221, 83%, 53%)" strokeWidth={2.5} dot={{ r: 3 }} />
+                      {employeeKeys.map((emp, i) => {
+                        const palette = ["hsl(142, 71%, 45%)", "hsl(262, 83%, 58%)", "hsl(24, 95%, 53%)", "hsl(340, 82%, 52%)", "hsl(190, 80%, 45%)", "hsl(48, 90%, 50%)", "hsl(0, 0%, 50%)", "hsl(280, 65%, 60%)"];
+                        return (
+                          <Line key={emp} type="monotone" dataKey={emp} name={emp} stroke={palette[i % palette.length]} strokeWidth={1.5} dot={{ r: 2 }} connectNulls />
+                        );
+                      })}
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
