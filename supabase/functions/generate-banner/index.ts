@@ -8,8 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const W = 800;
-const H = 450;
+const W = 1260;
+const H = 540;
 
 // Curated palettes (deep, premium feel)
 const PALETTES = [
@@ -78,26 +78,26 @@ function buildSvg(opts: {
     ? `₹${Number(opts.mrp).toLocaleString("en-IN")}` : null;
   const sizeStr = opts.size ? `Size ${escapeXml(opts.size)}` : null;
 
-  // Layout: left column for text (0-420), right column for photo (430-780)
-  const PHOTO_X = 430, PHOTO_Y = 25, PHOTO_W = 350, PHOTO_H = 400;
+  // Layout for 1260x540 (21:9): left text column 0-700, right photo column 720-1230
+  const PHOTO_X = 720, PHOTO_Y = 30, PHOTO_W = 510, PHOTO_H = 480;
 
   const photoBlock = opts.photoDataUrl
     ? `
       <defs>
-        <clipPath id="pclip"><rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14"/></clipPath>
+        <clipPath id="pclip"><rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="18"/></clipPath>
       </defs>
-      <rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14" fill="${p.accent}" opacity="0.06"/>
+      <rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="18" fill="${p.accent}" opacity="0.06"/>
       <image href="${opts.photoDataUrl}" x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}"
              preserveAspectRatio="xMidYMid slice" clip-path="url(#pclip)"/>
-      <rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14" fill="none"
+      <rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="18" fill="none"
             stroke="${p.accent}" stroke-opacity="0.18" stroke-width="1"/>`
-    : `<rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14" fill="${p.accent}" opacity="0.08"/>`;
+    : `<rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="18" fill="${p.accent}" opacity="0.08"/>`;
 
   // Vertical rhythm in left column
-  const TX = 50;
-  const headlineSize = lines.some((l) => l.length > 16) ? 30 : 36;
-  const headlineY1 = 130;
-  const headlineLineH = headlineSize + 6;
+  const TX = 70;
+  const headlineSize = lines.some((l) => l.length > 16) ? 44 : 54;
+  const headlineY1 = 175;
+  const headlineLineH = headlineSize + 8;
 
   const headlineSvg = lines
     .map((l, i) => `<text x="${TX}" y="${headlineY1 + i * headlineLineH}" fill="${p.accent}"
@@ -105,11 +105,11 @@ function buildSvg(opts: {
         font-weight="600">${escapeXml(l)}</text>`)
     .join("\n  ");
 
-  const subY = headlineY1 + lines.length * headlineLineH + 14;
-  const priceLabelY = subY + 50;
-  const priceY = priceLabelY + 36;
-  const mrpX = TX + priceStr.length * 17 + 8;
-  const sizeY = priceY + 38;
+  const subY = headlineY1 + lines.length * headlineLineH + 22;
+  const priceLabelY = subY + 60;
+  const priceY = priceLabelY + 46;
+  const mrpX = TX + priceStr.length * 24 + 12;
+  const sizeY = priceY + 46;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
@@ -128,30 +128,30 @@ function buildSvg(opts: {
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
 
   <!-- eyebrow -->
-  <line x1="${TX}" y1="80" x2="${TX + 36}" y2="80" stroke="${p.muted}" stroke-width="1.2"/>
-  <text x="${TX + 46}" y="84" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="10" letter-spacing="3" font-weight="500">NEW ARRIVAL</text>
+  <line x1="${TX}" y1="115" x2="${TX + 50}" y2="115" stroke="${p.muted}" stroke-width="1.5"/>
+  <text x="${TX + 62}" y="120" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="14" letter-spacing="4" font-weight="500">NEW ARRIVAL</text>
 
   <!-- headline -->
   ${headlineSvg}
 
   ${sub ? `<text x="${TX}" y="${subY}" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="11" letter-spacing="2">${escapeXml(sub.toUpperCase())}</text>` : ""}
+        font-size="14" letter-spacing="3">${escapeXml(sub.toUpperCase())}</text>` : ""}
 
   <!-- price block -->
   <text x="${TX}" y="${priceLabelY}" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="10" letter-spacing="2">PRICE</text>
+        font-size="13" letter-spacing="3">PRICE</text>
   <text x="${TX}" y="${priceY}" fill="${p.accent}" font-family="Georgia, serif"
-        font-size="32" font-weight="700">${priceStr}</text>
-  ${mrpStr ? `<text x="${mrpX}" y="${priceY - 4}" fill="${p.muted}"
-        font-family="Helvetica, Arial, sans-serif" font-size="14"
+        font-size="46" font-weight="700">${priceStr}</text>
+  ${mrpStr ? `<text x="${mrpX}" y="${priceY - 6}" fill="${p.muted}"
+        font-family="Helvetica, Arial, sans-serif" font-size="18"
         text-decoration="line-through">${mrpStr}</text>` : ""}
 
   ${sizeStr ? `
-  <rect x="${TX}" y="${sizeY}" width="${28 + sizeStr.length * 7}" height="24" rx="12"
+  <rect x="${TX}" y="${sizeY}" width="${36 + sizeStr.length * 9}" height="30" rx="15"
         fill="none" stroke="${p.accent}" stroke-opacity="0.4" stroke-width="1"/>
-  <text x="${TX + 14}" y="${sizeY + 16}" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
-        font-size="10" letter-spacing="1">${sizeStr}</text>` : ""}
+  <text x="${TX + 18}" y="${sizeY + 20}" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
+        font-size="13" letter-spacing="1.5">${sizeStr}</text>` : ""}
 
   ${photoBlock}
 </svg>`;
