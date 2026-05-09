@@ -90,8 +90,26 @@ export default function ShopHome() {
   const [featured, setFeatured] = useState<any[]>([]);
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
   const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
 
   useEffect(() => {
+    supabase
+      .from("home_banners")
+      .select("*")
+      .eq("store_id", STORE_ID)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setBanners(data ?? []));
+  }, []);
+
+  // Auto-advance carousel
+  useEffect(() => {
+    if (!carouselApi || banners.length < 2) return;
+    const t = setInterval(() => carouselApi.scrollNext(), 5000);
+    return () => clearInterval(t);
+  }, [carouselApi, banners.length]);
+
     const fetchProducts = async () => {
       const { data: featuredData } = await supabase.rpc("get_in_stock_shop_products", {
         p_store_id: STORE_ID,
