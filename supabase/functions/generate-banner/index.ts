@@ -55,14 +55,14 @@ Deno.serve(async (req) => {
     const finalSub = subheadline || `${product.category ?? ""} ${product.color ?? ""}`.trim() || "Discover the new collection";
 
     // Build prompt for AI banner. Reference the existing product photo if present.
-    const promptText = `Design a luxurious, modern e-commerce hero banner (16:9, wide). Product: "${product.name}". Category: ${product.category ?? "fashion"}. Color: ${product.color ?? ""}. Style: premium menswear editorial, dramatic studio lighting, cinematic, elegant typography-friendly negative space on the left for text overlay. Showcase the product prominently on the right. Clean minimalist background with subtle gradient. High fashion magazine quality.`;
+    const promptText = `Design a premium e-commerce hero banner (16:9 wide). Product: "${product.name}". Category: ${product.category ?? "fashion"}. Color: ${product.color ?? ""}. Style: high-end menswear editorial, dramatic studio lighting, cinematic, elegant typography-friendly negative space on the left for text overlay. Showcase the product prominently on the right. Clean minimalist background with subtle gradient. High fashion magazine quality, crisp detail.`;
 
     const messages: any[] = [
       {
         role: "user",
         content: product.photo_url
           ? [
-              { type: "text", text: promptText + " Use this product image as the hero subject." },
+              { type: "text", text: promptText + " Use this product image as the hero subject, keep its exact color/pattern/details." },
               { type: "image_url", image_url: { url: product.photo_url } },
             ]
           : promptText,
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
+        model: "google/gemini-3-pro-image-preview",
         messages,
         modalities: ["image", "text"],
       }),
