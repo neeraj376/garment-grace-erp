@@ -8,8 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const W = 800;
-const H = 450;
+const W = 1260;
+const H = 540;
 
 // Curated palettes (deep, premium feel)
 const PALETTES = [
