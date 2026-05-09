@@ -110,6 +110,7 @@ export default function ShopHome() {
     return () => clearInterval(t);
   }, [carouselApi, banners.length]);
 
+  useEffect(() => {
     const fetchProducts = async () => {
       const { data: featuredData } = await supabase.rpc("get_in_stock_shop_products", {
         p_store_id: STORE_ID,
@@ -135,6 +136,7 @@ export default function ShopHome() {
     };
     fetchProducts();
   }, []);
+
 
   return (
     <div>
