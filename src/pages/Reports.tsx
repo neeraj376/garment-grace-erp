@@ -234,23 +234,41 @@ export default function Reports() {
         .sort((a, b) => b.value - a.value)
     );
 
-    const grouped: Record<string, number> = {};
-    (invData ?? []).forEach(inv => {
-      const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-      grouped[day] = (grouped[day] || 0) + collected(inv);
-    });
-    orderData.forEach((o: any) => {
-      const day = new Date(o.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-      grouped[day] = (grouped[day] || 0) + Number(o.total_amount || 0);
-    });
-    setSalesData(Object.entries(grouped).map(([date, amount]) => ({ date, amount })));
-
-    // Employee sales breakdown
+    // Fetch employees first so we can attribute sales by name in the trend
     const { data: employees } = await supabase
       .from("employees")
       .select("id, name, role")
       .eq("store_id", storeId!);
 
+    const empNameById: Record<string, string> = {};
+    (employees ?? []).forEach((e: any) => { empNameById[e.id] = e.name; });
+
+    // Build trend grouped by date with per-employee breakdown
+    const trendMap: Record<string, Record<string, number>> = {};
+    const empKeysInUse = new Set<string>();
+    const bump = (date: string, key: string, amt: number) => {
+      if (!trendMap[date]) trendMap[date] = { total: 0 };
+      trendMap[date][key] = (trendMap[date][key] || 0) + amt;
+      trendMap[date].total = (trendMap[date].total || 0) + amt;
+      empKeysInUse.add(key);
+    };
+
+    (invData ?? []).forEach(inv => {
+      const day = new Date(inv.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+      const empKey = inv.employee_id && empNameById[inv.employee_id] ? empNameById[inv.employee_id] : "Unassigned";
+      bump(day, empKey, collected(inv));
+    });
+    orderData.forEach((o: any) => {
+      const day = new Date(o.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+      bump(day, "Online", Number(o.total_amount || 0));
+    });
+
+    setSalesData(
+      Object.entries(trendMap).map(([date, vals]) => ({ date, ...vals }))
+    );
+    setEmployeeKeys(Array.from(empKeysInUse));
+
+    // Employee sales breakdown table
     const empMap: Record<string, EmployeeSales> = {};
     (employees ?? []).forEach((e: any) => {
       empMap[e.id] = { id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0 };
