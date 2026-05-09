@@ -74,8 +74,8 @@ const UnderwearIcon = () => (
   </svg>
 );
 
-const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[] }[] = [
-  { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"] },
+const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[]; exclusions?: string[] }[] = [
+  { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"], exclusions: ["t-shirt", "tshirt", "t shirt", "t-shirts"] },
   { name: "Blazzer", Icon: BlazerIcon, matchers: ["blazzer", "blazer"] },
   { name: "Jeans", Icon: JeansIcon, matchers: ["jean"] },
   { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee "] },
@@ -122,7 +122,9 @@ export default function ShopHome() {
       const counts = HERO_CATEGORIES.map((cat) => {
         const count = allInStock.filter((p: any) => {
           const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
-          return cat.matchers.some((m) => hay.includes(m));
+          const matches = cat.matchers.some((m) => hay.includes(m));
+          const excluded = (cat.exclusions ?? []).some((m) => hay.includes(m));
+          return matches && !excluded;
         }).length;
         return { ...cat, count };
       });

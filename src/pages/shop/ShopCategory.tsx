@@ -12,11 +12,17 @@ const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 // Flexible matchers for hero category slugs -> any matching DB category/subcategory/name token
 const SLUG_MATCHERS: Record<string, string[]> = {
   Jeans: ["jean"],
+  Shirt: ["shirt"],
   "T-shirt": ["t-shirt", "tshirt", "t shirt", "tee"],
   Jacket: ["jacket"],
   Hoodie: ["hoodie", "sweatshirt"],
   Trousers: ["trouser", "pant", "chino"],
   Shorts: ["short"],
+};
+
+// Exclude patterns so Shirt doesn't match t-shirt products
+const SLUG_EXCLUSIONS: Record<string, string[]> = {
+  Shirt: ["t-shirt", "tshirt", "t shirt", "t-shirts"],
 };
 
 export default function ShopCategory() {
@@ -46,9 +52,12 @@ export default function ShopCategory() {
       let result = all;
       if (selectedCategory && selectedCategory !== "all") {
         const matchers = SLUG_MATCHERS[selectedCategory] ?? [selectedCategory.toLowerCase()];
+        const exclusions = SLUG_EXCLUSIONS[selectedCategory] ?? [];
         result = all.filter((p: any) => {
           const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
-          return matchers.some((m) => hay.includes(m.toLowerCase()));
+          const matches = matchers.some((m) => hay.includes(m.toLowerCase()));
+          const excluded = exclusions.some((m) => hay.includes(m.toLowerCase()));
+          return matches && !excluded;
         });
       }
       setProducts(result);
