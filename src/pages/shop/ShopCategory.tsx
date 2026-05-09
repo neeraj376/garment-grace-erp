@@ -10,25 +10,19 @@ import { groupVariants } from "@/lib/variantUtils";
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
 // Flexible matchers for hero category slugs -> any matching DB category/subcategory
-const SLUG_MATCHERS: Record<string, string[]> = {
-  Jeans: ["jean"],
-  Shirt: ["shirt"],
-  "T-shirt": ["t-shirt", "tshirt", "t shirt"],
-  Jacket: ["jacket"],
-  Hoodie: ["hoodie", "sweatshirt"],
-  Pants: ["trouser", "pant", "chino", "lower", "jogger"],
-  Trousers: ["trouser", "pant", "chino"],
-  Shorts: ["short"],
+// Each hero slug maps to an explicit list of DB `category` values (case-insensitive, exact).
+// Strictly follows the tag entered while adding the product — no fuzzy/text matching.
+const SLUG_CATEGORIES: Record<string, string[]> = {
+  Shirt: ["shirt", "full sleeve shirt"],
   Blazzer: ["blazzer", "blazer"],
-  Underwear: ["underwear", "brief", "boxer"],
-};
-
-// Exclude patterns so categories don't bleed into each other
-const SLUG_EXCLUSIONS: Record<string, string[]> = {
-  Shirt: ["t-shirt", "tshirt", "t shirt", "t-shirts"],
-  Jeans: ["short"],
-  Pants: ["short"],
-  Trousers: ["short"],
+  Jeans: ["jean", "jeans"],
+  "T-shirt": ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"],
+  Jacket: ["jacket", "windcheater"],
+  Hoodie: ["hoodie", "sweatshirt", "sweater", "zipper"],
+  Pants: ["pant", "trouser", "cargo pants", "linen pants", "jogger", "lower", "cotton", "dry fit"],
+  Trousers: ["pant", "trouser", "cargo pants", "linen pants"],
+  Shorts: ["short", "denim shorts"],
+  Underwear: ["underwear", "vest"],
 };
 
 export default function ShopCategory() {
@@ -57,13 +51,10 @@ export default function ShopCategory() {
 
       let result = all;
       if (selectedCategory && selectedCategory !== "all") {
-        const matchers = SLUG_MATCHERS[selectedCategory] ?? [selectedCategory.toLowerCase()];
-        const exclusions = SLUG_EXCLUSIONS[selectedCategory] ?? [];
+        const allowed = SLUG_CATEGORIES[selectedCategory] ?? [selectedCategory.toLowerCase()];
         result = all.filter((p: any) => {
-          const hay = `${p.category ?? ""} ${p.subcategory ?? ""}`.toLowerCase();
-          const matches = matchers.some((m) => hay.includes(m.toLowerCase()));
-          const excluded = exclusions.some((m) => hay.includes(m.toLowerCase()));
-          return matches && !excluded;
+          const c = (p.category ?? "").trim().toLowerCase();
+          return allowed.includes(c);
         });
       }
       setProducts(result);
