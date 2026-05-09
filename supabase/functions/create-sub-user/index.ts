@@ -90,6 +90,18 @@ Deno.serve(async (req) => {
 
     if (permError) throw permError;
 
+    // Register sub-user as OTP-only so they skip the password step at login.
+    // We store the password the owner just set, so verify-custom-otp can hand
+    // it back to the client to complete signInWithPassword after OTP verify.
+    await adminClient.from("employee_auth_passwords").upsert(
+      {
+        user_id: newUser.user.id,
+        email: String(email).trim().toLowerCase(),
+        password,
+      },
+      { onConflict: "email" }
+    );
+
     return new Response(
       JSON.stringify({ success: true, userId: newUser.user.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
