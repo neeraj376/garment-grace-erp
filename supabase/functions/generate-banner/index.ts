@@ -128,30 +128,30 @@ function buildSvg(opts: {
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
 
   <!-- eyebrow -->
-  <line x1="${TX}" y1="80" x2="${TX + 36}" y2="80" stroke="${p.muted}" stroke-width="1.2"/>
-  <text x="${TX + 46}" y="84" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="10" letter-spacing="3" font-weight="500">NEW ARRIVAL</text>
+  <line x1="${TX}" y1="115" x2="${TX + 50}" y2="115" stroke="${p.muted}" stroke-width="1.5"/>
+  <text x="${TX + 62}" y="120" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="14" letter-spacing="4" font-weight="500">NEW ARRIVAL</text>
 
   <!-- headline -->
   ${headlineSvg}
 
   ${sub ? `<text x="${TX}" y="${subY}" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="11" letter-spacing="2">${escapeXml(sub.toUpperCase())}</text>` : ""}
+        font-size="14" letter-spacing="3">${escapeXml(sub.toUpperCase())}</text>` : ""}
 
   <!-- price block -->
   <text x="${TX}" y="${priceLabelY}" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="10" letter-spacing="2">PRICE</text>
+        font-size="13" letter-spacing="3">PRICE</text>
   <text x="${TX}" y="${priceY}" fill="${p.accent}" font-family="Georgia, serif"
-        font-size="32" font-weight="700">${priceStr}</text>
-  ${mrpStr ? `<text x="${mrpX}" y="${priceY - 4}" fill="${p.muted}"
-        font-family="Helvetica, Arial, sans-serif" font-size="14"
+        font-size="46" font-weight="700">${priceStr}</text>
+  ${mrpStr ? `<text x="${mrpX}" y="${priceY - 6}" fill="${p.muted}"
+        font-family="Helvetica, Arial, sans-serif" font-size="18"
         text-decoration="line-through">${mrpStr}</text>` : ""}
 
   ${sizeStr ? `
-  <rect x="${TX}" y="${sizeY}" width="${28 + sizeStr.length * 7}" height="24" rx="12"
+  <rect x="${TX}" y="${sizeY}" width="${36 + sizeStr.length * 9}" height="30" rx="15"
         fill="none" stroke="${p.accent}" stroke-opacity="0.4" stroke-width="1"/>
-  <text x="${TX + 14}" y="${sizeY + 16}" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
-        font-size="10" letter-spacing="1">${sizeStr}</text>` : ""}
+  <text x="${TX + 18}" y="${sizeY + 20}" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
+        font-size="13" letter-spacing="1.5">${sizeStr}</text>` : ""}
 
   ${photoBlock}
 </svg>`;
