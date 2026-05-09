@@ -124,6 +124,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      <HomeBannersManager />
+
       <CategoryMappingManager />
 
       <SubUserManager />
