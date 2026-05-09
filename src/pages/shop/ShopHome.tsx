@@ -124,10 +124,8 @@ export default function ShopHome() {
       // Count only products WITH media so hero matches what /category page actually shows
       const counts = HERO_CATEGORIES.map((cat) => {
         const count = withMediaAll.filter((p: any) => {
-          const hay = `${p.category ?? ""} ${p.subcategory ?? ""}`.toLowerCase();
-          const matches = cat.matchers.some((m) => hay.includes(m));
-          const excluded = (cat.exclusions ?? []).some((m) => hay.includes(m));
-          return matches && !excluded;
+          const c = (p.category ?? "").trim().toLowerCase();
+          return cat.categories.includes(c);
         }).length;
         return { ...cat, count };
       });
