@@ -88,36 +88,36 @@ function buildSvg(opts: {
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
 
   <!-- decorative line -->
-  <line x1="80" y1="160" x2="200" y2="160" stroke="${p.muted}" stroke-width="2"/>
-  <text x="220" y="166" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="18" letter-spacing="6" font-weight="500">NEW ARRIVAL</text>
+  <line x1="80" y1="120" x2="160" y2="120" stroke="${p.muted}" stroke-width="1.5"/>
+  <text x="175" y="124" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="9" letter-spacing="3" font-weight="500">NEW ARRIVAL</text>
 
   <!-- headline -->
-  <text x="80" y="340" fill="${p.accent}" font-family="Georgia, 'Times New Roman', serif"
-        font-size="84" font-weight="600">${escapeXml(headline)}</text>
+  <text x="80" y="210" fill="${p.accent}" font-family="Georgia, 'Times New Roman', serif"
+        font-size="42" font-weight="600">${escapeXml(headline)}</text>
 
-  ${sub ? `<text x="80" y="400" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="26" letter-spacing="3">${escapeXml(sub.toUpperCase())}</text>` : ""}
+  ${sub ? `<text x="80" y="245" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="13" letter-spacing="2">${escapeXml(sub.toUpperCase())}</text>` : ""}
 
   <!-- price block -->
-  <text x="80" y="560" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
-        font-size="22" letter-spacing="4">PRICE</text>
-  <text x="80" y="640" fill="${p.accent}" font-family="Georgia, serif"
-        font-size="76" font-weight="700">${priceStr}</text>
-  ${mrpStr ? `<text x="${80 + priceStr.length * 38}" y="640" fill="${p.muted}"
-        font-family="Helvetica, Arial, sans-serif" font-size="32"
+  <text x="80" y="320" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
+        font-size="11" letter-spacing="2">PRICE</text>
+  <text x="80" y="360" fill="${p.accent}" font-family="Georgia, serif"
+        font-size="38" font-weight="700">${priceStr}</text>
+  ${mrpStr ? `<text x="${80 + priceStr.length * 19}" y="360" fill="${p.muted}"
+        font-family="Helvetica, Arial, sans-serif" font-size="16"
         text-decoration="line-through">${mrpStr}</text>` : ""}
 
   ${sizeStr ? `
-  <rect x="80" y="700" width="${40 + sizeStr.length * 14}" height="56" rx="28"
-        fill="none" stroke="${p.accent}" stroke-opacity="0.4" stroke-width="1.5"/>
-  <text x="${100}" y="736" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
-        font-size="22" letter-spacing="2">${sizeStr}</text>` : ""}
+  <rect x="80" y="390" width="${30 + sizeStr.length * 8}" height="30" rx="15"
+        fill="none" stroke="${p.accent}" stroke-opacity="0.4" stroke-width="1.2"/>
+  <text x="${95}" y="410" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
+        font-size="11" letter-spacing="1">${sizeStr}</text>` : ""}
 
   <!-- bottom CTA -->
-  <line x1="80" y1="820" x2="200" y2="820" stroke="${p.muted}" stroke-width="2"/>
-  <text x="220" y="826" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="16" letter-spacing="4">SHOP NOW</text>
+  <line x1="80" y1="430" x2="160" y2="430" stroke="${p.muted}" stroke-width="1.5"/>
+  <text x="175" y="434" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="8" letter-spacing="2">SHOP NOW</text>
 
   ${photoBlock}
 </svg>`;
