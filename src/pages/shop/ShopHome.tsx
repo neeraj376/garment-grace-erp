@@ -77,11 +77,11 @@ const UnderwearIcon = () => (
 const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[]; exclusions?: string[] }[] = [
   { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"], exclusions: ["t-shirt", "tshirt", "t shirt", "t-shirts"] },
   { name: "Blazzer", Icon: BlazerIcon, matchers: ["blazzer", "blazer"] },
-  { name: "Jeans", Icon: JeansIcon, matchers: ["jean"] },
-  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee "] },
+  { name: "Jeans", Icon: JeansIcon, matchers: ["jean"], exclusions: ["short"] },
+  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt"] },
   { name: "Jacket", Icon: JacketIcon, matchers: ["jacket"] },
   { name: "Hoodie", Icon: HoodieIcon, matchers: ["hoodie", "sweatshirt"] },
-  { name: "Pants", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower", "jogger"] },
+  { name: "Pants", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower", "jogger"], exclusions: ["short"] },
   { name: "Shorts", Icon: ShortsIcon, matchers: ["short"] },
   { name: "Underwear", Icon: UnderwearIcon, matchers: ["underwear", "brief", "boxer"] },
 ];
@@ -117,11 +117,12 @@ export default function ShopHome() {
         p_limit: 5000,
       });
       const allInStock = featuredData ?? [];
+      const withMediaAll = allInStock.filter((p: any) => p.photo_url || p.video_url);
 
-      // Count in-stock products per hero category
+      // Count only products WITH media so hero matches what /category page actually shows
       const counts = HERO_CATEGORIES.map((cat) => {
-        const count = allInStock.filter((p: any) => {
-          const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
+        const count = withMediaAll.filter((p: any) => {
+          const hay = `${p.category ?? ""} ${p.subcategory ?? ""}`.toLowerCase();
           const matches = cat.matchers.some((m) => hay.includes(m));
           const excluded = (cat.exclusions ?? []).some((m) => hay.includes(m));
           return matches && !excluded;
@@ -131,8 +132,7 @@ export default function ShopHome() {
       const visible = counts.filter((c) => c.count > 0).sort((a, b) => b.count - a.count);
       setSortedCategories(visible);
 
-      const withMedia = allInStock.filter((p: any) => p.photo_url || p.video_url);
-      const grouped = groupVariants(withMedia);
+      const grouped = groupVariants(withMediaAll);
       setFeatured(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 8));
       setNewArrivals(grouped.slice(0, 8));
     };

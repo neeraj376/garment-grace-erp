@@ -9,20 +9,26 @@ import { groupVariants } from "@/lib/variantUtils";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
-// Flexible matchers for hero category slugs -> any matching DB category/subcategory/name token
+// Flexible matchers for hero category slugs -> any matching DB category/subcategory
 const SLUG_MATCHERS: Record<string, string[]> = {
   Jeans: ["jean"],
   Shirt: ["shirt"],
-  "T-shirt": ["t-shirt", "tshirt", "t shirt", "tee"],
+  "T-shirt": ["t-shirt", "tshirt", "t shirt"],
   Jacket: ["jacket"],
   Hoodie: ["hoodie", "sweatshirt"],
+  Pants: ["trouser", "pant", "chino", "lower", "jogger"],
   Trousers: ["trouser", "pant", "chino"],
   Shorts: ["short"],
+  Blazzer: ["blazzer", "blazer"],
+  Underwear: ["underwear", "brief", "boxer"],
 };
 
-// Exclude patterns so Shirt doesn't match t-shirt products
+// Exclude patterns so categories don't bleed into each other
 const SLUG_EXCLUSIONS: Record<string, string[]> = {
   Shirt: ["t-shirt", "tshirt", "t shirt", "t-shirts"],
+  Jeans: ["short"],
+  Pants: ["short"],
+  Trousers: ["short"],
 };
 
 export default function ShopCategory() {
@@ -54,7 +60,7 @@ export default function ShopCategory() {
         const matchers = SLUG_MATCHERS[selectedCategory] ?? [selectedCategory.toLowerCase()];
         const exclusions = SLUG_EXCLUSIONS[selectedCategory] ?? [];
         result = all.filter((p: any) => {
-          const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
+          const hay = `${p.category ?? ""} ${p.subcategory ?? ""}`.toLowerCase();
           const matches = matchers.some((m) => hay.includes(m.toLowerCase()));
           const excluded = exclusions.some((m) => hay.includes(m.toLowerCase()));
           return matches && !excluded;
