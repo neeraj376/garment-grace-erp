@@ -122,7 +122,9 @@ export default function ShopHome() {
       const counts = HERO_CATEGORIES.map((cat) => {
         const count = allInStock.filter((p: any) => {
           const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
-          return cat.matchers.some((m) => hay.includes(m));
+          const matches = cat.matchers.some((m) => hay.includes(m));
+          const excluded = (cat.exclusions ?? []).some((m) => hay.includes(m));
+          return matches && !excluded;
         }).length;
         return { ...cat, count };
       });
