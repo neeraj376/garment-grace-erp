@@ -77,11 +77,11 @@ const UnderwearIcon = () => (
 const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[]; exclusions?: string[] }[] = [
   { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"], exclusions: ["t-shirt", "tshirt", "t shirt", "t-shirts"] },
   { name: "Blazzer", Icon: BlazerIcon, matchers: ["blazzer", "blazer"] },
-  { name: "Jeans", Icon: JeansIcon, matchers: ["jean"] },
-  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt", "tee "] },
+  { name: "Jeans", Icon: JeansIcon, matchers: ["jean"], exclusions: ["short"] },
+  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt"] },
   { name: "Jacket", Icon: JacketIcon, matchers: ["jacket"] },
   { name: "Hoodie", Icon: HoodieIcon, matchers: ["hoodie", "sweatshirt"] },
-  { name: "Pants", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower", "jogger"] },
+  { name: "Pants", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower", "jogger"], exclusions: ["short"] },
   { name: "Shorts", Icon: ShortsIcon, matchers: ["short"] },
   { name: "Underwear", Icon: UnderwearIcon, matchers: ["underwear", "brief", "boxer"] },
 ];
