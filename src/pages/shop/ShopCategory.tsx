@@ -60,7 +60,7 @@ export default function ShopCategory() {
         const matchers = SLUG_MATCHERS[selectedCategory] ?? [selectedCategory.toLowerCase()];
         const exclusions = SLUG_EXCLUSIONS[selectedCategory] ?? [];
         result = all.filter((p: any) => {
-          const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
+          const hay = `${p.category ?? ""} ${p.subcategory ?? ""}`.toLowerCase();
           const matches = matchers.some((m) => hay.includes(m.toLowerCase()));
           const excluded = exclusions.some((m) => hay.includes(m.toLowerCase()));
           return matches && !excluded;
