@@ -117,11 +117,12 @@ export default function ShopHome() {
         p_limit: 5000,
       });
       const allInStock = featuredData ?? [];
+      const withMediaAll = allInStock.filter((p: any) => p.photo_url || p.video_url);
 
-      // Count in-stock products per hero category
+      // Count only products WITH media so hero matches what /category page actually shows
       const counts = HERO_CATEGORIES.map((cat) => {
-        const count = allInStock.filter((p: any) => {
-          const hay = `${p.category ?? ""} ${p.subcategory ?? ""} ${p.name ?? ""}`.toLowerCase();
+        const count = withMediaAll.filter((p: any) => {
+          const hay = `${p.category ?? ""} ${p.subcategory ?? ""}`.toLowerCase();
           const matches = cat.matchers.some((m) => hay.includes(m));
           const excluded = (cat.exclusions ?? []).some((m) => hay.includes(m));
           return matches && !excluded;
