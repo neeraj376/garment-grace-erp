@@ -5,6 +5,7 @@ import { ArrowRight, Shirt, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/shop/ProductCard";
 import { groupVariants } from "@/lib/variantUtils";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
@@ -89,6 +90,25 @@ export default function ShopHome() {
   const [featured, setFeatured] = useState<any[]>([]);
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
   const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("home_banners")
+      .select("*")
+      .eq("store_id", STORE_ID)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setBanners(data ?? []));
+  }, []);
+
+  // Auto-advance carousel
+  useEffect(() => {
+    if (!carouselApi || banners.length < 2) return;
+    const t = setInterval(() => carouselApi.scrollNext(), 5000);
+    return () => clearInterval(t);
+  }, [carouselApi, banners.length]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -117,24 +137,76 @@ export default function ShopHome() {
     fetchProducts();
   }, []);
 
+
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-foreground text-background overflow-hidden">
-        <div className="container mx-auto px-4 py-10 md:py-14 text-center">
-          <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight mb-4">
-            Elevate Your Style
-          </h1>
-          <p className="text-background/70 text-lg md:text-xl max-w-xl mx-auto mb-8">
-            Premium menswear crafted for comfort and confidence. Discover the latest collection.
-          </p>
-          <Link to="/category/all">
-            <Button size="lg" className="rounded-full px-8 gap-2">
-              Shop Now <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      </section>
+      {banners.length > 0 ? (
+        <section className="relative overflow-hidden bg-foreground">
+          <Carousel
+            setApi={setCarouselApi}
+            opts={{ loop: true, align: "start" }}
+            className="w-full"
+          >
+            <CarouselContent>
+              {banners.map((b) => (
+                <CarouselItem key={b.id}>
+                  <div className="relative w-full aspect-[16/9] md:aspect-[21/9] max-h-[600px]">
+                    <img
+                      src={b.image_url}
+                      alt={b.headline ?? "Banner"}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="eager"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+                    <div className="relative z-10 container mx-auto h-full flex items-center px-4 md:px-8">
+                      <div className="max-w-xl text-background">
+                        {b.headline && (
+                          <h1 className="font-display text-3xl md:text-5xl font-bold tracking-tight mb-3 drop-shadow">
+                            {b.headline}
+                          </h1>
+                        )}
+                        {b.subheadline && (
+                          <p className="text-base md:text-lg text-background/85 mb-6 drop-shadow">
+                            {b.subheadline}
+                          </p>
+                        )}
+                        <Link to={`/product/${b.product_id}`}>
+                          <Button size="lg" className="rounded-full px-8 gap-2">
+                            View Details <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {banners.length > 1 && (
+              <>
+                <CarouselPrevious className="left-4 hidden md:flex" />
+                <CarouselNext className="right-4 hidden md:flex" />
+              </>
+            )}
+          </Carousel>
+        </section>
+      ) : (
+        <section className="relative bg-foreground text-background overflow-hidden">
+          <div className="container mx-auto px-4 py-10 md:py-14 text-center">
+            <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight mb-4">
+              Elevate Your Style
+            </h1>
+            <p className="text-background/70 text-lg md:text-xl max-w-xl mx-auto mb-8">
+              Premium menswear crafted for comfort and confidence. Discover the latest collection.
+            </p>
+            <Link to="/category/all">
+              <Button size="lg" className="rounded-full px-8 gap-2">
+                Shop Now <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Categories */}
       <section className="container mx-auto px-4 py-12">
