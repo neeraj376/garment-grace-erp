@@ -74,16 +74,18 @@ const UnderwearIcon = () => (
   </svg>
 );
 
-const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; matchers: string[]; exclusions?: string[] }[] = [
-  { name: "Shirt", Icon: ShirtIcon2, matchers: ["shirt"], exclusions: ["t-shirt", "tshirt", "t shirt", "t-shirts"] },
-  { name: "Blazzer", Icon: BlazerIcon, matchers: ["blazzer", "blazer"] },
-  { name: "Jeans", Icon: JeansIcon, matchers: ["jean"], exclusions: ["short"] },
-  { name: "T-shirt", Icon: TshirtIcon, matchers: ["t-shirt", "tshirt", "t shirt"] },
-  { name: "Jacket", Icon: JacketIcon, matchers: ["jacket"] },
-  { name: "Hoodie", Icon: HoodieIcon, matchers: ["hoodie", "sweatshirt"] },
-  { name: "Pants", Icon: TrousersIcon, matchers: ["trouser", "pant", "chino", "lower", "jogger"], exclusions: ["short"] },
-  { name: "Shorts", Icon: ShortsIcon, matchers: ["short"] },
-  { name: "Underwear", Icon: UnderwearIcon, matchers: ["underwear", "brief", "boxer"] },
+// Each hero category maps to an explicit list of DB `category` values (case-insensitive, exact).
+// Subcategory and product name are NOT used — we strictly follow the tag from product add.
+const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: string[] }[] = [
+  { name: "Shirt", Icon: ShirtIcon2, categories: ["shirt", "full sleeve shirt"] },
+  { name: "Blazzer", Icon: BlazerIcon, categories: ["blazzer", "blazer"] },
+  { name: "Jeans", Icon: JeansIcon, categories: ["jean", "jeans"] },
+  { name: "T-shirt", Icon: TshirtIcon, categories: ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"] },
+  { name: "Jacket", Icon: JacketIcon, categories: ["jacket", "windcheater"] },
+  { name: "Hoodie", Icon: HoodieIcon, categories: ["hoodie", "sweatshirt", "sweater", "zipper"] },
+  { name: "Pants", Icon: TrousersIcon, categories: ["pant", "trouser", "cargo pants", "linen pants", "jogger", "lower", "cotton", "dry fit"] },
+  { name: "Shorts", Icon: ShortsIcon, categories: ["short", "denim shorts"] },
+  { name: "Underwear", Icon: UnderwearIcon, categories: ["underwear", "vest"] },
 ];
 
 export default function ShopHome() {
