@@ -250,6 +250,45 @@ export type Database = {
           },
         ]
       }
+      home_banners: {
+        Row: {
+          created_at: string
+          headline: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          product_id: string
+          sort_order: number
+          store_id: string
+          subheadline: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          headline?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          product_id: string
+          sort_order?: number
+          store_id: string
+          subheadline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          headline?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          product_id?: string
+          sort_order?: number
+          store_id?: string
+          subheadline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_batches: {
         Row: {
           batch_number: string | null
