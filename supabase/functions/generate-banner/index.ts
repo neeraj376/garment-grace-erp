@@ -52,24 +52,64 @@ function buildSvg(opts: {
   color?: string | null; category?: string | null; photoDataUrl: string | null;
 }) {
   const p = pickPalette(opts.name);
-  const headline = opts.name.length > 38 ? opts.name.slice(0, 36) + "…" : opts.name;
+  // Wrap headline into up to 2 lines (~22 chars each) to fit left column
+  const rawName = opts.name.trim();
+  const words = rawName.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+  const MAX = 22;
+  for (const w of words) {
+    if ((current + " " + w).trim().length <= MAX) {
+      current = (current + " " + w).trim();
+    } else {
+      if (current) lines.push(current);
+      current = w;
+      if (lines.length === 1) break;
+    }
+  }
+  if (current && lines.length < 2) lines.push(current);
+  if (lines.length === 2 && rawName.length > lines.join(" ").length) {
+    lines[1] = lines[1].length > MAX - 1 ? lines[1].slice(0, MAX - 1) + "…" : lines[1] + "…";
+  }
+
   const sub = [opts.category, opts.color].filter(Boolean).join(" • ");
   const priceStr = `₹${Number(opts.price).toLocaleString("en-IN")}`;
   const mrpStr = opts.mrp && Number(opts.mrp) > Number(opts.price)
     ? `₹${Number(opts.mrp).toLocaleString("en-IN")}` : null;
   const sizeStr = opts.size ? `Size ${escapeXml(opts.size)}` : null;
 
+  // Layout: left column for text (0-420), right column for photo (430-780)
+  const PHOTO_X = 430, PHOTO_Y = 25, PHOTO_W = 350, PHOTO_H = 400;
+
   const photoBlock = opts.photoDataUrl
     ? `
       <defs>
-        <clipPath id="pclip"><rect x="900" y="60" width="640" height="780" rx="24"/></clipPath>
+        <clipPath id="pclip"><rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14"/></clipPath>
       </defs>
-      <rect x="900" y="60" width="640" height="780" rx="24" fill="${p.accent}" opacity="0.06"/>
-      <image href="${opts.photoDataUrl}" x="900" y="60" width="640" height="780"
+      <rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14" fill="${p.accent}" opacity="0.06"/>
+      <image href="${opts.photoDataUrl}" x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}"
              preserveAspectRatio="xMidYMid slice" clip-path="url(#pclip)"/>
-      <rect x="900" y="60" width="640" height="780" rx="24" fill="none"
-            stroke="${p.accent}" stroke-opacity="0.15" stroke-width="1"/>`
-    : `<rect x="900" y="60" width="640" height="780" rx="24" fill="${p.accent}" opacity="0.08"/>`;
+      <rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14" fill="none"
+            stroke="${p.accent}" stroke-opacity="0.18" stroke-width="1"/>`
+    : `<rect x="${PHOTO_X}" y="${PHOTO_Y}" width="${PHOTO_W}" height="${PHOTO_H}" rx="14" fill="${p.accent}" opacity="0.08"/>`;
+
+  // Vertical rhythm in left column
+  const TX = 50;
+  const headlineSize = lines.some((l) => l.length > 16) ? 30 : 36;
+  const headlineY1 = 130;
+  const headlineLineH = headlineSize + 6;
+
+  const headlineSvg = lines
+    .map((l, i) => `<text x="${TX}" y="${headlineY1 + i * headlineLineH}" fill="${p.accent}"
+        font-family="Georgia, 'Times New Roman', serif" font-size="${headlineSize}"
+        font-weight="600">${escapeXml(l)}</text>`)
+    .join("\n  ");
+
+  const subY = headlineY1 + lines.length * headlineLineH + 14;
+  const priceLabelY = subY + 50;
+  const priceY = priceLabelY + 36;
+  const mrpX = TX + priceStr.length * 17 + 8;
+  const sizeY = priceY + 38;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
@@ -87,37 +127,31 @@ function buildSvg(opts: {
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
 
-  <!-- decorative line -->
-  <line x1="80" y1="120" x2="160" y2="120" stroke="${p.muted}" stroke-width="1.5"/>
-  <text x="175" y="124" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="9" letter-spacing="3" font-weight="500">NEW ARRIVAL</text>
+  <!-- eyebrow -->
+  <line x1="${TX}" y1="80" x2="${TX + 36}" y2="80" stroke="${p.muted}" stroke-width="1.2"/>
+  <text x="${TX + 46}" y="84" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="10" letter-spacing="3" font-weight="500">NEW ARRIVAL</text>
 
   <!-- headline -->
-  <text x="80" y="210" fill="${p.accent}" font-family="Georgia, 'Times New Roman', serif"
-        font-size="42" font-weight="600">${escapeXml(headline)}</text>
+  ${headlineSvg}
 
-  ${sub ? `<text x="80" y="245" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="13" letter-spacing="2">${escapeXml(sub.toUpperCase())}</text>` : ""}
+  ${sub ? `<text x="${TX}" y="${subY}" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="11" letter-spacing="2">${escapeXml(sub.toUpperCase())}</text>` : ""}
 
   <!-- price block -->
-  <text x="80" y="320" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
-        font-size="11" letter-spacing="2">PRICE</text>
-  <text x="80" y="360" fill="${p.accent}" font-family="Georgia, serif"
-        font-size="38" font-weight="700">${priceStr}</text>
-  ${mrpStr ? `<text x="${80 + priceStr.length * 19}" y="360" fill="${p.muted}"
-        font-family="Helvetica, Arial, sans-serif" font-size="16"
+  <text x="${TX}" y="${priceLabelY}" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
+        font-size="10" letter-spacing="2">PRICE</text>
+  <text x="${TX}" y="${priceY}" fill="${p.accent}" font-family="Georgia, serif"
+        font-size="32" font-weight="700">${priceStr}</text>
+  ${mrpStr ? `<text x="${mrpX}" y="${priceY - 4}" fill="${p.muted}"
+        font-family="Helvetica, Arial, sans-serif" font-size="14"
         text-decoration="line-through">${mrpStr}</text>` : ""}
 
   ${sizeStr ? `
-  <rect x="80" y="390" width="${30 + sizeStr.length * 8}" height="30" rx="15"
-        fill="none" stroke="${p.accent}" stroke-opacity="0.4" stroke-width="1.2"/>
-  <text x="${95}" y="410" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
-        font-size="11" letter-spacing="1">${sizeStr}</text>` : ""}
-
-  <!-- bottom CTA -->
-  <line x1="80" y1="430" x2="160" y2="430" stroke="${p.muted}" stroke-width="1.5"/>
-  <text x="175" y="434" fill="${p.muted}" font-family="Helvetica, Arial, sans-serif"
-        font-size="8" letter-spacing="2">SHOP NOW</text>
+  <rect x="${TX}" y="${sizeY}" width="${28 + sizeStr.length * 7}" height="24" rx="12"
+        fill="none" stroke="${p.accent}" stroke-opacity="0.4" stroke-width="1"/>
+  <text x="${TX + 14}" y="${sizeY + 16}" fill="${p.accent}" font-family="Helvetica, Arial, sans-serif"
+        font-size="10" letter-spacing="1">${sizeStr}</text>` : ""}
 
   ${photoBlock}
 </svg>`;
