@@ -884,7 +884,10 @@ export default function Inventory() {
                     })()}
                   </TableCell>
                   <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>{p.name}</div>
+                    {p.brand && <div className="text-[11px] text-muted-foreground font-normal">{p.brand}</div>}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{p.category || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{p.subcategory || "—"}</TableCell>
                   <TableCell>
