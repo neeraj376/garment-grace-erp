@@ -645,14 +645,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a source", variant: "destructive" });
       return;
     }
-    if (source === "online" && !courierName.trim()) {
-      toast({ title: "Error", description: "Courier Name is required for online invoices", variant: "destructive" });
-      return;
-    }
-    if (source === "online" && !awbNo.trim()) {
-      toast({ title: "Error", description: "AWB No. is required for online invoices", variant: "destructive" });
-      return;
-    }
+    // Courier name and AWB are optional for online invoices — they can be added later.
     if (paymentMethods.length === 0) {
       toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
       return;
