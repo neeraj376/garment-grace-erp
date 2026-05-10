@@ -217,7 +217,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     if (!editingOrder) return;
     const courier = editCourier.trim() || editingOrder.courier_name || "";
     const awb = editAwb.trim() || editingOrder.tracking_number || "";
-    if (!courier || !awb) { toast.error("Courier and AWB are required to send tracking."); return; }
+    if (!awb) { toast.error("AWB / tracking number is required to send tracking."); return; }
     const phone = editingOrder.shipping_addresses?.phone || editingOrder.shop_customers?.phone || null;
     if (!phone) { toast.error("No customer phone on file."); return; }
     const customerName = editingOrder.shipping_addresses?.name || editingOrder.shop_customers?.name || "Customer";
