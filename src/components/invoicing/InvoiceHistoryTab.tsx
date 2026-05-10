@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote } from "lucide-react";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -53,6 +53,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "bulk" } | { type: "single"; invoice: Invoice } | null>(null);
@@ -90,6 +91,27 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
     } finally {
       setSendingWhatsApp(null);
+    }
+  };
+
+  const handleSendEmail = async (inv: Invoice) => {
+    let email = inv.customers?.email?.trim();
+    if (!email) {
+      email = window.prompt("Customer email not on file. Enter email to send invoice:")?.trim();
+      if (!email) return;
+    }
+    setSendingEmail(inv.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: { invoice_id: inv.id, to_email: email },
+      });
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || "Failed to send");
+      toast({ title: "Email sent!", description: `Invoice emailed to ${email}` });
+    } catch (err: any) {
+      toast({ title: "Email Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingEmail(null);
     }
   };
 
@@ -462,6 +484,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleSendEmail(inv)} disabled={sendingEmail === inv.id}>
+                              {sendingEmail === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 text-blue-600" />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{inv.customers?.email ? `Email invoice to ${inv.customers.email}` : "Send invoice via email"}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       {inv.status !== "fully_returned" && (
                         <TooltipProvider>
                           <Tooltip>
