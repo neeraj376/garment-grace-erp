@@ -249,7 +249,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     if (!editingOrder) return;
     const courier = editCourier.trim() || editingOrder.courier_name || "";
     const awb = editAwb.trim() || editingOrder.tracking_number || "";
-    if (!courier || !awb) { toast.error("Courier and AWB are required to send tracking."); return; }
+    if (!awb) { toast.error("AWB / tracking number is required to send tracking."); return; }
     const email = editingOrder.shop_customers?.email;
     if (!email) { toast.error("No customer email on file."); return; }
     const customerName = editingOrder.shipping_addresses?.name || editingOrder.shop_customers?.name || "Customer";
