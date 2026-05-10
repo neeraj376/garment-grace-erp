@@ -157,10 +157,7 @@ function generateInvoiceSVG(data: InvoiceData): string {
     `;
   });
 
-  if (data.items.length > maxItems) {
-    const y = headerHeight + 40 + displayItems.length * itemRowHeight;
-    itemRows += `<text x="300" y="${y}" font-size="11" fill="#888" font-family="Arial, sans-serif" text-anchor="middle">... and ${data.items.length - maxItems} more items</text>`;
-  }
+  // (no item cap — all items are rendered)
 
   const summaryY = headerHeight + itemsHeight + 10;
 
