@@ -57,3 +57,6 @@ verify_jwt = false
 
 [functions.admin-upload-media]
 verify_jwt = false
+
+[functions.send-invoice-email]
+verify_jwt = false
