@@ -134,8 +134,7 @@ interface InvoiceData {
 }
 
 function generateInvoiceSVG(data: InvoiceData): string {
-  const maxItems = 10;
-  const displayItems = data.items.slice(0, maxItems);
+  const displayItems = data.items;
   const itemRowHeight = 28;
   const headerHeight = 220;
   const itemsHeight = displayItems.length * itemRowHeight + 40;
