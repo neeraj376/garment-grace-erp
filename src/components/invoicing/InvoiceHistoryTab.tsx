@@ -94,6 +94,27 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
+  const handleSendEmail = async (inv: Invoice) => {
+    let email = inv.customers?.email?.trim();
+    if (!email) {
+      email = window.prompt("Customer email not on file. Enter email to send invoice:")?.trim();
+      if (!email) return;
+    }
+    setSendingEmail(inv.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: { invoice_id: inv.id, to_email: email },
+      });
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || "Failed to send");
+      toast({ title: "Email sent!", description: `Invoice emailed to ${email}` });
+    } catch (err: any) {
+      toast({ title: "Email Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
   const fetchInvoices = async () => {
     if (!storeId) return;
     setLoading(true);
