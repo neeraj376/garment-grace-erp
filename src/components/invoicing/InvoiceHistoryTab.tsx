@@ -484,6 +484,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleSendEmail(inv)} disabled={sendingEmail === inv.id}>
+                              {sendingEmail === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 text-blue-600" />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{inv.customers?.email ? `Email invoice to ${inv.customers.email}` : "Send invoice via email"}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       {inv.status !== "fully_returned" && (
                         <TooltipProvider>
                           <Tooltip>
