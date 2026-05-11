@@ -18,7 +18,7 @@ interface InvoiceItem {
   unit_price: number;
   tax_amount: number;
   total: number;
-  products: { name: string; sku: string } | null;
+  products: { name: string; sku: string; color: string | null; size: string | null; brand: string | null; category: string | null; subcategory: string | null; photo_url: string | null } | null;
 }
 
 interface ReturnItem {
@@ -49,7 +49,7 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
       setLoading(true);
       const { data } = await supabase
         .from("invoice_items")
-        .select("id, product_id, quantity, returned_quantity, unit_price, tax_amount, total, products(name, sku)")
+        .select("id, product_id, quantity, returned_quantity, unit_price, tax_amount, total, products(name, sku, color, size, brand, category, subcategory, photo_url)")
         .eq("invoice_id", invoice.id);
 
       setItems(
@@ -201,8 +201,38 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{r.item.products?.name}</div>
-                        <div className="text-xs text-muted-foreground">{r.item.products?.sku}</div>
+                        <div className="flex gap-2">
+                          {r.item.products?.photo_url && (
+                            <img
+                              src={r.item.products.photo_url}
+                              alt={r.item.products.name}
+                              className="h-12 w-12 rounded object-cover border flex-shrink-0"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm">{r.item.products?.name}</div>
+                            {r.item.products?.brand && (
+                              <div className="text-[11px] text-muted-foreground">{r.item.products.brand}</div>
+                            )}
+                            <div className="text-[11px] text-muted-foreground font-mono">{r.item.products?.sku}</div>
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {r.item.products?.color && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted">{r.item.products.color}</span>
+                              )}
+                              {r.item.products?.size && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted">Size {r.item.products.size}</span>
+                              )}
+                              {r.item.products?.category && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted">
+                                  {r.item.products.category}{r.item.products.subcategory ? ` / ${r.item.products.subcategory}` : ""}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              ₹{r.item.unit_price.toLocaleString("en-IN")} × {r.item.quantity}
+                            </div>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">{r.item.quantity}</TableCell>
                       <TableCell className="text-center">{r.item.returned_quantity}</TableCell>
