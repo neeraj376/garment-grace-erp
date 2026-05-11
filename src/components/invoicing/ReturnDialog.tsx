@@ -16,6 +16,7 @@ interface InvoiceItem {
   quantity: number;
   returned_quantity: number;
   unit_price: number;
+  discount: number;
   tax_amount: number;
   total: number;
   products: { name: string; sku: string; color: string | null; size: string | null; brand: string | null; category: string | null; subcategory: string | null; photo_url: string | null } | null;
