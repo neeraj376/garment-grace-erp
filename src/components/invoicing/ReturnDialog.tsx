@@ -161,20 +161,22 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-h-[calc(100vh-2rem)]">
+        <DialogHeader className="shrink-0 border-b px-4 py-4 pr-10 sm:px-6">
           <DialogTitle>Process Return — {invoice.invoice_number}</DialogTitle>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : returnable.length === 0 ? (
-          <p className="text-center py-8 text-muted-foreground">All items have already been returned.</p>
-        ) : (
-          <>
-            <Table>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : returnable.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">All items have already been returned.</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10"></TableHead>
@@ -256,8 +258,9 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
                     </TableRow>
                   );
                 })}
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+            </div>
 
             <div className="space-y-3">
               <div>
@@ -277,10 +280,11 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
                 </div>
               </div>
             </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={handleReturn}
