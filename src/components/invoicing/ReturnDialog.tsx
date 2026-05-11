@@ -50,7 +50,7 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
       setLoading(true);
       const { data } = await supabase
         .from("invoice_items")
-        .select("id, product_id, quantity, returned_quantity, unit_price, tax_amount, total, products(name, sku, color, size, brand, category, subcategory, photo_url)")
+        .select("id, product_id, quantity, returned_quantity, unit_price, discount, tax_amount, total, products(name, sku, color, size, brand, category, subcategory, photo_url)")
         .eq("invoice_id", invoice.id);
 
       setItems(
