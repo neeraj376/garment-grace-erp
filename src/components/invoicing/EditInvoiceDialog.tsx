@@ -381,8 +381,8 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="p-6 pb-3 border-b shrink-0">
           <DialogTitle>Edit Invoice {invoice.invoice_number}</DialogTitle>
         </DialogHeader>
 
@@ -391,7 +391,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-5 py-2">
+          <div className="space-y-5 px-6 py-4 overflow-y-auto flex-1 min-h-0">
             {/* Customer Section */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
