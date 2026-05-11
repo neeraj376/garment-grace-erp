@@ -16,6 +16,7 @@ interface InvoiceItem {
   quantity: number;
   returned_quantity: number;
   unit_price: number;
+  discount: number;
   tax_amount: number;
   total: number;
   products: { name: string; sku: string; color: string | null; size: string | null; brand: string | null; category: string | null; subcategory: string | null; photo_url: string | null } | null;
@@ -49,7 +50,7 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
       setLoading(true);
       const { data } = await supabase
         .from("invoice_items")
-        .select("id, product_id, quantity, returned_quantity, unit_price, tax_amount, total, products(name, sku, color, size, brand, category, subcategory, photo_url)")
+        .select("id, product_id, quantity, returned_quantity, unit_price, discount, tax_amount, total, products(name, sku, color, size, brand, category, subcategory, photo_url)")
         .eq("invoice_id", invoice.id);
 
       setItems(
@@ -133,19 +134,36 @@ export default function ReturnDialog({ invoice, storeId, userId, open, onClose, 
         }
       }
 
-      // 4. Update invoice status
+      // 4. Recompute invoice totals based on remaining (non-returned) quantities
+      let newSubtotal = 0;
+      let newTax = 0;
+      let newDiscount = 0;
+      let newTotal = 0;
       const allItems = items.map(r => {
         const sel = selected.find(s => s.item.id === r.item.id);
         const totalReturned = r.item.returned_quantity + (sel ? sel.returnQty : 0);
+        const remainingQty = Math.max(0, r.item.quantity - totalReturned);
+        if (r.item.quantity > 0 && remainingQty > 0) {
+          const ratio = remainingQty / r.item.quantity;
+          newTax += r.item.tax_amount * ratio;
+          newTotal += r.item.total * ratio;
+          newDiscount += (r.item.discount || 0) * ratio;
+          newSubtotal += r.item.unit_price * remainingQty;
+        }
         return { qty: r.item.quantity, returned: totalReturned };
       });
 
       const allFullyReturned = allItems.every(i => i.returned >= i.qty);
       const anyReturned = allItems.some(i => i.returned > 0);
-
       const newStatus = allFullyReturned ? "fully_returned" : anyReturned ? "partially_returned" : "completed";
 
-      await supabase.from("invoices").update({ status: newStatus }).eq("id", invoice.id);
+      await supabase.from("invoices").update({
+        status: newStatus,
+        subtotal: parseFloat(newSubtotal.toFixed(2)),
+        tax_amount: parseFloat(newTax.toFixed(2)),
+        discount_amount: parseFloat(newDiscount.toFixed(2)),
+        total_amount: parseFloat(newTotal.toFixed(2)),
+      }).eq("id", invoice.id);
 
       toast({
         title: "Return processed",
