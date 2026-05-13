@@ -100,19 +100,22 @@ serve(async (req) => {
       }
     }
 
-    // Fire-and-forget order alert email
+    // Fire-and-forget admin alert + customer order confirmation
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const auth = `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`;
       fetch(`${supabaseUrl}/functions/v1/send-order-alert`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: auth },
         body: JSON.stringify({ order_id }),
       }).catch((e) => console.error("alert email failed:", e));
+      fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: auth },
+        body: JSON.stringify({ order_id }),
+      }).catch((e) => console.error("customer confirmation failed:", e));
     } catch (e) {
-      console.error("alert email dispatch error:", e);
+      console.error("email dispatch error:", e);
     }
 
     return new Response(
