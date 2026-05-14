@@ -546,7 +546,7 @@ export default function ShopProduct() {
       <ImageZoomDialog
         open={zoomOpen}
         onOpenChange={setZoomOpen}
-        images={photos}
+        images={mediaItems.filter((m) => m.type === "image").map((m) => m.url)}
         startIndex={current?.type === "image" ? activeMedia : 0}
         alt={product.name}
       />
