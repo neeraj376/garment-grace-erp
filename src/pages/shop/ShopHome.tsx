@@ -129,8 +129,27 @@ export default function ShopHome() {
         }).length;
         return { ...cat, count };
       });
-      const visible = counts.filter((c) => c.count > 0).sort((a, b) => b.count - a.count);
-      setSortedCategories(visible);
+      const visible = counts.filter((c) => c.count > 0);
+
+      // Add any DB category with media that isn't already covered by the curated set above
+      const covered = new Set(HERO_CATEGORIES.flatMap((c) => c.categories));
+      const extras: Record<string, number> = {};
+      withMediaAll.forEach((p: any) => {
+        const raw = (p.category ?? "").trim();
+        if (!raw) return;
+        if (covered.has(raw.toLowerCase())) return;
+        const name = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+        extras[name] = (extras[name] ?? 0) + 1;
+      });
+      const extraTiles = Object.entries(extras).map(([name, count]) => ({
+        name,
+        Icon: (() => <Package className="w-8 h-8 mx-auto" strokeWidth={1.6} />) as () => JSX.Element,
+        categories: [name.toLowerCase()],
+        count,
+      }));
+
+      const all = [...visible, ...extraTiles].sort((a, b) => b.count - a.count);
+      setSortedCategories(all);
 
       const grouped = groupVariants(withMediaAll);
       setFeatured(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 8));
