@@ -59,6 +59,17 @@ Deno.serve(async (req) => {
     const { error: permErr } = await admin.from("user_permissions").delete().eq("user_id", userId);
     if (permErr) throw new Error("Failed to remove permissions: " + permErr.message);
 
+    // Null out FK references to auth.users that don't have ON DELETE CASCADE
+    const { error: invErr } = await admin.from("invoices").update({ created_by: null }).eq("created_by", userId);
+    if (invErr) throw new Error("Failed to detach invoices: " + invErr.message);
+
+    const { error: retErr } = await admin.from("invoice_returns").update({ created_by: null }).eq("created_by", userId);
+    if (retErr) throw new Error("Failed to detach invoice returns: " + retErr.message);
+
+    // Clean up any other tables that may reference this user
+    await admin.from("held_invoices").delete().eq("held_by", userId);
+    await admin.from("employee_auth_passwords").delete().eq("user_id", userId);
+
     const { error: profDelErr } = await admin.from("profiles").delete().eq("user_id", userId);
     if (profDelErr) throw new Error("Failed to remove profile: " + profDelErr.message);
 
