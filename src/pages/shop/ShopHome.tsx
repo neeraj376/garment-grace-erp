@@ -114,10 +114,12 @@ export default function ShopHome() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data: featuredData } = await supabase.rpc("get_in_stock_shop_products", {
-        p_store_id: STORE_ID,
-        p_limit: 5000,
-      });
+      const { data: featuredData } = await supabase
+        .rpc("get_in_stock_shop_products", {
+          p_store_id: STORE_ID,
+          p_limit: 5000,
+        })
+        .range(0, 4999);
       const allInStock = featuredData ?? [];
       const withMediaAll = allInStock.filter((p: any) => p.photo_url || p.video_url);
 
