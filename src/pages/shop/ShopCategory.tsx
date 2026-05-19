@@ -1,13 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import ProductCard from "@/components/shop/ProductCard";
 import { groupVariants } from "@/lib/variantUtils";
-
-const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
+import { fetchInStockShopProducts } from "@/lib/shopProducts";
 
 // Flexible matchers for hero category slugs -> any matching DB category/subcategory
 // Each hero slug maps to an explicit list of DB `category` values (case-insensitive, exact).
@@ -43,13 +41,8 @@ export default function ShopCategory() {
       setLoading(true);
       // Always fetch all in-stock products, then filter client-side using flexible matchers.
       // This handles cases where slug "Shorts" should also match DB category "Short".
-      const { data: allData } = await supabase
-        .rpc("get_in_stock_shop_products", {
-          p_store_id: STORE_ID,
-          p_limit: 5000,
-        })
-        .range(0, 4999);
-      const all = (allData ?? []).filter((p: any) => p.photo_url || p.video_url);
+      const allData = await fetchInStockShopProducts();
+      const all = allData.filter((p: any) => p.photo_url || p.video_url);
 
       let result = all;
       if (selectedCategory && selectedCategory !== "all") {

@@ -5,9 +5,8 @@ import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/shop/ProductCard";
 import { groupVariants } from "@/lib/variantUtils";
+import { fetchInStockShopProducts, SHOP_STORE_ID } from "@/lib/shopProducts";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
-
-const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
 // SVG icons for garment categories (clearer than emoji)
 const JeansIcon = () => (
@@ -99,7 +98,7 @@ export default function ShopHome() {
     supabase
       .from("home_banners")
       .select("*")
-      .eq("store_id", STORE_ID)
+      .eq("store_id", SHOP_STORE_ID)
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .then(({ data }) => setBanners(data ?? []));
@@ -114,13 +113,7 @@ export default function ShopHome() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data: featuredData } = await supabase
-        .rpc("get_in_stock_shop_products", {
-          p_store_id: STORE_ID,
-          p_limit: 5000,
-        })
-        .range(0, 4999);
-      const allInStock = featuredData ?? [];
+      const allInStock = await fetchInStockShopProducts();
       const withMediaAll = allInStock.filter((p: any) => p.photo_url || p.video_url);
 
       // Count only products WITH media so hero matches what /category page actually shows
