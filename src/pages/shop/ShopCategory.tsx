@@ -43,10 +43,12 @@ export default function ShopCategory() {
       setLoading(true);
       // Always fetch all in-stock products, then filter client-side using flexible matchers.
       // This handles cases where slug "Shorts" should also match DB category "Short".
-      const { data: allData } = await supabase.rpc("get_in_stock_shop_products", {
-        p_store_id: STORE_ID,
-        p_limit: 5000,
-      });
+      const { data: allData } = await supabase
+        .rpc("get_in_stock_shop_products", {
+          p_store_id: STORE_ID,
+          p_limit: 5000,
+        })
+        .range(0, 4999);
       const all = (allData ?? []).filter((p: any) => p.photo_url || p.video_url);
 
       let result = all;
