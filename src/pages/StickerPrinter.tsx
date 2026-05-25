@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
@@ -25,10 +25,15 @@ type Product = {
   _stock?: number;
 };
 
+// DCODE DC MP20 is a direct-thermal label printer that takes label rolls
+// up to ~80mm wide. Most common roll sizes for retail garment tags are
+// 50×25mm and 50×38mm. We render ONE sticker per page so the printer
+// advances exactly one label between prints (no A4 sheet layout).
 const STICKER_SIZES = {
-  small: { label: 'Small (50×30 mm)', w: 50, h: 30, cols: 4, rows: 9 },
-  medium: { label: 'Medium (70×40 mm)', w: 70, h: 40, cols: 3, rows: 7 },
-  large: { label: 'Large (90×50 mm)', w: 90, h: 50, cols: 2, rows: 5 },
+  "50x25": { label: "50 × 25 mm (single column)", w: 50, h: 25 },
+  "50x38": { label: "50 × 38 mm (single column)", w: 50, h: 38 },
+  "75x50": { label: "75 × 50 mm (single column)", w: 75, h: 50 },
+  "40x30": { label: "40 × 30 mm (single column)", w: 40, h: 30 },
 };
 
 export default function StickerPrinter() {
@@ -38,7 +43,7 @@ export default function StickerPrinter() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [selected, setSelected] = useState<Record<string, number>>({});
-  const [size, setSize] = useState<keyof typeof STICKER_SIZES>("medium");
+  const [size, setSize] = useState<keyof typeof STICKER_SIZES>("50x25");
   const [includeMrp, setIncludeMrp] = useState(true);
   const [loading, setLoading] = useState(false);
   const [qrMap, setQrMap] = useState<Record<string, string>>({});
@@ -55,7 +60,6 @@ export default function StickerPrinter() {
       .order("name")
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
-        // attach stock
         const withStock = await Promise.all(data.map(async (p) => {
           const { data: s } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
           return { ...p, _stock: typeof s === "number" ? s : 0 };
@@ -110,7 +114,7 @@ export default function StickerPrinter() {
     }
     const map: Record<string, string> = {};
     for (const p of items) {
-      map[p.id] = await QRCode.toDataURL(p.sku, { width: 300, margin: 1, errorCorrectionLevel: "M" });
+      map[p.id] = await QRCode.toDataURL(p.sku, { width: 300, margin: 0, errorCorrectionLevel: "M" });
     }
     setQrMap(map);
     setShowPreview(true);
@@ -130,6 +134,8 @@ export default function StickerPrinter() {
   }, [showPreview, products, selected]);
 
   const dims = STICKER_SIZES[size];
+  // QR box ~ matches label height minus padding
+  const qrSize = Math.max(12, dims.h - 6);
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl">
@@ -138,10 +144,16 @@ export default function StickerPrinter() {
       </div>
 
       <Card className="print:hidden">
-        <CardHeader><CardTitle className="section-title">Sticker Options</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="section-title">Sticker Options</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Configured for DCODE DC MP20 thermal label printer (direct-thermal, label roll).
+            Each label prints on its own page so the printer feeds exactly one sticker at a time.
+          </p>
+        </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label>Sticker size</Label>
+            <Label>Label roll size</Label>
             <Select value={size} onValueChange={(v) => setSize(v as keyof typeof STICKER_SIZES)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -248,16 +260,12 @@ export default function StickerPrinter() {
             <h2 className="section-title">Print Preview ({expandedStickers.length} stickers)</h2>
             <Button onClick={printNow}><Printer className="h-4 w-4 mr-2" /> Print</Button>
           </div>
+          <p className="text-xs text-muted-foreground print:hidden">
+            In the browser print dialog, set paper size to <strong>{dims.w} × {dims.h} mm</strong> (custom)
+            and margins to <strong>None</strong>. Disable "Headers and footers" and "Fit to page".
+          </p>
           <div className="print-area bg-white text-black p-4 border rounded-lg print:p-0 print:border-0">
-            <div
-              className="sticker-grid"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${dims.cols}, ${dims.w}mm)`,
-                gap: '2mm',
-                justifyContent: 'center',
-              }}
-            >
+            <div className="sticker-stack flex flex-col items-center gap-2 print:gap-0">
               {expandedStickers.map((p, idx) => (
                 <div
                   key={`${p.id}-${idx}`}
@@ -270,32 +278,33 @@ export default function StickerPrinter() {
                     display: 'flex',
                     gap: '1.5mm',
                     overflow: 'hidden',
-                    fontSize: '7pt',
-                    lineHeight: 1.15,
+                    fontSize: '6.5pt',
+                    lineHeight: 1.1,
                     boxSizing: 'border-box',
-                    pageBreakInside: 'avoid',
+                    color: '#000',
+                    background: '#fff',
                   }}
                 >
                   {qrMap[p.id] && (
                     <img
                       src={qrMap[p.id]}
                       alt={p.sku}
-                      style={{ width: `${dims.h - 4}mm`, height: `${dims.h - 4}mm`, flexShrink: 0 }}
+                      style={{ width: `${qrSize}mm`, height: `${qrSize}mm`, flexShrink: 0 }}
                     />
                   )}
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '8pt', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      <div style={{ fontWeight: 700, fontSize: '7pt', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                         {p.name}
                       </div>
-                      <div style={{ marginTop: '0.5mm', fontSize: '6.5pt' }}>
+                      <div style={{ fontSize: '5.5pt', marginTop: '0.3mm' }}>
                         {[p.category, p.subcategory].filter(Boolean).join(' / ')}
                       </div>
-                      <div style={{ fontSize: '6.5pt' }}>
+                      <div style={{ fontSize: '5.5pt' }}>
                         {[p.color, p.size].filter(Boolean).join(' · ')}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '7pt' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '6pt' }}>
                       <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.sku}</span>
                       {includeMrp && (
                         <span style={{ fontWeight: 700 }}>
@@ -315,9 +324,11 @@ export default function StickerPrinter() {
         @media print {
           body * { visibility: hidden; }
           .print-area, .print-area * { visibility: visible; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-          .sticker { border: none !important; }
-          @page { size: A4; margin: 5mm; }
+          .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; }
+          .sticker { border: none !important; page-break-after: always; break-after: page; margin: 0 !important; }
+          .sticker:last-child { page-break-after: auto; break-after: auto; }
+          .sticker-stack { gap: 0 !important; }
+          @page { size: ${dims.w}mm ${dims.h}mm; margin: 0; }
         }
       `}</style>
     </div>
