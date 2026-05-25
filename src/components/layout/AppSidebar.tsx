@@ -53,6 +53,7 @@ export default function AppSidebar() {
     { icon: UserCog, label: "Employees", path: "/administrator/employees", visible: isOwner || can_employees },
     { icon: ImagePlus, label: "Photo Manager", path: "/administrator/photos", visible: isOwner || can_photos },
     { icon: Megaphone, label: "Marketing", path: "/administrator/marketing", visible: isOwner || can_customers },
+    { icon: MessageCircle, label: "WhatsApp Rotation", path: "/administrator/whatsapp-rotation", visible: isOwner },
     { icon: Settings, label: "Settings", path: "/administrator/settings", visible: isOwner || can_settings },
   ];
 
