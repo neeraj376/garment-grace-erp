@@ -21,6 +21,7 @@ import Employees from "@/pages/Employees";
 import SettingsPage from "@/pages/SettingsPage";
 import PhotoManager from "@/pages/PhotoManager";
 import Marketing from "@/pages/Marketing";
+import WhatsAppRotation from "@/pages/WhatsAppRotation";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
 
