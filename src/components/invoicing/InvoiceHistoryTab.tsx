@@ -118,19 +118,27 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const fetchInvoices = async () => {
     if (!storeId) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("invoices")
-      .select("*, customers(name, mobile, email)")
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false });
+    try {
+      // Paginate to bypass Supabase's default 1000-row cap
+      const pageSize = 1000;
+      let from = 0;
+      const all: Invoice[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("*, customers(name, mobile, email)")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const chunk = (data as any[]) ?? [];
+        all.push(...(chunk as Invoice[]));
+        if (chunk.length < pageSize) break;
+        from += pageSize;
+      }
+      setInvoices(all);
 
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      const invoiceData = (data as any) ?? [];
-      setInvoices(invoiceData);
-
-      const creatorIds = [...new Set(invoiceData.map((i: Invoice) => i.created_by).filter(Boolean))] as string[];
+      const creatorIds = [...new Set(all.map((i: Invoice) => i.created_by).filter(Boolean))] as string[];
       if (creatorIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
@@ -142,6 +150,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           setCreatorNames(nameMap);
         }
       }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
     setSelectedIds(new Set());
     setLoading(false);
