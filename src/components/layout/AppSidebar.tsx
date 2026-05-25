@@ -13,6 +13,7 @@ import {
   ImagePlus,
   Megaphone,
   MessageCircle,
+  QrCode,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
