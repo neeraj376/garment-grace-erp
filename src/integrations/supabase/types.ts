@@ -1187,6 +1187,120 @@ export type Database = {
           },
         ]
       }
+      whatsapp_assignments: {
+        Row: {
+          assigned_at: string
+          customer_phone: string
+          id: string
+          last_message_at: string
+          number_id: string
+          store_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          customer_phone: string
+          id?: string
+          last_message_at?: string
+          number_id: string
+          store_id: string
+        }
+        Update: {
+          assigned_at?: string
+          customer_phone?: string
+          id?: string
+          last_message_at?: string
+          number_id?: string
+          store_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_inbound_log: {
+        Row: {
+          assigned_number_id: string | null
+          created_at: string
+          error: string | null
+          forwarded_ok: boolean
+          from_phone: string | null
+          id: string
+          message_text: string | null
+          raw_payload: Json | null
+          store_id: string
+        }
+        Insert: {
+          assigned_number_id?: string | null
+          created_at?: string
+          error?: string | null
+          forwarded_ok?: boolean
+          from_phone?: string | null
+          id?: string
+          message_text?: string | null
+          raw_payload?: Json | null
+          store_id: string
+        }
+        Update: {
+          assigned_number_id?: string | null
+          created_at?: string
+          error?: string | null
+          forwarded_ok?: boolean
+          from_phone?: string | null
+          id?: string
+          message_text?: string | null
+          raw_payload?: Json | null
+          store_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_numbers: {
+        Row: {
+          api_key: string | null
+          api_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          last_used_at: string | null
+          message_count: number
+          phone: string
+          provider: string
+          sort_order: number
+          store_id: string
+          template_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          api_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          last_used_at?: string | null
+          message_count?: number
+          phone: string
+          provider?: string
+          sort_order?: number
+          store_id: string
+          template_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          api_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_used_at?: string | null
+          message_count?: number
+          phone?: string
+          provider?: string
+          sort_order?: number
+          store_id?: string
+          template_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
