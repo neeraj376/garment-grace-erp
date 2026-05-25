@@ -123,6 +123,7 @@ function AppRoutes() {
         <Route path="photos" element={<PhotoManager />} />
         <Route path="marketing" element={<Marketing />} />
         <Route path="whatsapp-rotation" element={<WhatsAppRotation />} />
+        <Route path="stickers" element={<StickerPrinter />} />
       </Route>
       {shopRoutes}
       <Route path="/administrator/auth" element={<Navigate to="/administrator" replace />} />
