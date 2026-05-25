@@ -22,6 +22,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import PhotoManager from "@/pages/PhotoManager";
 import Marketing from "@/pages/Marketing";
 import WhatsAppRotation from "@/pages/WhatsAppRotation";
+import StickerPrinter from "@/pages/StickerPrinter";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
 
