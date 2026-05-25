@@ -322,12 +322,29 @@ export default function StickerPrinter() {
 
       <style>{`
         @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
           body * { visibility: hidden; }
           .print-area, .print-area * { visibility: visible; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; }
-          .sticker { border: none !important; page-break-after: always; break-after: page; margin: 0 !important; }
+          .print-area {
+            position: absolute;
+            left: 0; top: 0;
+            width: ${dims.w}mm;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: #fff !important;
+          }
+          .sticker-stack { gap: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; }
+          .sticker {
+            border: none !important;
+            margin: 0 !important;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            page-break-after: always;
+            break-after: page;
+          }
+          .sticker:first-child { page-break-before: avoid; break-before: avoid; }
           .sticker:last-child { page-break-after: auto; break-after: auto; }
-          .sticker-stack { gap: 0 !important; }
           @page { size: ${dims.w}mm ${dims.h}mm; margin: 0; }
         }
       `}</style>
