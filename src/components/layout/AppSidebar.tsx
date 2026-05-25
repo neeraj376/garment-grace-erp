@@ -13,6 +13,7 @@ import {
   ImagePlus,
   Megaphone,
   MessageCircle,
+  QrCode,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -52,6 +53,7 @@ export default function AppSidebar() {
     { icon: BarChart3, label: "Reports", path: "/administrator/reports", visible: isOwner || can_reports },
     { icon: UserCog, label: "Employees", path: "/administrator/employees", visible: isOwner || can_employees },
     { icon: ImagePlus, label: "Photo Manager", path: "/administrator/photos", visible: isOwner || can_photos },
+    { icon: QrCode, label: "Print Stickers", path: "/administrator/stickers", visible: isOwner || can_inventory },
     { icon: Megaphone, label: "Marketing", path: "/administrator/marketing", visible: isOwner || can_customers },
     { icon: MessageCircle, label: "WhatsApp Rotation", path: "/administrator/whatsapp-rotation", visible: isOwner },
     { icon: Settings, label: "Settings", path: "/administrator/settings", visible: isOwner || can_settings },

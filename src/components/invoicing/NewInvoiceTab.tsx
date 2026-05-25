@@ -1053,9 +1053,36 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           </CardHeader>
           <CardContent>
             <Input
-              placeholder="Search products to add..."
+              placeholder="Scan barcode or search products to add..."
               value={searchProduct}
               onChange={e => setSearchProduct(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                const code = searchProduct.trim();
+                if (!code || !storeId) return;
+                // Try exact SKU match first (scanner input)
+                const { data: exact } = await supabase
+                  .from("products")
+                  .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
+                  .eq("store_id", storeId)
+                  .eq("is_active", true)
+                  .eq("sku", code)
+                  .maybeSingle();
+                let match: any = exact;
+                if (!match && filteredProducts.length === 1) match = filteredProducts[0];
+                if (match) {
+                  const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: match.id });
+                  if ((typeof stock === "number" ? stock : 0) <= 0) {
+                    toast({ title: "Out of stock", description: match.name, variant: "destructive" });
+                    return;
+                  }
+                  addToCart({ ...match, _stock: stock });
+                } else {
+                  toast({ title: "No product found", description: code, variant: "destructive" });
+                }
+              }}
+              autoFocus
               className="mb-3"
             />
             {searchProduct && (
