@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine } from "lucide-react";
 import InvoicePreviewDialog from "./InvoicePreviewDialog";
+import QRScannerDialog from "./QRScannerDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -120,6 +121,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
   const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
@@ -591,6 +593,29 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setSearchProduct("");
   };
 
+  const lookupAndAddBySku = async (code: string) => {
+    const sku = code.trim();
+    if (!sku || !storeId) return;
+    const { data: match } = await supabase
+      .from("products")
+      .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .eq("sku", sku)
+      .maybeSingle();
+    if (!match) {
+      toast({ title: "No product found", description: sku, variant: "destructive" });
+      return;
+    }
+    const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: match.id });
+    if ((typeof stock === "number" ? stock : 0) <= 0) {
+      toast({ title: "Out of stock", description: match.name, variant: "destructive" });
+      return;
+    }
+    addToCart({ ...match, _stock: stock });
+    toast({ title: "Added", description: match.name });
+  };
+
   const getLineTotal = (item: CartItem) => {
     const gross = item.unit_price * item.quantity;
     return gross - item.item_discount;
@@ -1052,39 +1077,35 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             </div>
           </CardHeader>
           <CardContent>
-            <Input
-              placeholder="Scan barcode or search products to add..."
-              value={searchProduct}
-              onChange={e => setSearchProduct(e.target.value)}
-              onKeyDown={async (e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                const code = searchProduct.trim();
-                if (!code || !storeId) return;
-                // Try exact SKU match first (scanner input)
-                const { data: exact } = await supabase
-                  .from("products")
-                  .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
-                  .eq("store_id", storeId)
-                  .eq("is_active", true)
-                  .eq("sku", code)
-                  .maybeSingle();
-                let match: any = exact;
-                if (!match && filteredProducts.length === 1) match = filteredProducts[0];
-                if (match) {
-                  const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: match.id });
-                  if ((typeof stock === "number" ? stock : 0) <= 0) {
-                    toast({ title: "Out of stock", description: match.name, variant: "destructive" });
+            <div className="flex gap-2 mb-3">
+              <Input
+                placeholder="Scan barcode or search products to add..."
+                value={searchProduct}
+                onChange={e => setSearchProduct(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  const code = searchProduct.trim();
+                  if (!code) return;
+                  if (filteredProducts.length === 1) {
+                    addToCart(filteredProducts[0]);
                     return;
                   }
-                  addToCart({ ...match, _stock: stock });
-                } else {
-                  toast({ title: "No product found", description: code, variant: "destructive" });
-                }
-              }}
-              autoFocus
-              className="mb-3"
-            />
+                  await lookupAndAddBySku(code);
+                }}
+                autoFocus
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setScannerOpen(true)}
+                title="Scan QR with camera"
+              >
+                <ScanLine className="h-4 w-4" />
+              </Button>
+            </div>
             {searchProduct && (
               <div className="border rounded-lg max-h-60 overflow-y-auto mb-3">
                 {filteredProducts.map(p => (
@@ -1552,6 +1573,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       taxAmount={taxAmount}
       discount={discount}
       total={total}
+    />
+    <QRScannerDialog
+      open={scannerOpen}
+      onClose={() => setScannerOpen(false)}
+      onScan={async (text) => {
+        setScannerOpen(false);
+        await lookupAndAddBySku(text);
+      }}
     />
     </div>
   );
