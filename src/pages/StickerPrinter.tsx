@@ -146,7 +146,7 @@ export default function StickerPrinter() {
         <CardHeader>
           <CardTitle className="section-title">Sticker Options</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Configured for DCODE DC MP20 thermal label printer (direct-thermal, label roll).
+            Configured for Hewlett H30C thermal label printer (50mm / 2-inch roll, direct-thermal).
             Each label prints on its own page so the printer feeds exactly one sticker at a time.
           </p>
         </CardHeader>
