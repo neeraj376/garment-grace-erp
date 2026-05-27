@@ -1574,6 +1574,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       discount={discount}
       total={total}
     />
+    <QRScannerDialog
+      open={scannerOpen}
+      onClose={() => setScannerOpen(false)}
+      onScan={async (text) => {
+        setScannerOpen(false);
+        await lookupAndAddBySku(text);
+      }}
+    />
     </div>
   );
 }
