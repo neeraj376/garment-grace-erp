@@ -593,6 +593,29 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setSearchProduct("");
   };
 
+  const lookupAndAddBySku = async (code: string) => {
+    const sku = code.trim();
+    if (!sku || !storeId) return;
+    const { data: match } = await supabase
+      .from("products")
+      .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .eq("sku", sku)
+      .maybeSingle();
+    if (!match) {
+      toast({ title: "No product found", description: sku, variant: "destructive" });
+      return;
+    }
+    const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: match.id });
+    if ((typeof stock === "number" ? stock : 0) <= 0) {
+      toast({ title: "Out of stock", description: match.name, variant: "destructive" });
+      return;
+    }
+    addToCart({ ...match, _stock: stock });
+    toast({ title: "Added", description: match.name });
+  };
+
   const getLineTotal = (item: CartItem) => {
     const gross = item.unit_price * item.quantity;
     return gross - item.item_discount;
