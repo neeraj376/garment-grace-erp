@@ -35,6 +35,8 @@ const STICKER_SIZES = {
   "50x40": { label: "50 × 40 mm (Hewlett H30C)", w: 50, h: 40 },
 };
 
+const PRINT_SAFE_INSET_MM = 3;
+
 export default function StickerPrinter() {
   const { storeId } = useStore();
   const { toast } = useToast();
@@ -113,7 +115,7 @@ export default function StickerPrinter() {
     }
     const map: Record<string, string> = {};
     for (const p of items) {
-      map[p.id] = await QRCode.toDataURL(p.sku, { width: 300, margin: 0, errorCorrectionLevel: "M" });
+      map[p.id] = await QRCode.toDataURL(p.sku, { width: 360, margin: 2, errorCorrectionLevel: "M" });
     }
     setQrMap(map);
     setShowPreview(true);
@@ -133,8 +135,9 @@ export default function StickerPrinter() {
   }, [showPreview, products, selected]);
 
   const dims = STICKER_SIZES[size];
-  // QR box ~ matches label height minus padding
-  const qrSize = Math.max(12, dims.h - 6);
+  // Keep the QR inside the Hewlett H30C printable area; the first 2–3mm near
+  // the cutter/feed edge can get clipped on 50mm rolls.
+  const qrSize = Math.max(12, dims.h - 7);
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl">
@@ -273,9 +276,9 @@ export default function StickerPrinter() {
                     width: `${dims.w}mm`,
                     height: `${dims.h}mm`,
                     border: '1px dashed #ccc',
-                    padding: '1.5mm',
+                    padding: `1.5mm ${PRINT_SAFE_INSET_MM}mm`,
                     display: 'flex',
-                    gap: '1.5mm',
+                    gap: '1.2mm',
                     overflow: 'hidden',
                     fontSize: '6.5pt',
                     lineHeight: 1.1,
