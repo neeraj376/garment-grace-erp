@@ -25,15 +25,14 @@ type Product = {
   _stock?: number;
 };
 
-// DCODE DC MP20 is a direct-thermal label printer that takes label rolls
-// up to ~80mm wide. Most common roll sizes for retail garment tags are
-// 50×25mm and 50×38mm. We render ONE sticker per page so the printer
-// advances exactly one label between prints (no A4 sheet layout).
+// Hewlett H30C is a 50mm (2 inch) direct-thermal label printer.
+// Max printable width is ~48mm on a 50mm roll. We render ONE sticker per
+// page so the printer advances exactly one label between prints.
 const STICKER_SIZES = {
-  "50x25": { label: "50 × 25 mm (single column)", w: 50, h: 25 },
-  "50x38": { label: "50 × 38 mm (single column)", w: 50, h: 38 },
-  "75x50": { label: "75 × 50 mm (single column)", w: 75, h: 50 },
-  "40x30": { label: "40 × 30 mm (single column)", w: 40, h: 30 },
+  "50x25": { label: "50 × 25 mm (Hewlett H30C)", w: 50, h: 25 },
+  "50x30": { label: "50 × 30 mm (Hewlett H30C)", w: 50, h: 30 },
+  "50x38": { label: "50 × 38 mm (Hewlett H30C)", w: 50, h: 38 },
+  "50x40": { label: "50 × 40 mm (Hewlett H30C)", w: 50, h: 40 },
 };
 
 export default function StickerPrinter() {
@@ -147,7 +146,7 @@ export default function StickerPrinter() {
         <CardHeader>
           <CardTitle className="section-title">Sticker Options</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Configured for DCODE DC MP20 thermal label printer (direct-thermal, label roll).
+            Configured for Hewlett H30C thermal label printer (50mm / 2-inch roll, direct-thermal).
             Each label prints on its own page so the printer feeds exactly one sticker at a time.
           </p>
         </CardHeader>
