@@ -32,7 +32,7 @@ export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDial
         scannerRef.current = html5;
         await html5.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 240, width: 240 } as any },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
           (decodedText) => {
             onScan(decodedText.trim());
           },
