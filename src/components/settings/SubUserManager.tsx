@@ -45,6 +45,7 @@ const PERMISSION_MODULES = [
   { key: "can_reports", label: "Reports" },
   { key: "can_employees", label: "Employees" },
   { key: "can_photos", label: "Photo Manager" },
+  { key: "can_print_stickers", label: "Print Stickers" },
   { key: "can_settings", label: "Settings" },
 ];
 
