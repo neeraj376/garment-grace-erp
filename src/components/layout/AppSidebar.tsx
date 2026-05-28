@@ -39,6 +39,7 @@ export default function AppSidebar() {
   const {
     role, can_invoicing, can_inventory, can_photos, can_customers,
     can_dashboard, can_reports, can_loyalty, can_employees, can_stock_summary, can_settings,
+    can_print_stickers,
   } = usePermissions();
 
   const isOwner = role === "owner";
