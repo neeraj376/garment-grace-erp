@@ -201,6 +201,7 @@ export default function SubUserManager() {
             can_settings: form.can_settings,
             can_edit_invoices: form.can_edit_invoices,
             can_upload_inventory: form.can_upload_inventory,
+            can_print_stickers: form.can_print_stickers,
           },
         },
       });
