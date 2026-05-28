@@ -53,21 +53,30 @@ export default function StickerPrinter() {
   useEffect(() => {
     if (!storeId) return;
     setLoading(true);
-    supabase
-      .from("products")
-      .select("id, sku, name, category, subcategory, color, size, brand, selling_price, mrp")
-      .eq("store_id", storeId)
-      .eq("is_active", true)
-      .order("name")
-      .then(async ({ data }) => {
-        if (!data) { setLoading(false); return; }
-        const withStock = await Promise.all(data.map(async (p) => {
-          const { data: s } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
-          return { ...p, _stock: typeof s === "number" ? s : 0 };
-        }));
-        setProducts(withStock as Product[]);
-        setLoading(false);
-      });
+    (async () => {
+      const PAGE = 1000;
+      let from = 0;
+      const all: any[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, sku, name, category, subcategory, color, size, brand, selling_price, mrp")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .order("name")
+          .range(from, from + PAGE - 1);
+        if (error || !data) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      const withStock = await Promise.all(all.map(async (p) => {
+        const { data: s } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
+        return { ...p, _stock: typeof s === "number" ? s : 0 };
+      }));
+      setProducts(withStock as Product[]);
+      setLoading(false);
+    })();
   }, [storeId]);
 
   const categories = useMemo(() => {
