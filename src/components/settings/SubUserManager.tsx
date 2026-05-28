@@ -102,6 +102,7 @@ export default function SubUserManager() {
     can_settings: false,
     can_edit_invoices: false,
     can_upload_inventory: false,
+    can_print_stickers: false,
   });
 
   const fetchSubUsers = async () => {
