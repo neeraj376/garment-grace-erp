@@ -1,0 +1,1 @@
+ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS can_print_stickers boolean NOT NULL DEFAULT false;
