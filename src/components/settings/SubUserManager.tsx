@@ -160,6 +160,7 @@ export default function SubUserManager() {
         can_settings: perm?.can_settings ?? false,
         can_edit_invoices: (perm as any)?.can_edit_invoices ?? false,
         can_upload_inventory: (perm as any)?.can_upload_inventory ?? false,
+        can_print_stickers: (perm as any)?.can_print_stickers ?? false,
         permission_id: perm?.id ?? "",
       };
     });
