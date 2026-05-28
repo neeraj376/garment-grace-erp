@@ -29,6 +29,7 @@ interface SubUser {
   can_settings: boolean;
   can_edit_invoices: boolean;
   can_upload_inventory: boolean;
+  can_print_stickers: boolean;
   permission_id: string;
 }
 
@@ -44,6 +45,7 @@ const PERMISSION_MODULES = [
   { key: "can_reports", label: "Reports" },
   { key: "can_employees", label: "Employees" },
   { key: "can_photos", label: "Photo Manager" },
+  { key: "can_print_stickers", label: "Print Stickers" },
   { key: "can_settings", label: "Settings" },
 ];
 
@@ -100,6 +102,7 @@ export default function SubUserManager() {
     can_settings: false,
     can_edit_invoices: false,
     can_upload_inventory: false,
+    can_print_stickers: false,
   });
 
   const fetchSubUsers = async () => {
@@ -158,6 +161,7 @@ export default function SubUserManager() {
         can_settings: perm?.can_settings ?? false,
         can_edit_invoices: (perm as any)?.can_edit_invoices ?? false,
         can_upload_inventory: (perm as any)?.can_upload_inventory ?? false,
+        can_print_stickers: (perm as any)?.can_print_stickers ?? false,
         permission_id: perm?.id ?? "",
       };
     });
@@ -197,6 +201,7 @@ export default function SubUserManager() {
             can_settings: form.can_settings,
             can_edit_invoices: form.can_edit_invoices,
             can_upload_inventory: form.can_upload_inventory,
+            can_print_stickers: form.can_print_stickers,
           },
         },
       });
@@ -205,7 +210,7 @@ export default function SubUserManager() {
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "Sub-user created", description: `${form.email} can now log in.` });
-      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false, can_edit_invoices: false, can_upload_inventory: false });
+      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false, can_edit_invoices: false, can_upload_inventory: false, can_print_stickers: false });
       setDialogOpen(false);
       fetchSubUsers();
     } catch (err: any) {
