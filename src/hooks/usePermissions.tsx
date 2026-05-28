@@ -34,6 +34,7 @@ const defaultOwner: Permissions = {
   can_settings: true,
   can_edit_invoices: true,
   can_upload_inventory: true,
+  can_print_stickers: true,
 };
 
 const defaultStaff: Permissions = {
