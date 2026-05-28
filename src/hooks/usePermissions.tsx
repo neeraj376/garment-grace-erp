@@ -17,6 +17,7 @@ interface Permissions {
   can_settings: boolean;
   can_edit_invoices: boolean;
   can_upload_inventory: boolean;
+  can_print_stickers: boolean;
 }
 
 const defaultOwner: Permissions = {
