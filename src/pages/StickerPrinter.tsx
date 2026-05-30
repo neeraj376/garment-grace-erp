@@ -87,10 +87,13 @@ export default function StickerPrinter() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const words = q.split(/\s+/).filter(Boolean);
     return products.filter(p => {
       if (category !== "all" && p.category !== category) return false;
-      if (!q) return true;
-      return p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q);
+      if (words.length === 0) return true;
+      const text = [p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand]
+        .filter(Boolean).join(" ").toLowerCase();
+      return words.every(w => text.includes(w));
     });
   }, [products, search, category]);
 
@@ -196,11 +199,20 @@ export default function StickerPrinter() {
           <CardTitle className="section-title">Select Products ({filtered.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 mb-3">
-            <Input placeholder="Search SKU or name..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <Input
+              placeholder="Scan barcode or search products by name, SKU, category, color, size..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+              className="flex-1 min-w-[260px]"
+            />
             <Button variant="outline" onClick={() => toggleAll(true)}>Select all (stock qty)</Button>
             <Button variant="outline" onClick={() => toggleAll(false)}>Clear</Button>
           </div>
+          <p className="text-xs text-muted-foreground mb-2">
+            Showing {filtered.length} of {products.length} products
+          </p>
 
           {loading ? (
             <p className="text-sm text-muted-foreground py-8 text-center">Loading products...</p>
