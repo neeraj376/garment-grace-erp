@@ -87,10 +87,13 @@ export default function StickerPrinter() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const words = q.split(/\s+/).filter(Boolean);
     return products.filter(p => {
       if (category !== "all" && p.category !== category) return false;
-      if (!q) return true;
-      return p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q);
+      if (words.length === 0) return true;
+      const text = [p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand]
+        .filter(Boolean).join(" ").toLowerCase();
+      return words.every(w => text.includes(w));
     });
   }, [products, search, category]);
 
