@@ -87,20 +87,29 @@ serve(async (req) => {
         }
       }
 
-      // Fire-and-forget admin alert + customer order confirmation
+      // Background admin alert + customer order confirmation (kept alive past response)
       try {
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const auth = `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`;
-        fetch(`${supabaseUrl}/functions/v1/send-order-alert`, {
+        const alertP = fetch(`${supabaseUrl}/functions/v1/send-order-alert`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: auth },
           body: JSON.stringify({ order_id: orderId }),
-        }).catch((e) => console.error("alert email failed:", e));
-        fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
+        }).then(r => r.text()).then(t => console.log("alert email response:", t))
+          .catch((e) => console.error("alert email failed:", e));
+        const confirmP = fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: auth },
           body: JSON.stringify({ order_id: orderId }),
-        }).catch((e) => console.error("customer confirmation failed:", e));
+        }).then(r => r.text()).then(t => console.log("confirmation email response:", t))
+          .catch((e) => console.error("customer confirmation failed:", e));
+        // @ts-ignore - EdgeRuntime provided by Supabase
+        if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any)?.waitUntil) {
+          // @ts-ignore
+          (EdgeRuntime as any).waitUntil(Promise.allSettled([alertP, confirmP]));
+        } else {
+          await Promise.allSettled([alertP, confirmP]);
+        }
       } catch (e) {
         console.error("email dispatch error:", e);
       }
