@@ -55,6 +55,7 @@ export default function StickerPrinter() {
     setLoading(true);
     (async () => {
       const PAGE = 1000;
+      // Fetch all active products (paged)
       let from = 0;
       const all: any[] = [];
       while (true) {
@@ -70,10 +71,26 @@ export default function StickerPrinter() {
         if (data.length < PAGE) break;
         from += PAGE;
       }
-      const withStock = await Promise.all(all.map(async (p) => {
-        const { data: s } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
-        return { ...p, _stock: typeof s === "number" ? s : 0 };
-      }));
+
+      // Fetch all inventory batches for this store (paged) and aggregate.
+      // This avoids firing thousands of parallel RPCs which can fail/return 0.
+      const stockMap: Record<string, number> = {};
+      let bFrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("inventory_batches")
+          .select("product_id, quantity")
+          .eq("store_id", storeId)
+          .range(bFrom, bFrom + PAGE - 1);
+        if (error || !data) break;
+        for (const b of data as any[]) {
+          stockMap[b.product_id] = (stockMap[b.product_id] || 0) + (b.quantity || 0);
+        }
+        if (data.length < PAGE) break;
+        bFrom += PAGE;
+      }
+
+      const withStock = all.map((p) => ({ ...p, _stock: stockMap[p.id] || 0 }));
       setProducts(withStock as Product[]);
       setLoading(false);
     })();
