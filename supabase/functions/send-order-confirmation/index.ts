@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
         </div>
       </div>`;
 
-    await sendEmailViaSMTP(customerEmail, subject, html);
+    await sendEmailViaSMTP(customerEmail, subject, html, BCC_ADMINS);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
