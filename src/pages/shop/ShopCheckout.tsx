@@ -53,76 +53,41 @@ export default function ShopCheckout() {
     pincode: "",
   });
 
-  // Serviceability state
-  const [checkingPincode, setCheckingPincode] = useState(false);
+  // Shipping state (DTDC, calculated locally based on state + weight + invoice value)
   const [serviceable, setServiceable] = useState<boolean | null>(null);
-  const [couriers, setCouriers] = useState<CourierOption[]>([]);
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
 
-  // Check pincode serviceability
+  // Recompute DTDC shipping whenever state, pincode, or cart changes
   useEffect(() => {
-    const pincode = form.pincode;
-    if (pincode.length !== 6 || !/^[1-9]\d{5}$/.test(pincode)) {
+    const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
+    if (!pincodeValid || !form.state) {
       setServiceable(null);
-      setCouriers([]);
       setSelectedCourier(null);
       setShippingCost(0);
       return;
     }
 
-    const timer = setTimeout(async () => {
-      setCheckingPincode(true);
-      try {
-        // Calculate total weight: 300g per item, 0.5kg minimum, +20% buffer
-        // for volumetric/handling differences vs Shiprocket actual billing.
-        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-        const baseWeightKg = Math.max(0.5, totalQuantity * 0.3);
-        const totalWeightKg = baseWeightKg * 1.2;
+    // Weight: 300g per item, 0.5kg minimum, +20% buffer
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    const baseWeightKg = Math.max(0.5, totalQuantity * 0.3);
+    const billableKg = baseWeightKg * 1.2;
 
-        const { data, error } = await supabase.functions.invoke("shiprocket", {
-          body: {
-            action: "check_serviceability",
-            pickup_pincode: PICKUP_PINCODE,
-            delivery_pincode: pincode,
-            weight: totalWeightKg.toFixed(1),
-          },
-        });
+    const invoiceValue = items.reduce(
+      (sum, item) => sum + (item.product?.selling_price ?? 0) * item.quantity,
+      0
+    );
 
-        if (error) throw error;
+    const { cost, zone } = calculateDtdcShipping(form.state, billableKg, invoiceValue);
+    setServiceable(true);
+    setShippingCost(cost);
+    setSelectedCourier({
+      courier_name: `${DEFAULT_COURIER} Express (${zone})`,
+      rate: cost,
+    });
+  }, [form.pincode, form.state, items]);
 
-        const available = data?.data?.available_courier_companies;
-        if (available && available.length > 0) {
-          setServiceable(true);
-          const sorted = available
-            .map((c: any) => ({
-              courier_company_id: c.courier_company_id,
-              courier_name: c.courier_name,
-              // Apply 18% GST on top of Shiprocket's quoted rate
-              rate: Math.round(Number(c.rate) * 1.18),
-              etd: c.etd,
-              estimated_delivery_days: c.estimated_delivery_days,
-            }))
-            .sort((a: CourierOption, b: CourierOption) => a.rate - b.rate);
-          setCouriers(sorted);
-          setSelectedCourier(sorted[0]);
-          setShippingCost(sorted[0].rate);
-        } else {
-          setServiceable(false);
-          setCouriers([]);
-          setSelectedCourier(null);
-          setShippingCost(0);
-        }
-      } catch {
-        setServiceable(null);
-        setCouriers([]);
-      } finally {
-        setCheckingPincode(false);
-      }
-    }, 600);
 
-    return () => clearTimeout(timer);
-  }, [form.pincode, items]);
 
   useEffect(() => {
     if (items.length === 0 && !loading) {
