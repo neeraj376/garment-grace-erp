@@ -282,15 +282,10 @@ export default function ShopCheckout() {
                     maxLength={6}
                     placeholder="110001"
                   />
-                  {form.pincode.length === 6 && (
+                  {form.pincode.length === 6 && form.state && serviceable && (
                     <div className="mt-1 flex items-center gap-1 text-xs">
-                      {checkingPincode ? (
-                        <><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /><span className="text-muted-foreground">Checking...</span></>
-                      ) : serviceable === true ? (
-                        <><CheckCircle className="h-3 w-3 text-green-600" /><span className="text-green-600">Delivery available</span></>
-                      ) : serviceable === false ? (
-                        <><XCircle className="h-3 w-3 text-destructive" /><span className="text-destructive">Not deliverable</span></>
-                      ) : null}
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      <span className="text-green-600">Delivery available</span>
                     </div>
                   )}
                 </div>
