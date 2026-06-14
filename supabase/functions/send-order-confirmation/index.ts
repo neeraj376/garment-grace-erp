@@ -42,6 +42,9 @@ async function sendEmailViaSMTP(to: string, subject: string, body: string, bcc: 
   }
   await sendCommand(`MAIL FROM:<${FROM}>`);
   await sendCommand(`RCPT TO:<${to}>`);
+  for (const b of bcc) {
+    await sendCommand(`RCPT TO:<${b}>`);
+  }
   await sendCommand("DATA");
 
   const message = [
