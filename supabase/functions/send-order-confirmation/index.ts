@@ -10,8 +10,9 @@ const corsHeaders = {
 };
 
 const FROM = "originee.store@gmail.com";
+const BCC_ADMINS = ["hrithiksuri2000@gmail.com"];
 
-async function sendEmailViaSMTP(to: string, subject: string, body: string): Promise<void> {
+async function sendEmailViaSMTP(to: string, subject: string, body: string, bcc: string[] = []): Promise<void> {
   const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
   if (!rawPassword) throw new Error("GMAIL_APP_PASSWORD not configured");
   const password = rawPassword.replace(/\s/g, "");
@@ -41,6 +42,9 @@ async function sendEmailViaSMTP(to: string, subject: string, body: string): Prom
   }
   await sendCommand(`MAIL FROM:<${FROM}>`);
   await sendCommand(`RCPT TO:<${to}>`);
+  for (const b of bcc) {
+    await sendCommand(`RCPT TO:<${b}>`);
+  }
   await sendCommand("DATA");
 
   const message = [
@@ -153,7 +157,7 @@ Deno.serve(async (req) => {
         </div>
       </div>`;
 
-    await sendEmailViaSMTP(customerEmail, subject, html);
+    await sendEmailViaSMTP(customerEmail, subject, html, BCC_ADMINS);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
