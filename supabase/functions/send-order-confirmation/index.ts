@@ -12,7 +12,7 @@ const corsHeaders = {
 const FROM = "originee.store@gmail.com";
 const BCC_ADMINS = ["hrithiksuri2000@gmail.com"];
 
-async function sendEmailViaSMTP(to: string, subject: string, body: string): Promise<void> {
+async function sendEmailViaSMTP(to: string, subject: string, body: string, bcc: string[] = []): Promise<void> {
   const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
   if (!rawPassword) throw new Error("GMAIL_APP_PASSWORD not configured");
   const password = rawPassword.replace(/\s/g, "");
