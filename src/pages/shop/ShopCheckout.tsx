@@ -310,46 +310,8 @@ export default function ShopCheckout() {
             </CardContent>
           </Card>
 
-          {/* Courier options */}
-          {couriers.length > 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Truck className="h-4 w-4" /> Shipping Options
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {couriers.slice(0, 4).map((c) => (
-                  <label
-                    key={c.courier_company_id}
-                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedCourier?.courier_company_id === c.courier_company_id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="courier"
-                        checked={selectedCourier?.courier_company_id === c.courier_company_id}
-                        onChange={() => {
-                          setSelectedCourier(c);
-                          setShippingCost(c.rate);
-                        }}
-                        className="accent-primary"
-                      />
-                      <div>
-                        <p className="text-sm font-medium">{c.courier_name}</p>
-                        <p className="text-xs text-muted-foreground">Est. {c.etd}</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-semibold">₹{c.rate}</span>
-                  </label>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          {/* Courier: DTDC fixed default — no user selection */}
+
         </div>
 
         {/* Summary */}
