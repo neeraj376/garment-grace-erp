@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Loader2, Truck } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
+import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
-const PICKUP_PINCODE = "110001";
+const DEFAULT_COURIER = "DTDC";
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -24,12 +25,11 @@ const INDIAN_STATES = [
 ];
 
 interface CourierOption {
-  courier_company_id: number;
   courier_name: string;
   rate: number;
-  etd: string;
-  estimated_delivery_days: number;
 }
+
+
 
 declare global {
   interface Window {
@@ -53,76 +53,41 @@ export default function ShopCheckout() {
     pincode: "",
   });
 
-  // Serviceability state
-  const [checkingPincode, setCheckingPincode] = useState(false);
+  // Shipping state (DTDC, calculated locally based on state + weight + invoice value)
   const [serviceable, setServiceable] = useState<boolean | null>(null);
-  const [couriers, setCouriers] = useState<CourierOption[]>([]);
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
 
-  // Check pincode serviceability
+  // Recompute DTDC shipping whenever state, pincode, or cart changes
   useEffect(() => {
-    const pincode = form.pincode;
-    if (pincode.length !== 6 || !/^[1-9]\d{5}$/.test(pincode)) {
+    const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
+    if (!pincodeValid || !form.state) {
       setServiceable(null);
-      setCouriers([]);
       setSelectedCourier(null);
       setShippingCost(0);
       return;
     }
 
-    const timer = setTimeout(async () => {
-      setCheckingPincode(true);
-      try {
-        // Calculate total weight: 300g per item, 0.5kg minimum, +20% buffer
-        // for volumetric/handling differences vs Shiprocket actual billing.
-        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-        const baseWeightKg = Math.max(0.5, totalQuantity * 0.3);
-        const totalWeightKg = baseWeightKg * 1.2;
+    // Weight: 300g per item, 0.5kg minimum, +20% buffer
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    const baseWeightKg = Math.max(0.5, totalQuantity * 0.3);
+    const billableKg = baseWeightKg * 1.2;
 
-        const { data, error } = await supabase.functions.invoke("shiprocket", {
-          body: {
-            action: "check_serviceability",
-            pickup_pincode: PICKUP_PINCODE,
-            delivery_pincode: pincode,
-            weight: totalWeightKg.toFixed(1),
-          },
-        });
+    const invoiceValue = items.reduce(
+      (sum, item) => sum + (item.product?.selling_price ?? 0) * item.quantity,
+      0
+    );
 
-        if (error) throw error;
+    const { cost, zone } = calculateDtdcShipping(form.state, billableKg, invoiceValue);
+    setServiceable(true);
+    setShippingCost(cost);
+    setSelectedCourier({
+      courier_name: `${DEFAULT_COURIER} Express (${zone})`,
+      rate: cost,
+    });
+  }, [form.pincode, form.state, items]);
 
-        const available = data?.data?.available_courier_companies;
-        if (available && available.length > 0) {
-          setServiceable(true);
-          const sorted = available
-            .map((c: any) => ({
-              courier_company_id: c.courier_company_id,
-              courier_name: c.courier_name,
-              // Apply 18% GST on top of Shiprocket's quoted rate
-              rate: Math.round(Number(c.rate) * 1.18),
-              etd: c.etd,
-              estimated_delivery_days: c.estimated_delivery_days,
-            }))
-            .sort((a: CourierOption, b: CourierOption) => a.rate - b.rate);
-          setCouriers(sorted);
-          setSelectedCourier(sorted[0]);
-          setShippingCost(sorted[0].rate);
-        } else {
-          setServiceable(false);
-          setCouriers([]);
-          setSelectedCourier(null);
-          setShippingCost(0);
-        }
-      } catch {
-        setServiceable(null);
-        setCouriers([]);
-      } finally {
-        setCheckingPincode(false);
-      }
-    }, 600);
 
-    return () => clearTimeout(timer);
-  }, [form.pincode, items]);
 
   useEffect(() => {
     if (items.length === 0 && !loading) {
@@ -317,15 +282,10 @@ export default function ShopCheckout() {
                     maxLength={6}
                     placeholder="110001"
                   />
-                  {form.pincode.length === 6 && (
+                  {form.pincode.length === 6 && form.state && serviceable && (
                     <div className="mt-1 flex items-center gap-1 text-xs">
-                      {checkingPincode ? (
-                        <><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /><span className="text-muted-foreground">Checking...</span></>
-                      ) : serviceable === true ? (
-                        <><CheckCircle className="h-3 w-3 text-green-600" /><span className="text-green-600">Delivery available</span></>
-                      ) : serviceable === false ? (
-                        <><XCircle className="h-3 w-3 text-destructive" /><span className="text-destructive">Not deliverable</span></>
-                      ) : null}
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      <span className="text-green-600">Delivery available</span>
                     </div>
                   )}
                 </div>
@@ -350,46 +310,8 @@ export default function ShopCheckout() {
             </CardContent>
           </Card>
 
-          {/* Courier options */}
-          {couriers.length > 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Truck className="h-4 w-4" /> Shipping Options
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {couriers.slice(0, 4).map((c) => (
-                  <label
-                    key={c.courier_company_id}
-                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedCourier?.courier_company_id === c.courier_company_id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="courier"
-                        checked={selectedCourier?.courier_company_id === c.courier_company_id}
-                        onChange={() => {
-                          setSelectedCourier(c);
-                          setShippingCost(c.rate);
-                        }}
-                        className="accent-primary"
-                      />
-                      <div>
-                        <p className="text-sm font-medium">{c.courier_name}</p>
-                        <p className="text-xs text-muted-foreground">Est. {c.etd}</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-semibold">₹{c.rate}</span>
-                  </label>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          {/* Courier: DTDC fixed default — no user selection */}
+
         </div>
 
         {/* Summary */}
