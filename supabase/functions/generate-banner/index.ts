@@ -79,7 +79,10 @@ function buildSvg(opts: {
   const sizeStr = opts.size ? `Size ${escapeXml(opts.size)}` : null;
 
   // Layout for 1260x540 (21:9): left text column 0-700, right photo column 720-1230
-  const PHOTO_X = 720, PHOTO_Y = 30, PHOTO_W = 510, PHOTO_H = 480;
+  // Photo reduced 30% to fit better in banner
+  const PHOTO_W = 357, PHOTO_H = 336;
+  const PHOTO_X = 720 + Math.round((510 - PHOTO_W) / 2);
+  const PHOTO_Y = 30 + Math.round((480 - PHOTO_H) / 2);
 
   const photoBlock = opts.photoDataUrl
     ? `
