@@ -25,12 +25,11 @@ const INDIAN_STATES = [
 ];
 
 interface CourierOption {
-  courier_company_id: number;
   courier_name: string;
   rate: number;
-  etd: string;
-  estimated_delivery_days: number;
 }
+
+
 
 declare global {
   interface Window {
