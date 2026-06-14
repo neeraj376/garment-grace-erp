@@ -10,6 +10,7 @@ const corsHeaders = {
 };
 
 const FROM = "originee.store@gmail.com";
+const BCC_ADMINS = ["hrithiksuri2000@gmail.com"];
 
 async function sendEmailViaSMTP(to: string, subject: string, body: string): Promise<void> {
   const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
