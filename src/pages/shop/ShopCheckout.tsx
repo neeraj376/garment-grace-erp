@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
-import { calculateDtdcShipping, getZoneForState } from "@/lib/dtdcRates";
+import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 const DEFAULT_COURIER = "DTDC";
