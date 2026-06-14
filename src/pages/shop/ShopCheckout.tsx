@@ -68,9 +68,9 @@ export default function ShopCheckout() {
       return;
     }
 
-    // Weight: 300g per item, 0.5kg minimum, +20% buffer
+    // Weight: 400g per item, 0.5kg minimum, +20% buffer
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    const baseWeightKg = Math.max(0.5, totalQuantity * 0.3);
+    const baseWeightKg = Math.max(0.5, totalQuantity * 0.4);
     const billableKg = baseWeightKg * 1.2;
 
     const invoiceValue = items.reduce(
