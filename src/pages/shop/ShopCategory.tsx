@@ -11,7 +11,7 @@ import { fetchInStockShopProducts } from "@/lib/shopProducts";
 // Each hero slug maps to an explicit list of DB `category` values (case-insensitive, exact).
 // Strictly follows the tag entered while adding the product — no fuzzy/text matching.
 const SLUG_CATEGORIES: Record<string, string[]> = {
-  Shirt: ["shirt", "full sleeve shirt"],
+  Shirt: ["shirt", "shirts", "full sleeve shirt", "linen shirts", "linen shirt"],
   Blazzer: ["blazzer", "blazer"],
   Jeans: ["jean", "jeans"],
   "T-shirt": ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"],
@@ -19,7 +19,7 @@ const SLUG_CATEGORIES: Record<string, string[]> = {
   Hoodie: ["hoodie", "sweatshirt", "sweater", "zipper"],
   Pants: ["pant", "trouser", "cargo pants", "linen pants", "jogger", "lower", "cotton", "dry fit"],
   Trousers: ["pant", "trouser", "cargo pants", "linen pants"],
-  Shorts: ["short", "denim shorts"],
+  Shorts: ["short", "shorts", "denim shorts", "cotton shorts"],
   Underwear: ["underwear", "vest"],
 };
 
