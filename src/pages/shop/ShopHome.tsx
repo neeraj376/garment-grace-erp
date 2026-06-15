@@ -76,14 +76,14 @@ const UnderwearIcon = () => (
 // Each hero category maps to an explicit list of DB `category` values (case-insensitive, exact).
 // Subcategory and product name are NOT used — we strictly follow the tag from product add.
 const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: string[] }[] = [
-  { name: "Shirt", Icon: ShirtIcon2, categories: ["shirt", "full sleeve shirt"] },
+  { name: "Shirt", Icon: ShirtIcon2, categories: ["shirt", "shirts", "full sleeve shirt", "linen shirts", "linen shirt"] },
   { name: "Blazzer", Icon: BlazerIcon, categories: ["blazzer", "blazer"] },
   { name: "Jeans", Icon: JeansIcon, categories: ["jean", "jeans"] },
   { name: "T-shirt", Icon: TshirtIcon, categories: ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"] },
   { name: "Jacket", Icon: JacketIcon, categories: ["jacket", "windcheater"] },
   { name: "Hoodie", Icon: HoodieIcon, categories: ["hoodie", "sweatshirt", "sweater", "zipper"] },
   { name: "Pants", Icon: TrousersIcon, categories: ["pant", "trouser", "cargo pants", "linen pants", "jogger", "lower", "cotton", "dry fit"] },
-  { name: "Shorts", Icon: ShortsIcon, categories: ["short", "denim shorts"] },
+  { name: "Shorts", Icon: ShortsIcon, categories: ["short", "shorts", "denim shorts", "cotton shorts"] },
   { name: "Underwear", Icon: UnderwearIcon, categories: ["underwear", "vest"] },
 ];
 
