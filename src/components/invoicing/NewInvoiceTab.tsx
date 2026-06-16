@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine, Camera, Keyboard } from "lucide-react";
 import InvoicePreviewDialog from "./InvoicePreviewDialog";
 import QRScannerDialog from "./QRScannerDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -122,6 +122,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanSourceOpen, setScanSourceOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
@@ -1079,6 +1081,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           <CardContent>
             <div className="flex gap-2 mb-3">
               <Input
+                ref={searchInputRef}
                 placeholder="Scan barcode or search products to add..."
                 value={searchProduct}
                 onChange={e => setSearchProduct(e.target.value)}
@@ -1096,15 +1099,46 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 autoFocus
                 className="flex-1"
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setScannerOpen(true)}
-                title="Scan QR with camera"
-              >
-                <ScanLine className="h-4 w-4" />
-              </Button>
+              <Popover open={scanSourceOpen} onOpenChange={setScanSourceOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    title="Scan options"
+                  >
+                    <ScanLine className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-2">
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-accent text-sm"
+                    onClick={() => {
+                      setScanSourceOpen(false);
+                      setScannerOpen(true);
+                    }}
+                  >
+                    <Camera className="h-4 w-4" />
+                    Use Camera
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-accent text-sm"
+                    onClick={() => {
+                      setScanSourceOpen(false);
+                      setTimeout(() => searchInputRef.current?.focus(), 50);
+                      toast({
+                        title: "Scanner ready",
+                        description: "Scan with your handheld device — it will type into the search box and auto-add on Enter.",
+                      });
+                    }}
+                  >
+                    <Keyboard className="h-4 w-4" />
+                    Use Scanner Device
+                  </button>
+                </PopoverContent>
+              </Popover>
             </div>
             {searchProduct && (
               <div className="border rounded-lg max-h-60 overflow-y-auto mb-3">
