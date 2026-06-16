@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
 import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
@@ -39,19 +40,34 @@ declare global {
 
 export default function ShopCheckout() {
   const { items, clearCart } = useCart();
+  const { visitor } = useShopVisitor();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  // Prefill from verified visitor (name + 10-digit phone, stripping +91)
+  const visitorPhone10 = visitor?.phone?.startsWith("91") ? visitor.phone.slice(2) : (visitor?.phone ?? "");
+
   const [form, setForm] = useState({
-    name: "",
+    name: visitor?.name ?? "",
     email: "",
-    phone: "",
+    phone: visitorPhone10,
     address_line1: "",
     address_line2: "",
     city: "",
     state: "",
     pincode: "",
   });
+
+  // Keep prefilled fields in sync if visitor loads after first render
+  useEffect(() => {
+    if (visitor) {
+      setForm((f) => ({
+        ...f,
+        name: f.name || visitor.name,
+        phone: f.phone || (visitor.phone.startsWith("91") ? visitor.phone.slice(2) : visitor.phone),
+      }));
+    }
+  }, [visitor]);
 
   // Shipping state (DTDC, calculated locally based on state + weight + invoice value)
   const [serviceable, setServiceable] = useState<boolean | null>(null);

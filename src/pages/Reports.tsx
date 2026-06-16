@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import InventoryAgingReport from "@/components/reports/InventoryAgingReport";
 import CategorySizeReport from "@/components/reports/CategorySizeReport";
+import ShopVisitorsReport from "@/components/reports/ShopVisitorsReport";
 
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
@@ -363,6 +364,7 @@ export default function Reports() {
           <TabsTrigger value="sales">Sales & P&L</TabsTrigger>
           <TabsTrigger value="category">Category & Size</TabsTrigger>
           <TabsTrigger value="aging">Inventory Aging</TabsTrigger>
+          <TabsTrigger value="visitors">Shop Visitors</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales" className="space-y-6">
@@ -621,6 +623,10 @@ export default function Reports() {
 
         <TabsContent value="aging">
           <InventoryAgingReport />
+        </TabsContent>
+
+        <TabsContent value="visitors">
+          <ShopVisitorsReport />
         </TabsContent>
       </Tabs>
     </div>
