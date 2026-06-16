@@ -104,6 +104,17 @@ const TrousersIcon = () => (
   </svg>
 );
 
+const LinenPantsIcon = () => (
+  <svg {...SVG_PROPS}>
+    {/* waistband */}
+    <path d="M14 8h36v5H14z" />
+    {/* relaxed straight legs */}
+    <path d="M14 13l2 42h12l2-28 2 28h12l2-42" />
+    {/* soft vertical folds */}
+    <path d="M24 16v36M40 16v36" />
+  </svg>
+);
+
 const ShortsIcon = () => (
   <svg {...SVG_PROPS}>
     {/* waistband */}
@@ -133,7 +144,8 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
   { name: "T-shirt", Icon: TshirtIcon, categories: ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"] },
   { name: "Jacket", Icon: JacketIcon, categories: ["jacket", "windcheater"] },
   { name: "Hoodie", Icon: HoodieIcon, categories: ["hoodie", "sweatshirt", "sweater", "zipper"] },
-  { name: "Pants", Icon: TrousersIcon, categories: ["pant", "trouser", "cargo pants", "linen pants", "jogger", "lower", "cotton", "dry fit"] },
+  { name: "Pants", Icon: TrousersIcon, categories: ["pant", "trouser", "cargo pants", "jogger", "lower", "cotton", "dry fit"] },
+  { name: "Linen Pants", Icon: LinenPantsIcon, categories: ["linen pants"] },
   { name: "Shorts", Icon: ShortsIcon, categories: ["short", "shorts", "denim shorts", "cotton shorts"] },
   { name: "Underwear", Icon: UnderwearIcon, categories: ["underwear", "vest"] },
 ];
