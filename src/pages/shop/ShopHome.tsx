@@ -104,6 +104,17 @@ const TrousersIcon = () => (
   </svg>
 );
 
+const LinenPantsIcon = () => (
+  <svg {...SVG_PROPS}>
+    {/* waistband */}
+    <path d="M14 8h36v5H14z" />
+    {/* relaxed straight legs */}
+    <path d="M14 13l2 42h12l2-28 2 28h12l2-42" />
+    {/* soft vertical folds */}
+    <path d="M24 16v36M40 16v36" />
+  </svg>
+);
+
 const ShortsIcon = () => (
   <svg {...SVG_PROPS}>
     {/* waistband */}
