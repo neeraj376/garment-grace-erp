@@ -13,25 +13,42 @@ function generateOtp(): string {
 
 function normalizePhone(raw: string): string | null {
   const digits = String(raw || "").replace(/\D/g, "");
-  // Accept 10-digit Indian, or with country code 91
   if (digits.length === 10) return "91" + digits;
   if (digits.length === 12 && digits.startsWith("91")) return digits;
   if (digits.length === 11 && digits.startsWith("0")) return "91" + digits.slice(1);
   return null;
 }
 
-async function sendMsg91(phone: string, otp: string) {
+async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: string; raw: any }> {
   const authKey = Deno.env.get("MSG91_AUTH_KEY");
   const templateId = Deno.env.get("MSG91_TEMPLATE_ID");
   const senderId = Deno.env.get("MSG91_SENDER_ID");
   if (!authKey || !templateId) throw new Error("MSG91 not configured");
 
-  // MSG91 v5 OTP API — uses your DLT-approved template that contains ##OTP##
   const url = `https://control.msg91.com/api/v5/otp?template_id=${templateId}&mobile=${phone}&authkey=${authKey}&otp=${otp}${senderId ? `&sender=${senderId}` : ""}`;
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" } });
   const data = await res.json().catch(() => ({}));
+  console.log("MSG91 send response:", JSON.stringify(data));
   if (!res.ok || data?.type === "error") {
-    throw new Error(`MSG91 error: ${JSON.stringify(data)}`);
+    throw new Error(`MSG91 send error: ${JSON.stringify(data)}`);
+  }
+  return { requestId: data?.request_id, raw: data };
+}
+
+async function checkMsg91Delivery(requestId: string): Promise<any> {
+  const authKey = Deno.env.get("MSG91_AUTH_KEY");
+  if (!authKey || !requestId) return null;
+  try {
+    // Wait briefly so MSG91 has a delivery status to report
+    await new Promise((r) => setTimeout(r, 2500));
+    const url = `https://control.msg91.com/api/v5/report/logs/p/sms?request_id=${requestId}`;
+    const res = await fetch(url, { headers: { authkey: authKey } });
+    const data = await res.json().catch(() => ({}));
+    console.log("MSG91 delivery report:", JSON.stringify(data));
+    return data;
+  } catch (e) {
+    console.error("Delivery report fetch failed:", e);
+    return null;
   }
 }
 
@@ -51,7 +68,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Rate-limit: max 3 OTPs per phone per 10 minutes
     const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { count } = await supabase
       .from("shop_mobile_otps")
@@ -62,7 +78,6 @@ Deno.serve(async (req) => {
       throw new Error("Too many OTP requests. Try again in a few minutes.");
     }
 
-    // Invalidate prior unused codes
     await supabase
       .from("shop_mobile_otps")
       .update({ used: true })
@@ -76,10 +91,23 @@ Deno.serve(async (req) => {
       .insert({ phone: normalized, code, expires_at: expiresAt });
     if (insErr) throw insErr;
 
-    await sendMsg91(normalized, code);
+    console.log(`Sending OTP to ${normalized}`);
+    const { requestId, raw } = await sendMsg91(normalized, code);
+
+    // Best-effort: fetch delivery status so we can surface carrier-level failures
+    const delivery = requestId ? await checkMsg91Delivery(requestId) : null;
+    const deliveryRow = Array.isArray(delivery?.data) ? delivery.data[0] : null;
+    const carrierStatus = deliveryRow?.status || deliveryRow?.description || null;
 
     return new Response(
-      JSON.stringify({ success: true, phone: normalized }),
+      JSON.stringify({
+        success: true,
+        phone: normalized,
+        msg91RequestId: requestId,
+        msg91Response: raw,
+        carrierStatus,
+        delivery: deliveryRow,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
