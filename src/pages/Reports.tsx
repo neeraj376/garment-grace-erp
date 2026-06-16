@@ -36,7 +36,11 @@ interface EmployeeSales {
   role: string;
   invoiceCount: number;
   totalSales: number;
+  bySource: { offline: { count: number; sales: number }; online: { count: number; sales: number }; wholesale: { count: number; sales: number } };
 }
+
+type SourceFilter = "all" | "offline" | "online" | "wholesale";
+
 
 export default function Reports() {
   const { storeId } = useStore();
@@ -50,6 +54,8 @@ export default function Reports() {
   const [paymentSplit, setPaymentSplit] = useState<PaymentSplit[]>([]);
   const [sourceSplit, setSourceSplit] = useState<PaymentSplit[]>([]);
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
+  const [empSourceFilter, setEmpSourceFilter] = useState<SourceFilter>("all");
+
 
   useEffect(() => {
     if (!storeId) return;
@@ -269,16 +275,24 @@ export default function Reports() {
     );
     setEmployeeKeys(Array.from(empKeysInUse));
 
-    // Employee sales breakdown table
+    // Employee sales breakdown table (with per-source split)
     const empMap: Record<string, EmployeeSales> = {};
     (employees ?? []).forEach((e: any) => {
-      empMap[e.id] = { id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0 };
+      empMap[e.id] = {
+        id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0,
+        bySource: { offline: { count: 0, sales: 0 }, online: { count: 0, sales: 0 }, wholesale: { count: 0, sales: 0 } },
+      };
     });
 
     (invData ?? []).forEach((inv: any) => {
       if (inv.employee_id && empMap[inv.employee_id]) {
+        const amt = collected(inv);
         empMap[inv.employee_id].invoiceCount += 1;
-        empMap[inv.employee_id].totalSales += collected(inv);
+        empMap[inv.employee_id].totalSales += amt;
+        const src = (inv.source || "offline").toLowerCase();
+        const key: "offline" | "online" | "wholesale" = src === "online" ? "online" : src === "wholesale" ? "wholesale" : "offline";
+        empMap[inv.employee_id].bySource[key].count += 1;
+        empMap[inv.employee_id].bySource[key].sales += amt;
       }
     });
 
@@ -288,6 +302,7 @@ export default function Reports() {
         .sort((a, b) => b.totalSales - a.totalSales)
     );
   };
+
 
   const formatCurrency = (v: number) => `₹${v.toLocaleString("en-IN")}`;
 
@@ -527,18 +542,42 @@ export default function Reports() {
           </div>
 
           <Card>
-            <CardHeader><CardTitle className="section-title">Employee Sales Performance</CardTitle></CardHeader>
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <CardTitle className="section-title">Employee Sales Performance</CardTitle>
+                <Select value={empSourceFilter} onValueChange={(v) => setEmpSourceFilter(v as SourceFilter)}>
+                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    <SelectItem value="offline">Offline</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="wholesale">Wholesale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
             <CardContent>
-              {employeeSales.length > 0 ? (
+              {(() => {
+                const filtered = employeeSales
+                  .map(e => {
+                    if (empSourceFilter === "all") {
+                      return { ...e, _count: e.invoiceCount, _sales: e.totalSales };
+                    }
+                    const b = e.bySource[empSourceFilter];
+                    return { ...e, _count: b.count, _sales: b.sales };
+                  })
+                  .filter(e => e._count > 0)
+                  .sort((a, b) => b._sales - a._sales);
+                return filtered.length > 0 ? (
                 <>
                   <div className="h-64 mb-6">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={employeeSales}>
+                      <BarChart data={filtered}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
                         <XAxis dataKey="name" fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} />
                         <YAxis fontSize={12} tick={{ fill: "hsl(220, 9%, 46%)" }} tickFormatter={v => `₹${v}`} />
                         <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                        <Bar dataKey="totalSales" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} name="Total Sales" />
+                        <Bar dataKey="_sales" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} name="Total Sales" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -553,13 +592,13 @@ export default function Reports() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {employeeSales.map(emp => (
+                      {filtered.map(emp => (
                         <TableRow key={emp.id}>
                           <TableCell className="font-medium">{emp.name}</TableCell>
                           <TableCell className="text-muted-foreground capitalize">{emp.role}</TableCell>
-                          <TableCell className="text-center">{emp.invoiceCount}</TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(emp.totalSales)}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Math.round(emp.totalSales / emp.invoiceCount))}</TableCell>
+                          <TableCell className="text-center">{emp._count}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(emp._sales)}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Math.round(emp._sales / emp._count))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -569,9 +608,11 @@ export default function Reports() {
                 <div className="h-32 flex items-center justify-center text-muted-foreground">
                   <Users className="h-6 w-6 mr-2" /> No employee sales data for this period
                 </div>
-              )}
+              );
+              })()}
             </CardContent>
           </Card>
+
         </TabsContent>
 
         <TabsContent value="category">
