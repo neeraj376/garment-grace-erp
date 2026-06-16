@@ -88,10 +88,9 @@ export default function ShopCheckout() {
       return;
     }
 
-    // Weight: 400g per item, 0.5kg minimum, +20% buffer
+    // Weight: 400g per item, 0.5kg minimum (DTDC Exp. slabs of 0.5kg)
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    const baseWeightKg = Math.max(0.5, totalQuantity * 0.4);
-    const billableKg = baseWeightKg * 1.2;
+    const billableKg = Math.max(0.5, totalQuantity * 0.4);
 
     const invoiceValue = items.reduce(
       (sum, item) => sum + (item.product?.selling_price ?? 0) * item.quantity,
