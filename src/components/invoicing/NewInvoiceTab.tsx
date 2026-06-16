@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
 const PAYMENT_OPTIONS: { value: string; label: string }[] = [
   { value: "cash", label: "Cash" },
