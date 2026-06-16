@@ -185,7 +185,7 @@ export default function ShopHome() {
       });
       const extraTiles = Object.entries(extras).map(([name, count]) => ({
         name,
-        Icon: (() => <Package className="w-8 h-8 mx-auto" strokeWidth={1.6} />) as () => JSX.Element,
+        Icon: (() => <Package className="w-9 h-9 mx-auto" strokeWidth={2.2} />) as () => JSX.Element,
         categories: [name.toLowerCase()],
         count,
       }));
