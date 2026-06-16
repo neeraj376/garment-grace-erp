@@ -82,16 +82,27 @@ async function preflightTemplate(authKey: string, templateId: string): Promise<v
 async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: string; raw: any }> {
   const authKey = Deno.env.get("MSG91_AUTH_KEY");
   const templateId = Deno.env.get("MSG91_TEMPLATE_ID");
-  const senderId = Deno.env.get("MSG91_SENDER_ID");
   if (!authKey || !templateId) throw new Error("MSG91 not configured");
 
   // Preflight: verify template exists, is active, and usable for OTP.
   await preflightTemplate(authKey, templateId);
 
-  const url = `https://control.msg91.com/api/v5/otp?template_id=${templateId}&mobile=${phone}&authkey=${authKey}&otp=${otp}${senderId ? `&sender=${senderId}` : ""}`;
+  // V5 SendOTP does not document a sender/header query parameter; the approved
+  // header is tied to the OTP template in MSG91. Passing a separate sender can
+  // make MSG91 accept the request but fail downstream DLT delivery.
+  const params = new URLSearchParams({
+    template_id: templateId,
+    mobile: phone,
+    authkey: authKey,
+    otp,
+    otp_length: "6",
+    otp_expiry: "5",
+    unicode: "0",
+  });
+  const url = `https://control.msg91.com/api/v5/otp?${params.toString()}`;
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" } });
   const data = await res.json().catch(() => ({}));
-  console.log("MSG91 send response:", JSON.stringify(data));
+  console.log("MSG91 send response:", JSON.stringify({ status: res.status, ok: res.ok, data }));
   if (!res.ok || data?.type === "error") {
     throw new Error(`MSG91 send error: ${JSON.stringify(data)}`);
   }
