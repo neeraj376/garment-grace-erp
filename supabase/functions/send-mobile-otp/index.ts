@@ -101,6 +101,7 @@ async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: stri
   // Template body uses ##var1## as the OTP placeholder, so we MUST pass var1.
   // Passing only `otp` leaves ##var1## empty and the operator drops the SMS
   // (MSG91 still returns success). We pass both for compatibility.
+  const senderId = Deno.env.get("MSG91_SENDER_ID");
   const params = new URLSearchParams({
     template_id: templateId,
     mobile: phone,
@@ -112,6 +113,9 @@ async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: stri
     otp_expiry: "5",
     unicode: "0",
   });
+  if (senderId) {
+    params.set("sender", senderId);
+  }
   const url = `https://control.msg91.com/api/v5/otp?${params.toString()}`;
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" } });
   const data = await res.json().catch(() => ({}));
