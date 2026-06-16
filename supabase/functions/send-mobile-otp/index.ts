@@ -35,17 +35,25 @@ async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: stri
   return { requestId: data?.request_id, raw: data };
 }
 
-async function checkMsg91Delivery(requestId: string): Promise<any> {
+async function checkMsg91Delivery(requestId: string, phone: string): Promise<any> {
   const authKey = Deno.env.get("MSG91_AUTH_KEY");
   if (!authKey || !requestId) return null;
   try {
     // Wait briefly so MSG91 has a delivery status to report
     await new Promise((r) => setTimeout(r, 2500));
-    const url = `https://control.msg91.com/api/v5/report/logs/p/sms?request_id=${requestId}`;
-    const res = await fetch(url, { headers: { authkey: authKey } });
+    const now = new Date();
+    const start = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const formatDate = (date: Date) => date.toISOString().slice(0, 10);
+    const url = `https://control.msg91.com/api/v5/report/logs/p/otp?startDate=${formatDate(start)}&endDate=${formatDate(now)}`;
+    const res = await fetch(url, { headers: { accept: "application/json", authkey: authKey } });
     const data = await res.json().catch(() => ({}));
-    console.log("MSG91 delivery report:", JSON.stringify(data));
-    return data;
+    const rows = Array.isArray(data?.data) ? data.data : [];
+    const matchingRows = rows.filter((row: any) => {
+      const rowText = JSON.stringify(row);
+      return rowText.includes(requestId) || rowText.includes(phone);
+    });
+    console.log("MSG91 OTP delivery report:", JSON.stringify({ requestId, phone, matches: matchingRows, rawCount: rows.length }));
+    return { ...data, matchingRows };
   } catch (e) {
     console.error("Delivery report fetch failed:", e);
     return null;
@@ -95,8 +103,10 @@ Deno.serve(async (req) => {
     const { requestId, raw } = await sendMsg91(normalized, code);
 
     // Best-effort: fetch delivery status so we can surface carrier-level failures
-    const delivery = requestId ? await checkMsg91Delivery(requestId) : null;
-    const deliveryRow = Array.isArray(delivery?.data) ? delivery.data[0] : null;
+    const delivery = requestId ? await checkMsg91Delivery(requestId, normalized) : null;
+    const deliveryRow = Array.isArray(delivery?.matchingRows) && delivery.matchingRows.length > 0
+      ? delivery.matchingRows[0]
+      : null;
     const carrierStatus = deliveryRow?.status || deliveryRow?.description || null;
 
     return new Response(
