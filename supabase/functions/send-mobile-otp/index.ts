@@ -48,11 +48,19 @@ async function preflightTemplate(authKey: string, templateId: string): Promise<v
   }
   console.log("MSG91 template preflight:", JSON.stringify({ httpOk, data }));
 
-  // MSG91 typically responds with { type: "success", data: { ... } } or
-  // { type: "error", message: "..." } / { message: "...", code: 400 }.
-  const isError = !httpOk || data?.type === "error" || (data?.message && !data?.data && data?.type !== "success");
-  if (isError) {
-    const reason = data?.message || data?.error || `HTTP ${httpOk ? 200 : "non-200"}`;
+  // The get-template endpoint is plan/scope dependent and often returns 401
+  // even when the authkey works fine for the actual OTP send. Treat HTTP
+  // failures and Unauthorized responses as INCONCLUSIVE — don't block sends.
+  const code = String(data?.code ?? "");
+  const errStr = String(data?.errors ?? data?.message ?? "").toLowerCase();
+  if (!httpOk || code === "401" || errStr.includes("unauthorized")) {
+    console.warn("MSG91 template preflight inconclusive — proceeding with send.");
+    return;
+  }
+
+  // Only block on explicit error responses that indicate the template itself is bad.
+  if (data?.type === "error" || (data?.hasError === true && data?.data == null)) {
+    const reason = data?.message || data?.errors || "template error";
     templateCheckCache.set(templateId, { ok: false, reason, at: Date.now() });
     throw new Error(`MSG91 template check failed: ${reason}. Verify MSG91_TEMPLATE_ID is a valid OTP template in your MSG91 account.`);
   }
