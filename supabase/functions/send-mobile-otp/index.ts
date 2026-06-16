@@ -98,11 +98,16 @@ async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: stri
   // V5 SendOTP does not document a sender/header query parameter; the approved
   // header is tied to the OTP template in MSG91. Passing a separate sender can
   // make MSG91 accept the request but fail downstream DLT delivery.
+  // Template body uses ##var1## as the OTP placeholder, so we MUST pass var1.
+  // Passing only `otp` leaves ##var1## empty and the operator drops the SMS
+  // (MSG91 still returns success). We pass both for compatibility.
   const params = new URLSearchParams({
     template_id: templateId,
     mobile: phone,
     authkey: authKey,
     otp,
+    var1: otp,
+    VAR1: otp,
     otp_length: "6",
     otp_expiry: "5",
     unicode: "0",
