@@ -8,68 +8,119 @@ import { groupVariants } from "@/lib/variantUtils";
 import { fetchInStockShopProducts, SHOP_STORE_ID } from "@/lib/shopProducts";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
-// SVG icons for garment categories (clearer than emoji)
-const JeansIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M5 3h14l-1 18h-5l-1-10-1 10H6L5 3z" />
-    <path d="M5 3h14" />
-  </svg>
-);
-const TshirtIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M4 7l4-4h8l4 4-3 3-2-2v13H6V8L4 10 4 7z" />
-  </svg>
-);
-const JacketIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M4 7l4-4 4 3 4-3 4 4-3 3v11H7V10L4 7z" />
-    <path d="M12 6v15" />
-  </svg>
-);
-const HoodieIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M8 3c-1 2-1 4 0 5-2 0-4 1-5 4l3 2v7h12v-7l3-2c-1-3-3-4-5-4 1-1 1-3 0-5" />
-    <path d="M9 8c1 2 5 2 6 0" />
-    <path d="M12 13v4" />
-  </svg>
-);
-const TrousersIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    {/* waistband */}
-    <path d="M5 4h14v3H5z" />
-    {/* left leg */}
-    <path d="M5 7l1 14h4l1-14" />
-    {/* right leg */}
-    <path d="M19 7l-1 14h-4l-1-14" />
-  </svg>
-);
-const ShortsIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    {/* waistband */}
-    <path d="M5 5h14v3H5z" />
-    {/* left leg (short) */}
-    <path d="M5 8l1 8h4l1-8" />
-    {/* right leg (short) */}
-    <path d="M19 8l-1 8h-4l-1-8" />
+// Refined garment category icons — clean, recognizable, consistent stroke
+const ICON_CLASS = "w-9 h-9 mx-auto";
+const SVG_PROPS = {
+  viewBox: "0 0 64 64",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2.2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  className: ICON_CLASS,
+};
+
+const ShirtIcon2 = () => (
+  <svg {...SVG_PROPS}>
+    {/* collar */}
+    <path d="M26 8l6 6 6-6" />
+    {/* body with shoulders & sleeves */}
+    <path d="M26 8l-14 6 4 10 6-2v28h24V22l6 2 4-10-14-6" />
+    {/* button placket */}
+    <path d="M32 16v30" />
   </svg>
 );
 
-const ShirtIcon2 = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M4 6l4-3 2 2h4l2-2 4 3-2 3-2-1v13H8V8L6 9 4 6z" />
-    <path d="M10 5l2 2 2-2" />
-  </svg>
-);
 const BlazerIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M5 5l3-2 4 5 4-5 3 2-2 4v12H7V9L5 5z" />
-    <path d="M12 8v13" />
-    <path d="M9 14h2" />
+  <svg {...SVG_PROPS}>
+    {/* lapels meeting at V */}
+    <path d="M22 8l10 12 10-12" />
+    {/* jacket body & sleeves */}
+    <path d="M22 8l-12 8 4 12 6-2v28h24V26l6 2 4-12-12-8" />
+    {/* center seam */}
+    <path d="M32 20v36" />
+    {/* pocket */}
+    <path d="M40 40h6" />
   </svg>
 );
+
+const TshirtIcon = () => (
+  <svg {...SVG_PROPS}>
+    <path d="M24 8h16l12 6-4 10-8-2v34H24V22l-8 2-4-10z" />
+    {/* neckline */}
+    <path d="M24 8c2 4 14 4 16 0" />
+  </svg>
+);
+
+const HoodieIcon = () => (
+  <svg {...SVG_PROPS}>
+    {/* hood */}
+    <path d="M22 12c0 6 4 10 10 10s10-4 10-10" />
+    {/* body & sleeves */}
+    <path d="M22 12l-10 6 4 12 6-2v28h20V28l6 2 4-12-10-6" />
+    {/* kangaroo pocket */}
+    <path d="M22 38l10 6 10-6" />
+    {/* drawstring */}
+    <path d="M30 22v6M34 22v6" />
+  </svg>
+);
+
+const JacketIcon = () => (
+  <svg {...SVG_PROPS}>
+    {/* collar */}
+    <path d="M24 10l8 6 8-6" />
+    {/* body & sleeves */}
+    <path d="M24 10l-12 6 4 12 6-2v30h20V26l6 2 4-12-12-6" />
+    {/* zipper */}
+    <path d="M32 16v40" />
+    {/* zipper teeth */}
+    <path d="M30 24h4M30 32h4M30 40h4M30 48h4" />
+  </svg>
+);
+
+const JeansIcon = () => (
+  <svg {...SVG_PROPS}>
+    {/* waistband */}
+    <path d="M14 8h36v6H14z" />
+    {/* legs */}
+    <path d="M14 14l4 42h12l2-26 2 26h12l4-42" />
+    {/* center crotch */}
+    <path d="M32 14v16" />
+    {/* belt loops */}
+    <path d="M22 8v6M32 8v6M42 8v6" />
+  </svg>
+);
+
+const TrousersIcon = () => (
+  <svg {...SVG_PROPS}>
+    {/* waistband */}
+    <path d="M14 8h36v5H14z" />
+    {/* tapered legs */}
+    <path d="M14 13l3 43h11l2-28 2 28h11l3-43" />
+    {/* center crease left leg */}
+    <path d="M22 16v36" />
+    {/* center crease right leg */}
+    <path d="M42 16v36" />
+  </svg>
+);
+
+const ShortsIcon = () => (
+  <svg {...SVG_PROPS}>
+    {/* waistband */}
+    <path d="M12 10h40v6H12z" />
+    {/* short legs */}
+    <path d="M12 16l4 24h12l4-16 4 16h12l4-24" />
+    {/* center seam */}
+    <path d="M32 16v12" />
+  </svg>
+);
+
 const UnderwearIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 mx-auto">
-    <path d="M3 7h18l-1 4c-2 0-4 1-5 4-1-2-2-3-3-3s-2 1-3 3c-1-3-3-4-5-4L3 7z" />
+  <svg {...SVG_PROPS}>
+    {/* waistband + brief shape */}
+    <path d="M8 18h48l-4 14c-6 0-12 2-14 10-2-6-4-8-6-8s-4 2-6 8c-2-8-8-10-14-10z" />
+    {/* waistband line */}
+    <path d="M8 22h48" />
   </svg>
 );
 
@@ -134,7 +185,7 @@ export default function ShopHome() {
       });
       const extraTiles = Object.entries(extras).map(([name, count]) => ({
         name,
-        Icon: (() => <Package className="w-8 h-8 mx-auto" strokeWidth={1.6} />) as () => JSX.Element,
+        Icon: (() => <Package className="w-9 h-9 mx-auto" strokeWidth={2.2} />) as () => JSX.Element,
         categories: [name.toLowerCase()],
         count,
       }));
