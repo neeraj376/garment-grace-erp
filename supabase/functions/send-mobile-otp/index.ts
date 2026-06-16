@@ -19,11 +19,74 @@ function normalizePhone(raw: string): string | null {
   return null;
 }
 
+// Cache the preflight result for the lifetime of this isolate to avoid hitting
+// MSG91's template API on every OTP send. Keyed by templateId.
+const templateCheckCache = new Map<string, { ok: true; at: number } | { ok: false; reason: string; at: number }>();
+const TEMPLATE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+async function preflightTemplate(authKey: string, templateId: string): Promise<void> {
+  const cached = templateCheckCache.get(templateId);
+  if (cached && Date.now() - cached.at < TEMPLATE_CACHE_TTL_MS) {
+    if (cached.ok) return;
+    throw new Error(`MSG91 template invalid: ${cached.reason}`);
+  }
+
+  const url = `https://control.msg91.com/api/v5/otp/get-template?template_id=${encodeURIComponent(templateId)}`;
+  let data: any = {};
+  let httpOk = false;
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { accept: "application/json", authkey: authKey },
+    });
+    httpOk = res.ok;
+    data = await res.json().catch(() => ({}));
+  } catch (e) {
+    console.error("MSG91 template preflight network error:", e);
+    // Network failure shouldn't permanently block sends — let send proceed.
+    return;
+  }
+  console.log("MSG91 template preflight:", JSON.stringify({ httpOk, data }));
+
+  // MSG91 typically responds with { type: "success", data: { ... } } or
+  // { type: "error", message: "..." } / { message: "...", code: 400 }.
+  const isError = !httpOk || data?.type === "error" || (data?.message && !data?.data && data?.type !== "success");
+  if (isError) {
+    const reason = data?.message || data?.error || `HTTP ${httpOk ? 200 : "non-200"}`;
+    templateCheckCache.set(templateId, { ok: false, reason, at: Date.now() });
+    throw new Error(`MSG91 template check failed: ${reason}. Verify MSG91_TEMPLATE_ID is a valid OTP template in your MSG91 account.`);
+  }
+
+  const tpl = data?.data ?? data;
+  // Status fields used by MSG91 vary: status / template_status / dlt_status.
+  const status = String(tpl?.status ?? tpl?.template_status ?? tpl?.dlt_status ?? "").toLowerCase();
+  const isActive = status === "" /* unknown shape, don't block */ ||
+    status === "active" || status === "approved" || status === "1" || status === "enabled";
+  if (!isActive) {
+    const reason = `template not active (status: ${status})`;
+    templateCheckCache.set(templateId, { ok: false, reason, at: Date.now() });
+    throw new Error(`MSG91 template is not active. Current status: ${status}. Activate/approve the template in MSG91 and try again.`);
+  }
+
+  // Some responses expose template_type / category — only block if explicitly non-OTP.
+  const templateType = String(tpl?.template_type ?? tpl?.category ?? "").toLowerCase();
+  if (templateType && !["otp", "service_implicit", "service implicit", "transactional"].some((t) => templateType.includes(t))) {
+    const reason = `template type is "${templateType}", expected OTP/Service Implicit`;
+    templateCheckCache.set(templateId, { ok: false, reason, at: Date.now() });
+    throw new Error(`MSG91 template cannot be used for OTP. ${reason}.`);
+  }
+
+  templateCheckCache.set(templateId, { ok: true, at: Date.now() });
+}
+
 async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: string; raw: any }> {
   const authKey = Deno.env.get("MSG91_AUTH_KEY");
   const templateId = Deno.env.get("MSG91_TEMPLATE_ID");
   const senderId = Deno.env.get("MSG91_SENDER_ID");
   if (!authKey || !templateId) throw new Error("MSG91 not configured");
+
+  // Preflight: verify template exists, is active, and usable for OTP.
+  await preflightTemplate(authKey, templateId);
 
   const url = `https://control.msg91.com/api/v5/otp?template_id=${templateId}&mobile=${phone}&authkey=${authKey}&otp=${otp}${senderId ? `&sender=${senderId}` : ""}`;
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" } });
