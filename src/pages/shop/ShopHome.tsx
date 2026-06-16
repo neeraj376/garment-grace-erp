@@ -144,7 +144,8 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
   { name: "T-shirt", Icon: TshirtIcon, categories: ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"] },
   { name: "Jacket", Icon: JacketIcon, categories: ["jacket", "windcheater"] },
   { name: "Hoodie", Icon: HoodieIcon, categories: ["hoodie", "sweatshirt", "sweater", "zipper"] },
-  { name: "Pants", Icon: TrousersIcon, categories: ["pant", "trouser", "cargo pants", "linen pants", "jogger", "lower", "cotton", "dry fit"] },
+  { name: "Pants", Icon: TrousersIcon, categories: ["pant", "trouser", "cargo pants", "jogger", "lower", "cotton", "dry fit"] },
+  { name: "Linen Pants", Icon: LinenPantsIcon, categories: ["linen pants"] },
   { name: "Shorts", Icon: ShortsIcon, categories: ["short", "shorts", "denim shorts", "cotton shorts"] },
   { name: "Underwear", Icon: UnderwearIcon, categories: ["underwear", "vest"] },
 ];
