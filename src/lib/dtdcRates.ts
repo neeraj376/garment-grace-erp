@@ -1,18 +1,19 @@
-// DTDC Express shipping rate calculator
-// Pickup: Delhi (110001). Rate row: Exp. 0-0.5kg + Exp. Add. 0.5kg.
+// DTDC S/F (Surface/Freight) shipping rate calculator
+// Pickup: Delhi (110001). Rate row: S/F Per kg, minimum 5kg billable.
 // Surcharges: +35% fuel, +0.20% FOB on invoice value, +18% GST.
 
 export type DtdcZone = "City" | "North" | "Metro" | "Rest" | "Special";
 
-// Base DTDC Express rates (INR) for each zone
-const BASE_RATES: Record<DtdcZone, { first: number; addl: number }> = {
-  City: { first: 99, addl: 50 },
-  North: { first: 210, addl: 150 },
-  Metro: { first: 250, addl: 180 },
-  Rest: { first: 350, addl: 250 },
-  Special: { first: 420, addl: 290 },
+// S/F Per kg rates (INR/kg) — minimum 5kg billed
+const RATE_PER_KG: Record<DtdcZone, number> = {
+  City: 45,
+  North: 80,
+  Metro: 70,
+  Rest: 70,
+  Special: 100,
 };
 
+const MIN_BILLABLE_KG = 5;
 const FUEL_SURCHARGE = 0.35;
 const FOB_RATE = 0.002; // 0.20% on invoice value
 const GST = 0.18;
@@ -59,23 +60,22 @@ export function getZoneForState(state: string): DtdcZone {
 }
 
 /**
- * Calculate DTDC shipping cost.
- * @param state - destination state name (matches checkout dropdown)
- * @param weightKg - billable weight in kg (already include any buffer)
- * @param invoiceValue - order subtotal in INR, used for 0.20% FOB
+ * Calculate DTDC S/F shipping cost.
+ * @param state - destination state name
+ * @param weightKg - actual weight in kg
+ * @param invoiceValue - order subtotal in INR (used for 0.20% FOB)
  */
 export function calculateDtdcShipping(
   state: string,
   weightKg: number,
   invoiceValue: number
-): { cost: number; zone: DtdcZone; base: number } {
+): { cost: number; zone: DtdcZone; base: number; billableKg: number } {
   const zone = getZoneForState(state);
-  const { first, addl } = BASE_RATES[zone];
-  const billable = Math.max(0.5, weightKg);
-  const addlUnits = Math.ceil((billable - 0.5) / 0.5);
-  const base = first + Math.max(0, addlUnits) * addl;
+  const perKg = RATE_PER_KG[zone];
+  const billableKg = Math.max(MIN_BILLABLE_KG, Math.ceil(weightKg));
+  const base = perKg * billableKg;
   const withFuel = base * (1 + FUEL_SURCHARGE);
   const withFob = withFuel + invoiceValue * FOB_RATE;
   const cost = Math.round(withFob * (1 + GST));
-  return { cost, zone, base };
+  return { cost, zone, base, billableKg };
 }
