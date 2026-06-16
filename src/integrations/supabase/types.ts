@@ -1030,6 +1030,63 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_mobile_otps: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          used: boolean
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          phone: string
+          used?: boolean
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
+      shop_visitors: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          name: string
+          phone: string
+          verified_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          name: string
+          phone: string
+          verified_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          name?: string
+          phone?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       store_settings: {
         Row: {
           created_at: string
