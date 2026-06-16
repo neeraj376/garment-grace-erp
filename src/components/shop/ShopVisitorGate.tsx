@@ -150,7 +150,7 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={sending}>
-              {sending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Send OTP
+              {sending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Send Email OTP
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">
               By continuing, you agree to receive an email for verification.
