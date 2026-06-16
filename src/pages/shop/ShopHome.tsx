@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ProductCard from "@/components/shop/ProductCard";
+import MasonryProductCard from "@/components/shop/MasonryProductCard";
 import { groupVariants } from "@/lib/variantUtils";
 import { fetchInStockShopProducts, SHOP_STORE_ID } from "@/lib/shopProducts";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
@@ -88,8 +88,7 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
 ];
 
 export default function ShopHome() {
-  const [featured, setFeatured] = useState<any[]>([]);
-  const [newArrivals, setNewArrivals] = useState<any[]>([]);
+  const [feed, setFeed] = useState<any[]>([]);
   const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
@@ -104,7 +103,6 @@ export default function ShopHome() {
       .then(({ data }) => setBanners(data ?? []));
   }, []);
 
-  // Auto-advance carousel
   useEffect(() => {
     if (!carouselApi || banners.length < 2) return;
     const t = setInterval(() => carouselApi.scrollNext(), 5000);
@@ -116,7 +114,6 @@ export default function ShopHome() {
       const allInStock = await fetchInStockShopProducts();
       const withMediaAll = allInStock.filter((p: any) => p.photo_url || p.video_url);
 
-      // Count only products WITH media so hero matches what /category page actually shows
       const counts = HERO_CATEGORIES.map((cat) => {
         const count = withMediaAll.filter((p: any) => {
           const c = (p.category ?? "").trim().toLowerCase();
@@ -126,7 +123,6 @@ export default function ShopHome() {
       });
       const visible = counts.filter((c) => c.count > 0);
 
-      // Add any DB category with media that isn't already covered by the curated set above
       const covered = new Set(HERO_CATEGORIES.flatMap((c) => c.categories));
       const extras: Record<string, number> = {};
       withMediaAll.forEach((p: any) => {
@@ -147,11 +143,12 @@ export default function ShopHome() {
       setSortedCategories(all);
 
       const grouped = groupVariants(withMediaAll);
-      setFeatured(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 8));
-      setNewArrivals(grouped.slice(0, 8));
+      setFeed(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 60));
     };
     fetchProducts();
   }, []);
+
+
 
 
   return (
@@ -245,22 +242,20 @@ export default function ShopHome() {
         </div>
       </section>
 
-      {/* Featured */}
-      {featured.length > 0 && (
+      {/* Poshmark-style masonry feed */}
+      {feed.length > 0 && (
         <section className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-2xl font-bold">Featured Products</h2>
+            <h2 className="font-display text-2xl font-bold">Just In</h2>
             <Link to="/category/all" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
               View All <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {featured.map((g) => (
-              <ProductCard
+          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3">
+            {feed.map((g) => (
+              <MasonryProductCard
                 key={g.key}
                 product={g.primary}
-                colors={g.colors}
-                sizes={g.sizes}
                 minPrice={g.minPrice}
                 maxPrice={g.maxPrice}
               />
@@ -269,29 +264,6 @@ export default function ShopHome() {
         </section>
       )}
 
-      {/* New Arrivals */}
-      {newArrivals.length > 0 && (
-        <section className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-2xl font-bold">New Arrivals</h2>
-            <Link to="/category/all" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
-              View All <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {newArrivals.map((g) => (
-              <ProductCard
-                key={g.key}
-                product={g.primary}
-                colors={g.colors}
-                sizes={g.sizes}
-                minPrice={g.minPrice}
-                maxPrice={g.maxPrice}
-              />
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
