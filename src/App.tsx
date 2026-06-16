@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { StoreProvider, useStore } from "@/hooks/useStore";
 import { CartProvider } from "@/hooks/useCart";
+import { ShopVisitorProvider } from "@/hooks/useShopVisitor";
+import { ShopVisitorGate } from "@/components/shop/ShopVisitorGate";
 import { PermissionsProvider, usePermissions } from "@/hooks/usePermissions";
 import AppLayout from "@/components/layout/AppLayout";
 import Auth from "@/pages/Auth";
@@ -54,9 +56,9 @@ function AppRoutes() {
     );
   }
 
-  // Shop routes (always accessible)
+  // Shop routes (always accessible) — gated by mobile-OTP verification
   const shopRoutes = (
-    <Route path="/" element={<ShopLayout />}>
+    <Route path="/" element={<ShopVisitorGate><ShopLayout /></ShopVisitorGate>}>
       <Route index element={<ShopHome />} />
       <Route path="category/:slug" element={<ShopCategory />} />
       <Route path="product/:id" element={<ShopProduct />} />
@@ -144,7 +146,9 @@ const App = () => (
           <StoreProvider>
             <PermissionsProvider>
               <CartProvider>
-                <AppRoutes />
+                <ShopVisitorProvider>
+                  <AppRoutes />
+                </ShopVisitorProvider>
               </CartProvider>
             </PermissionsProvider>
           </StoreProvider>
