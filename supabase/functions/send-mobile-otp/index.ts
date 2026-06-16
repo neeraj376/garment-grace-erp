@@ -95,9 +95,7 @@ async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: stri
   // Preflight: verify template exists, is active, and usable for OTP.
   await preflightTemplate(authKey, templateId);
 
-  // V5 SendOTP does not document a sender/header query parameter; the approved
-  // header is tied to the OTP template in MSG91. Passing a separate sender can
-  // make MSG91 accept the request but fail downstream DLT delivery.
+  // MSG91's OTP endpoint expects the DLT header as `senderid` when forcing it.
   // Template body uses ##var1## as the OTP placeholder, so we MUST pass var1.
   // Passing only `otp` leaves ##var1## empty and the operator drops the SMS
   // (MSG91 still returns success). We pass both for compatibility.
@@ -114,7 +112,7 @@ async function sendMsg91(phone: string, otp: string): Promise<{ requestId?: stri
     unicode: "0",
   });
   if (senderId) {
-    params.set("sender", senderId);
+    params.set("senderid", senderId);
   }
   const url = `https://control.msg91.com/api/v5/otp?${params.toString()}`;
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" } });
