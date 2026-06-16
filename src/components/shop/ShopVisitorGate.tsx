@@ -133,7 +133,7 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
               />
             </div>
             <div>
-              <Label htmlFor="v-phone">Mobile number <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label htmlFor="v-phone">Mobile number</Label>
               <div className="flex">
                 <div className="px-3 inline-flex items-center bg-muted border border-r-0 border-input rounded-l-md text-sm text-muted-foreground">
                   +91
