@@ -88,8 +88,7 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
 ];
 
 export default function ShopHome() {
-  const [featured, setFeatured] = useState<any[]>([]);
-  const [newArrivals, setNewArrivals] = useState<any[]>([]);
+  const [feed, setFeed] = useState<any[]>([]);
   const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
@@ -104,7 +103,6 @@ export default function ShopHome() {
       .then(({ data }) => setBanners(data ?? []));
   }, []);
 
-  // Auto-advance carousel
   useEffect(() => {
     if (!carouselApi || banners.length < 2) return;
     const t = setInterval(() => carouselApi.scrollNext(), 5000);
@@ -116,7 +114,6 @@ export default function ShopHome() {
       const allInStock = await fetchInStockShopProducts();
       const withMediaAll = allInStock.filter((p: any) => p.photo_url || p.video_url);
 
-      // Count only products WITH media so hero matches what /category page actually shows
       const counts = HERO_CATEGORIES.map((cat) => {
         const count = withMediaAll.filter((p: any) => {
           const c = (p.category ?? "").trim().toLowerCase();
@@ -126,7 +123,6 @@ export default function ShopHome() {
       });
       const visible = counts.filter((c) => c.count > 0);
 
-      // Add any DB category with media that isn't already covered by the curated set above
       const covered = new Set(HERO_CATEGORIES.flatMap((c) => c.categories));
       const extras: Record<string, number> = {};
       withMediaAll.forEach((p: any) => {
@@ -147,11 +143,12 @@ export default function ShopHome() {
       setSortedCategories(all);
 
       const grouped = groupVariants(withMediaAll);
-      setFeatured(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 8));
-      setNewArrivals(grouped.slice(0, 8));
+      setFeed(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 60));
     };
     fetchProducts();
   }, []);
+
+
 
 
   return (
