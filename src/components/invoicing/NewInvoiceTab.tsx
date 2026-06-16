@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
 const PAYMENT_OPTIONS: { value: string; label: string }[] = [
   { value: "cash", label: "Cash" },
@@ -285,7 +286,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     })));
   };
 
-  // Pincode serviceability check (only when source is online)
+  // DTDC Non-Dox shipping quote (matches storefront) — based on state, weight & invoice value
   useEffect(() => {
     if (source !== "online") {
       setServiceable(null);
@@ -294,7 +295,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setShippingCost(0);
       return;
     }
-    if (shipPincode.length !== 6 || !/^[1-9]\d{5}$/.test(shipPincode)) {
+    if (shipPincode.length !== 6 || !/^[1-9]\d{5}$/.test(shipPincode) || !shipState) {
       setServiceable(null);
       setCouriers([]);
       setSelectedCourier(null);
@@ -304,52 +305,26 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
     if (totalQty === 0) return;
 
-    const timer = setTimeout(async () => {
-      setCheckingPincode(true);
-      try {
-        // Match storefront formula: 400g/item, 0.5kg minimum, +20% buffer
-        const baseWeightKg = Math.max(0.5, totalQty * 0.4);
-        const totalWeightKg = baseWeightKg * 1.2;
-        const { data, error } = await supabase.functions.invoke("shiprocket", {
-          body: {
-            action: "check_serviceability",
-            pickup_pincode: PICKUP_PINCODE,
-            delivery_pincode: shipPincode,
-            weight: totalWeightKg.toFixed(1),
-          },
-        });
-        if (error) throw error;
-        const available = data?.data?.available_courier_companies;
-        if (available && available.length > 0) {
-          setServiceable(true);
-          const sorted = available
-            .map((c: any) => ({
-              courier_company_id: c.courier_company_id,
-              courier_name: c.courier_name,
-              // Apply 18% GST on top of Shiprocket's quoted rate (matches storefront)
-              rate: Math.round(Number(c.rate) * 1.18),
-              etd: c.etd,
-              estimated_delivery_days: c.estimated_delivery_days,
-            }))
-            .sort((a: CourierOption, b: CourierOption) => a.rate - b.rate);
-          setCouriers(sorted);
-          setSelectedCourier(sorted[0]);
-          setShippingCost(sorted[0].rate);
-        } else {
-          setServiceable(false);
-          setCouriers([]);
-          setSelectedCourier(null);
-          setShippingCost(0);
-        }
-      } catch {
-        setServiceable(null);
-        setCouriers([]);
-      } finally {
-        setCheckingPincode(false);
-      }
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [shipPincode, source, cart]);
+    // Weight: 400g per item, 1kg minimum (Non-Dox rounds up to nearest kg)
+    const weightKg = Math.max(0.5, totalQty * 0.4);
+    const invoiceValue = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+
+    const { cost, zone, billableKg } = calculateDtdcShipping(shipState, weightKg, invoiceValue);
+    const option: CourierOption = {
+      courier_company_id: 0,
+      courier_name: `DTDC Non-Dox (${zone})`,
+      rate: cost,
+      etd: "",
+      estimated_delivery_days: 0,
+    };
+    setServiceable(true);
+    setCouriers([option]);
+    setSelectedCourier(option);
+    setShippingCost(cost);
+    // billableKg available if needed later
+    void billableKg;
+  }, [shipPincode, shipState, source, cart]);
+
 
   const handleBookCourier = async () => {
     if (!selectedCourier) {
