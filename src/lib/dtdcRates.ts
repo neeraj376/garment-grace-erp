@@ -1,29 +1,28 @@
-// DTDC S/F (Surface/Freight) shipping rate calculator
-// Pickup: Delhi (110001). Rate row: S/F Per kg, minimum 5kg billable.
+// DTDC Non-Dox shipping rate calculator
+// Pickup: Delhi (110001). Rate row: Non Dox per kg.
 // Surcharges: +35% fuel, +0.20% FOB on invoice value, +18% GST.
 
 export type DtdcZone = "City" | "North" | "Metro" | "Rest" | "Special";
 
-// S/F Per kg rates (INR/kg) — minimum 5kg billed
+// Non Dox per-kg rates (INR/kg). City & North not published on this row —
+// fall back to the same ₹100/kg used for Metro/Rest.
 const RATE_PER_KG: Record<DtdcZone, number> = {
-  City: 45,
-  North: 80,
-  Metro: 70,
-  Rest: 70,
-  Special: 100,
+  City: 100,
+  North: 100,
+  Metro: 100,
+  Rest: 100,
+  Special: 130,
 };
 
-const MIN_BILLABLE_KG = 5;
+const MIN_BILLABLE_KG = 1;
 const FUEL_SURCHARGE = 0.35;
 const FOB_RATE = 0.002; // 0.20% on invoice value
 const GST = 0.18;
 
 // State -> zone mapping (pickup = Delhi)
 const ZONE_BY_STATE: Record<string, DtdcZone> = {
-  // City
   "Delhi": "City",
 
-  // North
   "Haryana": "North",
   "Punjab": "North",
   "Uttar Pradesh": "North",
@@ -32,7 +31,6 @@ const ZONE_BY_STATE: Record<string, DtdcZone> = {
   "Rajasthan": "North",
   "Chandigarh": "North",
 
-  // Metro-to-Metro
   "Maharashtra": "Metro",
   "Karnataka": "Metro",
   "Tamil Nadu": "Metro",
@@ -40,7 +38,6 @@ const ZONE_BY_STATE: Record<string, DtdcZone> = {
   "Telangana": "Metro",
   "Gujarat": "Metro",
 
-  // Special Zone (NE, J&K, Ladakh, Islands)
   "Jammu and Kashmir": "Special",
   "Ladakh": "Special",
   "Assam": "Special",
@@ -60,10 +57,10 @@ export function getZoneForState(state: string): DtdcZone {
 }
 
 /**
- * Calculate DTDC S/F shipping cost.
- * @param state - destination state name
+ * Calculate DTDC Non-Dox shipping cost.
+ * @param state - destination state
  * @param weightKg - actual weight in kg
- * @param invoiceValue - order subtotal in INR (used for 0.20% FOB)
+ * @param invoiceValue - order subtotal in INR (for 0.20% FOB)
  */
 export function calculateDtdcShipping(
   state: string,
