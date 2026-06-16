@@ -12,9 +12,10 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
   const { visitor, setVisitor, ready } = useShopVisitor();
   const [step, setStep] = useState<"form" | "otp">("form");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
-  const [normalized, setNormalized] = useState("");
+  const [normalizedEmail, setNormalizedEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -34,22 +35,28 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
 
   async function sendOtp() {
     if (name.trim().length < 2) { toast.error("Please enter your full name"); return; }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      toast.error("Enter a valid email address");
+      return;
+    }
+    // Phone is optional but if entered must be 10 digits
     const digits = phone.replace(/\D/g, "");
-    if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
+    if (digits && (digits.length !== 10 || !/^[6-9]/.test(digits))) {
       toast.error("Enter a valid 10-digit Indian mobile number");
       return;
     }
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-mobile-otp", {
-        body: { name: name.trim(), phone: digits },
+      const { data, error } = await supabase.functions.invoke("send-visitor-email-otp", {
+        body: { name: name.trim(), email: cleanEmail },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      setNormalized((data as any).phone);
+      setNormalizedEmail((data as any).email);
       setStep("otp");
       startCooldown();
-      toast.success("OTP sent to your mobile");
+      toast.success("OTP sent to your email");
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to send OTP");
     } finally {
@@ -61,8 +68,13 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
     if (code.length !== 6) { toast.error("Enter the 6-digit OTP"); return; }
     setVerifying(true);
     try {
-      const { data, error } = await supabase.functions.invoke("verify-mobile-otp", {
-        body: { name: name.trim(), phone: normalized, code },
+      const { data, error } = await supabase.functions.invoke("verify-visitor-email-otp", {
+        body: {
+          name: name.trim(),
+          email: normalizedEmail,
+          phone: phone.replace(/\D/g, "") || null,
+          code,
+        },
       });
       if (error) throw error;
       const res = data as any;
@@ -87,8 +99,8 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
           <h1 className="font-display text-2xl font-bold">Welcome to Originee</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {step === "form"
-              ? "Please verify your mobile number to continue shopping"
-              : `Enter the 6-digit code sent to +${normalized}`}
+              ? "Please verify your email to continue shopping"
+              : `Enter the 6-digit code sent to ${normalizedEmail}`}
           </p>
         </div>
 
@@ -109,7 +121,19 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
               />
             </div>
             <div>
-              <Label htmlFor="v-phone">Mobile number</Label>
+              <Label htmlFor="v-email">Email</Label>
+              <Input
+                id="v-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                maxLength={255}
+                autoComplete="email"
+              />
+            </div>
+            <div>
+              <Label htmlFor="v-phone">Mobile number <span className="text-muted-foreground font-normal">(optional)</span></Label>
               <div className="flex">
                 <div className="px-3 inline-flex items-center bg-muted border border-r-0 border-input rounded-l-md text-sm text-muted-foreground">
                   +91
@@ -129,7 +153,7 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
               {sending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Send OTP
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">
-              By continuing, you agree to receive an SMS for verification.
+              By continuing, you agree to receive an email for verification.
             </p>
           </form>
         ) : (
@@ -150,7 +174,7 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
                 className="text-muted-foreground hover:text-foreground underline"
                 onClick={() => { setStep("form"); setCode(""); }}
               >
-                Change number
+                Change email
               </button>
               <button
                 type="button"

@@ -1030,6 +1030,36 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_email_otps: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          used: boolean
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          used?: boolean
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
       shop_mobile_otps: {
         Row: {
           attempts: number
@@ -1063,26 +1093,29 @@ export type Database = {
       shop_visitors: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           last_seen_at: string
           name: string
-          phone: string
+          phone: string | null
           verified_at: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           last_seen_at?: string
           name: string
-          phone: string
+          phone?: string | null
           verified_at?: string
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           last_seen_at?: string
           name?: string
-          phone?: string
+          phone?: string | null
           verified_at?: string
         }
         Relationships: []

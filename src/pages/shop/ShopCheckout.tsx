@@ -44,12 +44,13 @@ export default function ShopCheckout() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // Prefill from verified visitor (name + 10-digit phone, stripping +91)
-  const visitorPhone10 = visitor?.phone?.startsWith("91") ? visitor.phone.slice(2) : (visitor?.phone ?? "");
+  // Prefill from verified visitor (name + email + 10-digit phone, stripping +91)
+  const visitorPhoneRaw = visitor?.phone ?? "";
+  const visitorPhone10 = visitorPhoneRaw.startsWith("91") ? visitorPhoneRaw.slice(2) : visitorPhoneRaw;
 
   const [form, setForm] = useState({
     name: visitor?.name ?? "",
-    email: "",
+    email: visitor?.email ?? "",
     phone: visitorPhone10,
     address_line1: "",
     address_line2: "",
@@ -61,10 +62,13 @@ export default function ShopCheckout() {
   // Keep prefilled fields in sync if visitor loads after first render
   useEffect(() => {
     if (visitor) {
+      const vPhoneRaw = visitor.phone ?? "";
+      const vPhone10 = vPhoneRaw.startsWith("91") ? vPhoneRaw.slice(2) : vPhoneRaw;
       setForm((f) => ({
         ...f,
         name: f.name || visitor.name,
-        phone: f.phone || (visitor.phone.startsWith("91") ? visitor.phone.slice(2) : visitor.phone),
+        email: f.email || (visitor.email ?? ""),
+        phone: f.phone || vPhone10,
       }));
     }
   }, [visitor]);

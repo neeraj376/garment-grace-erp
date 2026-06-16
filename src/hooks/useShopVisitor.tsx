@@ -3,7 +3,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 export interface ShopVisitor {
   id: string;
   name: string;
-  phone: string; // normalized: 91XXXXXXXXXX
+  email: string;
+  phone?: string | null; // normalized: 91XXXXXXXXXX or null
   verified_at: string;
 }
 
