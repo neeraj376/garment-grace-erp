@@ -704,6 +704,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     };
   }, [storeId]);
 
+  useEffect(() => {
+    if (!deviceScannerOpen) return;
+    setDeviceScannerValue("");
+    const focusTimer = setTimeout(() => deviceScannerInputRef.current?.focus(), 80);
+    return () => {
+      clearTimeout(focusTimer);
+      if (deviceScannerTimerRef.current) {
+        clearTimeout(deviceScannerTimerRef.current);
+        deviceScannerTimerRef.current = null;
+      }
+    };
+  }, [deviceScannerOpen]);
+
 
 
   const getLineTotal = (item: CartItem) => {
