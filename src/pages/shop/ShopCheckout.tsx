@@ -10,7 +10,7 @@ import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
-// Shipping now powered by Nimbuspost edge function (nimbuspost-rates)
+// Shipping powered by DTDC edge function (dtdc, action: "rate")
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
