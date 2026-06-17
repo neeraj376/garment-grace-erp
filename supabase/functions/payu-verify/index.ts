@@ -146,7 +146,7 @@ serve(async (req) => {
 
     // Redirect to frontend — origin/referer headers come from PayU, not the user's browser
     const frontendBase = Deno.env.get("SITE_URL") || "https://garment-grace-erp.lovable.app";
-    const redirectUrl = `${frontendBase}/payment-result?status=${isSuccess ? "success" : "failed"}&order_id=${orderId}`;
+    const redirectUrl = `${frontendBase}/payment-result?status=${finalSuccess ? "success" : "failed"}&order_id=${orderId}`;
 
     return new Response(null, {
       status: 302,
