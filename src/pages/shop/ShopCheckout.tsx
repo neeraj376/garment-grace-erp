@@ -10,10 +10,9 @@ import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
-import { calculateDtdcShipping } from "@/lib/dtdcRates";
+// Shipping now powered by Nimbuspost edge function (nimbuspost-rates)
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
-const DEFAULT_COURIER = "DTDC";
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -78,33 +77,60 @@ export default function ShopCheckout() {
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
 
-  // Recompute DTDC shipping whenever state, pincode, or cart changes
+  // Recompute Nimbuspost shipping whenever pincode or cart changes
   useEffect(() => {
     const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
-    if (!pincodeValid || !form.state) {
+    if (!pincodeValid) {
       setServiceable(null);
       setSelectedCourier(null);
       setShippingCost(0);
       return;
     }
 
-    // Weight: 400g per item, 0.5kg minimum (DTDC Exp. slabs of 0.5kg)
+    // Weight: 400g per item, 0.5kg minimum
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
     const billableKg = Math.max(0.5, totalQuantity * 0.4);
-
     const invoiceValue = items.reduce(
       (sum, item) => sum + (item.product?.selling_price ?? 0) * item.quantity,
       0
     );
 
-    const { cost, zone } = calculateDtdcShipping(form.state, billableKg, invoiceValue);
-    setServiceable(true);
-    setShippingCost(cost);
-    setSelectedCourier({
-      courier_name: `${DEFAULT_COURIER} Express (${zone})`,
-      rate: cost,
-    });
-  }, [form.pincode, form.state, items]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("nimbuspost-rates", {
+          body: {
+            destination_pincode: form.pincode,
+            weight_kg: billableKg,
+            invoice_value: invoiceValue,
+            payment_type: "prepaid",
+          },
+        });
+        if (cancelled) return;
+        if (error || !data?.serviceable || !data?.cheapest) {
+          setServiceable(false);
+          setSelectedCourier(null);
+          setShippingCost(0);
+          return;
+        }
+        setServiceable(true);
+        setShippingCost(Math.round(data.cheapest.rate));
+        setSelectedCourier({
+          courier_name: data.cheapest.courier_name,
+          rate: Math.round(data.cheapest.rate),
+        });
+      } catch {
+        if (!cancelled) {
+          setServiceable(false);
+          setSelectedCourier(null);
+          setShippingCost(0);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [form.pincode, items]);
 
 
 
@@ -301,7 +327,7 @@ export default function ShopCheckout() {
                     maxLength={6}
                     placeholder="110001"
                   />
-                  {form.pincode.length === 6 && form.state && serviceable && (
+                  {form.pincode.length === 6 && serviceable && (
                     <div className="mt-1 flex items-center gap-1 text-xs">
                       <CheckCircle className="h-3 w-3 text-green-600" />
                       <span className="text-green-600">Delivery available</span>
