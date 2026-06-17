@@ -601,10 +601,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     let buffer = "";
     let lastTime = 0;
-    let startTime = 0;
-    const SCAN_CHAR_GAP_MS = 80;     // most HID scanners < 80ms between chars
-    const SCAN_TOTAL_MAX_MS = 600;   // an entire scan completes well under this
-    const MIN_SCAN_LENGTH = 2;
+    let flushTimer: any = null;
+    const SCAN_CHAR_GAP_MS = 120;    // generous - HT410 Lite can be slower
+    const MIN_SCAN_LENGTH = 3;
+    const IDLE_FLUSH_MS = 150;       // if no terminator, flush after idle
 
     const isBlockingTarget = (el: EventTarget | null) => {
       const node = el as HTMLElement | null;
@@ -612,15 +612,26 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const tag = node.tagName;
       if (tag === "TEXTAREA") return true;
       if (tag === "INPUT") {
-        // Allow scanner to drive the product search input itself
         if (node === searchInputRef.current) return false;
         const type = (node as HTMLInputElement).type;
-        // Block typing-heavy inputs but allow scanning into checkbox/radio/button
         if (["text", "search", "email", "tel", "number", "password", "url"].includes(type)) return true;
         return false;
       }
       if ((node as any).isContentEditable) return true;
       return false;
+    };
+
+    const commit = () => {
+      const code = buffer.trim();
+      buffer = "";
+      if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+      if (code.length >= MIN_SCAN_LENGTH) {
+        console.log("[HID scan] commit:", code);
+        setSearchProduct("");
+        lookupAndAddBySku(code);
+      } else if (code.length) {
+        console.log("[HID scan] dropped (too short):", code);
+      }
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -631,35 +642,35 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const gap = now - lastTime;
       lastTime = now;
 
-      if (e.key === "Enter") {
-        const code = buffer.trim();
-        const total = now - startTime;
-        buffer = "";
-        startTime = 0;
-        if (code.length >= MIN_SCAN_LENGTH && total < SCAN_TOTAL_MAX_MS) {
+      // Debug: surface every captured key
+      console.log("[HID key]", JSON.stringify(e.key), "gap=", Math.round(gap), "buf=", buffer.length);
+
+      if (e.key === "Enter" || e.key === "Tab") {
+        if (buffer.length >= MIN_SCAN_LENGTH) {
           e.preventDefault();
           e.stopPropagation();
-          setSearchProduct("");
-          console.log("[HID scan]", code);
-          lookupAndAddBySku(code);
         }
+        commit();
         return;
       }
 
-      // Reset if too slow between chars (human typing)
+      // Reset if too slow between chars (likely human typing)
       if (gap > SCAN_CHAR_GAP_MS) {
         buffer = "";
-        startTime = now;
       }
 
       if (e.key.length === 1) {
-        if (!buffer) startTime = now;
         buffer += e.key;
+        if (flushTimer) clearTimeout(flushTimer);
+        flushTimer = setTimeout(commit, IDLE_FLUSH_MS);
       }
     };
 
     window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      if (flushTimer) clearTimeout(flushTimer);
+    };
   }, [storeId]);
 
 
