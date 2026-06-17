@@ -306,8 +306,7 @@ export default function StickerPrinter() {
             <Button onClick={printNow}><Printer className="h-4 w-4 mr-2" /> Print</Button>
           </div>
           <p className="text-xs text-muted-foreground print:hidden">
-            In the browser print dialog, set paper size to <strong>{dims.w} × {dims.h} mm</strong> (custom)
-            and margins to <strong>None</strong>. Disable "Headers and footers" and "Fit to page".
+            In the browser print dialog, set paper size to <strong>{dims.w} × {dims.h} mm</strong> (custom), margins to <strong>None</strong>, scale to <strong>100%</strong>, and print quality/density to <strong>dark</strong>. Disable "Headers and footers" and "Fit to page".
           </p>
           <div className="print-area bg-white text-black p-4 border rounded-lg print:p-0 print:border-0">
             <div className="sticker-stack flex flex-col items-center gap-2 print:gap-0">
