@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
 const PAYMENT_OPTIONS: { value: string; label: string }[] = [
@@ -103,6 +104,22 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
+function extractScanCode(value: string) {
+  const raw = value.trim();
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw);
+    const param = url.searchParams.get("sku") || url.searchParams.get("code") || url.searchParams.get("barcode") || url.searchParams.get("qr");
+    if (param) return param.trim();
+    const lastPathPart = url.pathname.split("/").filter(Boolean).pop();
+    if (lastPathPart) return decodeURIComponent(lastPathPart).trim();
+  } catch {}
+
+  const match = raw.match(/(?:sku|code|barcode|qr)=([^&\s]+)/i);
+  return decodeURIComponent(match?.[1] ?? raw).trim();
+}
+
 export default function NewInvoiceTab({ storeId, userId }: Props) {
   const { toast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
@@ -124,7 +141,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanSourceOpen, setScanSourceOpen] = useState(false);
+  const [deviceScannerOpen, setDeviceScannerOpen] = useState(false);
+  const [deviceScannerValue, setDeviceScannerValue] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const deviceScannerInputRef = useRef<HTMLInputElement>(null);
+  const deviceScannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDeviceScanRef = useRef<{ code: string; at: number } | null>(null);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
@@ -546,13 +568,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   }, [searchProduct, storeId]);
 
   const addToCart = (product: any) => {
-    const existing = cart.find(i => i.product_id === product.id);
-    if (existing) {
-      setCart(cart.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
-    } else {
+    setCart(prev => {
+      const existing = prev.find(i => i.product_id === product.id);
+      if (existing) {
+        return prev.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+
       const basePrice = Number(product.selling_price);
       const price = storefrontPricing ? Math.round(basePrice * STOREFRONT_MARKUP) : basePrice;
-      setCart([...cart, {
+      return [...prev, {
         product_id: product.id,
         name: product.name,
         sku: product.sku,
@@ -565,20 +589,20 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         subcategory: product.subcategory || undefined,
         color: product.color || undefined,
         size: product.size || undefined,
-      }]);
-    }
+      }];
+    });
     setSearchProduct("");
   };
 
   const lookupAndAddBySku = async (code: string) => {
-    const sku = code.trim();
+    const sku = extractScanCode(code);
     if (!sku || !storeId) return;
     const { data: match } = await supabase
       .from("products")
       .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
       .eq("store_id", storeId)
       .eq("is_active", true)
-      .eq("sku", sku)
+      .ilike("sku", sku)
       .maybeSingle();
     if (!match) {
       toast({ title: "No product found", description: sku, variant: "destructive" });
@@ -591,6 +615,23 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
     addToCart({ ...match, _stock: stock });
     toast({ title: "Added", description: match.name });
+  };
+
+  const submitDeviceScan = (rawValue: string, keepOpen = true) => {
+    const code = extractScanCode(rawValue);
+    if (!code) return;
+
+    const now = Date.now();
+    const last = lastDeviceScanRef.current;
+    if (last?.code === code && now - last.at < 700) {
+      setDeviceScannerValue("");
+      return;
+    }
+
+    lastDeviceScanRef.current = { code, at: now };
+    setDeviceScannerValue("");
+    lookupAndAddBySku(code);
+    if (keepOpen) setTimeout(() => deviceScannerInputRef.current?.focus(), 30);
   };
 
   // Global HID barcode scanner listener (Hellett HT410 Lite & similar USB/BT scanners).
@@ -672,6 +713,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       if (flushTimer) clearTimeout(flushTimer);
     };
   }, [storeId]);
+
+  useEffect(() => {
+    if (!deviceScannerOpen) return;
+    setDeviceScannerValue("");
+    const focusTimer = setTimeout(() => deviceScannerInputRef.current?.focus(), 80);
+    return () => {
+      clearTimeout(focusTimer);
+      if (deviceScannerTimerRef.current) {
+        clearTimeout(deviceScannerTimerRef.current);
+        deviceScannerTimerRef.current = null;
+      }
+    };
+  }, [deviceScannerOpen]);
 
 
 
@@ -1184,10 +1238,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-accent text-sm"
                     onClick={() => {
                       setScanSourceOpen(false);
-                      setTimeout(() => searchInputRef.current?.focus(), 50);
+                      setDeviceScannerOpen(true);
                       toast({
                         title: "Scanner ready",
-                        description: "Scan with your handheld device — it will type into the search box and auto-add on Enter.",
+                        description: "Scan with your handheld device in the scanner box.",
                       });
                     }}
                   >
@@ -1665,6 +1719,36 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       discount={discount}
       total={total}
     />
+    <Dialog open={deviceScannerOpen} onOpenChange={setDeviceScannerOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Scanner device</DialogTitle>
+          <DialogDescription>Keep this box selected and scan the product sticker.</DialogDescription>
+        </DialogHeader>
+        <Input
+          ref={deviceScannerInputRef}
+          value={deviceScannerValue}
+          placeholder="Scanner input"
+          autoComplete="off"
+          inputMode="none"
+          onBlur={() => {
+            if (deviceScannerOpen) setTimeout(() => deviceScannerInputRef.current?.focus(), 30);
+          }}
+          onChange={(e) => {
+            const next = e.target.value;
+            setDeviceScannerValue(next);
+            if (deviceScannerTimerRef.current) clearTimeout(deviceScannerTimerRef.current);
+            deviceScannerTimerRef.current = setTimeout(() => submitDeviceScan(next), 250);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === "Tab") {
+              e.preventDefault();
+              submitDeviceScan((e.currentTarget as HTMLInputElement).value);
+            }
+          }}
+        />
+      </DialogContent>
+    </Dialog>
     <QRScannerDialog
       open={scannerOpen}
       onClose={() => setScannerOpen(false)}
