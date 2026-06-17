@@ -1228,10 +1228,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-accent text-sm"
                     onClick={() => {
                       setScanSourceOpen(false);
-                      setTimeout(() => searchInputRef.current?.focus(), 50);
+                      setDeviceScannerOpen(true);
                       toast({
                         title: "Scanner ready",
-                        description: "Scan with your handheld device — it will type into the search box and auto-add on Enter.",
+                        description: "Scan with your handheld device in the scanner box.",
                       });
                     }}
                   >
