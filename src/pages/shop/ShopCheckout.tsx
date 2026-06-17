@@ -10,7 +10,7 @@ import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
-import { calculateDtdcShipping } from "@/lib/dtdcRates";
+
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
@@ -72,15 +72,16 @@ export default function ShopCheckout() {
     }
   }, [visitor]);
 
-  // Shipping state (DTDC, calculated locally based on state + weight + invoice value)
+  // Shipping state (DTDC via edge function — rate API)
   const [serviceable, setServiceable] = useState<boolean | null>(null);
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
+  const [rateLoading, setRateLoading] = useState(false);
 
-  // Recompute DTDC shipping locally based on state + weight + invoice value
+  // Fetch DTDC live rate when pincode + items are valid (debounced)
   useEffect(() => {
     const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
-    if (!pincodeValid || !form.state) {
+    if (!pincodeValid) {
       setServiceable(null);
       setSelectedCourier(null);
       setShippingCost(0);
@@ -88,17 +89,51 @@ export default function ShopCheckout() {
     }
 
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    const billableKg = Math.max(0.5, totalQuantity * 0.4);
+    const weightKg = Math.max(0.5, totalQuantity * 0.4);
     const invoiceValue = items.reduce(
       (sum, item) => sum + (item.product?.selling_price ?? 0) * item.quantity,
       0
     );
 
-    const { cost } = calculateDtdcShipping(form.state, billableKg, invoiceValue);
-    setServiceable(true);
-    setShippingCost(cost);
-    setSelectedCourier({ courier_name: "DTDC", rate: cost });
-  }, [form.pincode, form.state, items]);
+    let cancelled = false;
+    setRateLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("dtdc", {
+          body: {
+            action: "rate",
+            destination_pincode: form.pincode,
+            weight_kg: weightKg,
+            invoice_value: invoiceValue,
+            payment_type: "prepaid",
+          },
+        });
+        if (cancelled) return;
+        if (error || !data?.serviceable) {
+          setServiceable(false);
+          setSelectedCourier(null);
+          setShippingCost(0);
+        } else {
+          setServiceable(true);
+          setShippingCost(data.cost);
+          setSelectedCourier({ courier_name: "DTDC", rate: data.cost });
+        }
+      } catch {
+        if (!cancelled) {
+          setServiceable(false);
+          setSelectedCourier(null);
+          setShippingCost(0);
+        }
+      } finally {
+        if (!cancelled) setRateLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [form.pincode, items]);
 
 
 
