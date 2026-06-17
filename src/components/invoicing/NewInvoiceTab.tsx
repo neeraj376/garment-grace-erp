@@ -594,23 +594,30 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   };
 
   // Global HID barcode scanner listener (Hellett HT410 Lite & similar USB/BT scanners).
-  // Scanners emit keystrokes very fast (<30ms apart) followed by Enter. We capture them
-  // even when the search input is not focused, so the user can scan from anywhere on the page.
+  // Scanners stream keystrokes quickly (typically 5-50ms apart) followed by Enter.
+  // We capture them even when the search input is not focused, so the user can scan
+  // from anywhere on the page. The HT410 Lite emits AT speeds ~80ms in some modes,
+  // so we use a generous inter-char gap and an absolute total-time fallback.
   useEffect(() => {
     let buffer = "";
     let lastTime = 0;
-    const SCAN_CHAR_GAP_MS = 35; // human typing is far slower than this
-    const MIN_SCAN_LENGTH = 3;
+    let startTime = 0;
+    const SCAN_CHAR_GAP_MS = 80;     // most HID scanners < 80ms between chars
+    const SCAN_TOTAL_MAX_MS = 600;   // an entire scan completes well under this
+    const MIN_SCAN_LENGTH = 2;
 
-    const isTypingTarget = (el: EventTarget | null) => {
+    const isBlockingTarget = (el: EventTarget | null) => {
       const node = el as HTMLElement | null;
       if (!node) return false;
       const tag = node.tagName;
-      if (tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (tag === "TEXTAREA") return true;
       if (tag === "INPUT") {
         // Allow scanner to drive the product search input itself
         if (node === searchInputRef.current) return false;
-        return true;
+        const type = (node as HTMLInputElement).type;
+        // Block typing-heavy inputs but allow scanning into checkbox/radio/button
+        if (["text", "search", "email", "tel", "number", "password", "url"].includes(type)) return true;
+        return false;
       }
       if ((node as any).isContentEditable) return true;
       return false;
@@ -618,7 +625,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (isTypingTarget(e.target)) return;
+      if (isBlockingTarget(e.target)) return;
 
       const now = performance.now();
       const gap = now - lastTime;
@@ -626,25 +633,33 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
       if (e.key === "Enter") {
         const code = buffer.trim();
+        const total = now - startTime;
         buffer = "";
-        if (code.length >= MIN_SCAN_LENGTH) {
+        startTime = 0;
+        if (code.length >= MIN_SCAN_LENGTH && total < SCAN_TOTAL_MAX_MS) {
           e.preventDefault();
+          e.stopPropagation();
           setSearchProduct("");
+          console.log("[HID scan]", code);
           lookupAndAddBySku(code);
         }
         return;
       }
 
-      // Reset buffer if too slow (human typing)
-      if (gap > SCAN_CHAR_GAP_MS) buffer = "";
+      // Reset if too slow between chars (human typing)
+      if (gap > SCAN_CHAR_GAP_MS) {
+        buffer = "";
+        startTime = now;
+      }
 
       if (e.key.length === 1) {
+        if (!buffer) startTime = now;
         buffer += e.key;
       }
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [storeId]);
 
 
