@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendGmail } from "../_shared/gmail-smtp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,53 +9,7 @@ const corsHeaders = {
 const ALERT_TO = "originee.store@gmail.com";
 
 async function sendEmailViaSMTP(to: string, subject: string, body: string): Promise<void> {
-  const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
-  if (!rawPassword) throw new Error("GMAIL_APP_PASSWORD not configured");
-  const password = rawPassword.replace(/\s/g, "");
-  const from = "originee.store@gmail.com";
-
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  const conn = await Deno.connectTls({ hostname: "smtp.gmail.com", port: 465 });
-
-  async function readResponse(): Promise<string> {
-    const buf = new Uint8Array(2048);
-    const n = await conn.read(buf);
-    return decoder.decode(buf.subarray(0, n || 0));
-  }
-  async function sendCommand(cmd: string): Promise<string> {
-    await conn.write(encoder.encode(cmd + "\r\n"));
-    return await readResponse();
-  }
-
-  await readResponse();
-  await sendCommand("EHLO localhost");
-  await sendCommand("AUTH LOGIN");
-  await sendCommand(btoa(from));
-  const authResult = await sendCommand(btoa(password));
-  if (!authResult.startsWith("235")) {
-    conn.close();
-    throw new Error("SMTP authentication failed");
-  }
-  await sendCommand(`MAIL FROM:<${from}>`);
-  await sendCommand(`RCPT TO:<${to}>`);
-  await sendCommand("DATA");
-
-  const message = [
-    `From: Originee Orders <${from}>`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/html; charset=UTF-8`,
-    ``,
-    body,
-    `.`,
-  ].join("\r\n");
-
-  const dataResult = await sendCommand(message);
-  await sendCommand("QUIT");
-  conn.close();
-  if (!dataResult.startsWith("250")) throw new Error("Failed to send: " + dataResult);
+  await sendGmail({ to, subject, html: body, fromName: "Originee Orders" });
 }
 
 Deno.serve(async (req) => {
