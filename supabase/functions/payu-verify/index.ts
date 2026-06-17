@@ -48,7 +48,31 @@ serve(async (req) => {
     // txnid format: order_id
     const orderId = txnid;
 
-    if (isSuccess) {
+    // Cross-check that the amount PayU reports matches the stored order total.
+    // Prevents underpayment attacks even if the hash were generated for a smaller amount.
+    let amountMatches = true;
+    if (isSuccess && orderId) {
+      const { data: storedOrder } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (storedOrder) {
+        const paid = Number(amount);
+        const expected = Number(storedOrder.total_amount);
+        // Allow 1 paisa rounding tolerance
+        if (!Number.isFinite(paid) || Math.abs(paid - expected) > 0.01) {
+          console.error(`PayU amount mismatch for order ${orderId}: paid=${paid} expected=${expected}`);
+          amountMatches = false;
+        }
+      } else {
+        amountMatches = false;
+      }
+    }
+
+    const finalSuccess = isSuccess && amountMatches;
+
+    if (finalSuccess) {
       await supabase.from("orders").update({
         payment_status: "paid",
         payment_id: payuMoneyId,
