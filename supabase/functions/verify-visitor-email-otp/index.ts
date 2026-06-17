@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
         .single();
       if (insErr) throw insErr;
       visitor = data;
-      await notifyAdminNewVisitor(cleanName, cleanEmail, normalizedPhone);
+      
     }
 
     return new Response(JSON.stringify({ valid: true, visitor }), {
