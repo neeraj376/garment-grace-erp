@@ -147,7 +147,7 @@ async function createConsignment(orderId: string) {
   const totalQty = items.reduce((s: number, i: any) => s + (i.quantity || 0), 0);
   const weightKg = Math.max(0.5, totalQty * 0.4);
 
-  const apiKey = need("DTDC_API_KEY");
+  const apiKey = await getSoftdataToken();
   const customerCode = need("DTDC_CUSTOMER_CODE");
   const refNumber = `ORD${String(order.order_number || order.id).replace(/[^A-Z0-9]/gi, "").slice(0, 20)}`;
 
