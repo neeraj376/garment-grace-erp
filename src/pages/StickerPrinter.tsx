@@ -35,7 +35,7 @@ const STICKER_SIZES = {
   "50x40": { label: "50 × 40 mm (Hewlett H30C)", w: 50, h: 40 },
 };
 
-const PRINT_SAFE_INSET_MM = 3;
+const PRINT_SAFE_INSET_MM = 2;
 
 export default function StickerPrinter() {
   const { storeId } = useStore();
@@ -144,7 +144,12 @@ export default function StickerPrinter() {
     }
     const map: Record<string, string> = {};
     for (const p of items) {
-      map[p.id] = await QRCode.toDataURL(p.sku, { width: 360, margin: 2, errorCorrectionLevel: "M" });
+      map[p.id] = await QRCode.toDataURL(p.sku.trim(), {
+        width: 720,
+        margin: 4,
+        errorCorrectionLevel: "H",
+        color: { dark: "#000000", light: "#ffffff" },
+      });
     }
     setQrMap(map);
     setShowPreview(true);
@@ -164,9 +169,9 @@ export default function StickerPrinter() {
   }, [showPreview, products, selected]);
 
   const dims = STICKER_SIZES[size];
-  // Keep the QR inside the Hewlett H30C printable area; the first 2–3mm near
-  // the cutter/feed edge can get clipped on 50mm rolls.
-  const qrSize = Math.max(12, dims.h - 7);
+  // Keep the QR as large and high-contrast as possible for handheld scanners.
+  // Small thermal QR prints fail often, especially on 25mm-height labels.
+  const qrSize = Math.max(20, dims.h - 3);
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl">
@@ -301,8 +306,7 @@ export default function StickerPrinter() {
             <Button onClick={printNow}><Printer className="h-4 w-4 mr-2" /> Print</Button>
           </div>
           <p className="text-xs text-muted-foreground print:hidden">
-            In the browser print dialog, set paper size to <strong>{dims.w} × {dims.h} mm</strong> (custom)
-            and margins to <strong>None</strong>. Disable "Headers and footers" and "Fit to page".
+            In the browser print dialog, set paper size to <strong>{dims.w} × {dims.h} mm</strong> (custom), margins to <strong>None</strong>, scale to <strong>100%</strong>, and print quality/density to <strong>dark</strong>. Disable "Headers and footers" and "Fit to page".
           </p>
           <div className="print-area bg-white text-black p-4 border rounded-lg print:p-0 print:border-0">
             <div className="sticker-stack flex flex-col items-center gap-2 print:gap-0">
@@ -314,9 +318,9 @@ export default function StickerPrinter() {
                     width: `${dims.w}mm`,
                     height: `${dims.h}mm`,
                     border: '1px dashed #ccc',
-                    padding: `1.5mm ${PRINT_SAFE_INSET_MM}mm`,
+                    padding: `1mm ${PRINT_SAFE_INSET_MM}mm`,
                     display: 'flex',
-                    gap: '1.2mm',
+                    gap: '1mm',
                     overflow: 'hidden',
                     fontSize: '6.5pt',
                     lineHeight: 1.1,
@@ -329,7 +333,13 @@ export default function StickerPrinter() {
                     <img
                       src={qrMap[p.id]}
                       alt={p.sku}
-                      style={{ width: `${qrSize}mm`, height: `${qrSize}mm`, flexShrink: 0 }}
+                      style={{
+                        width: `${qrSize}mm`,
+                        height: `${qrSize}mm`,
+                        flexShrink: 0,
+                        background: '#fff',
+                        imageRendering: 'pixelated',
+                      }}
                     />
                   )}
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
