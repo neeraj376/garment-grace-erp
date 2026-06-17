@@ -11,6 +11,7 @@ interface QRScannerDialogProps {
 }
 
 const REGION_ID = "qr-scanner-region";
+const STICKER_QR_BOX_PX = 170;
 
 export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDialogProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -32,7 +33,15 @@ export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDial
         scannerRef.current = html5;
         await html5.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 240, height: 240 } },
+          {
+            fps: 15,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const edge = Math.min(STICKER_QR_BOX_PX, Math.floor(viewfinderWidth * 0.58), Math.floor(viewfinderHeight * 0.58));
+              return { width: edge, height: edge };
+            },
+            aspectRatio: 1,
+            disableFlip: false,
+          },
           (decodedText) => {
             onScan(decodedText.trim());
           },
@@ -59,7 +68,7 @@ export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDial
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Scan product QR</DialogTitle>
           <DialogDescription>Point your camera at the product QR sticker.</DialogDescription>
@@ -67,6 +76,7 @@ export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDial
 
         <div className="relative w-full aspect-square bg-black rounded-lg overflow-hidden">
           <div id={REGION_ID} className="w-full h-full" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[170px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-background/90 shadow-[0_0_0_999px_rgba(0,0,0,0.18)]" />
           {starting && (
             <div className="absolute inset-0 flex items-center justify-center text-white">
               <Loader2 className="h-6 w-6 animate-spin" />
