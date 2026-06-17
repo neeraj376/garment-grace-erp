@@ -92,7 +92,7 @@ export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDial
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Scan product QR</DialogTitle>
           <DialogDescription>Point your camera at the product QR sticker.</DialogDescription>
@@ -100,7 +100,8 @@ export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDial
 
         <div className="relative w-full aspect-square bg-black rounded-lg overflow-hidden">
           <div id={REGION_ID} className="w-full h-full" />
-          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[170px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-background/90 shadow-[0_0_0_999px_rgba(0,0,0,0.18)]" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[170px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-background/90 shadow-[0_0_0_999px_rgba(0,0,0,0.12)]" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[88px] w-[88px] -translate-x-1/2 -translate-y-1/2 rounded-sm border border-background/70" />
           {starting && (
             <div className="absolute inset-0 flex items-center justify-center text-white">
               <Loader2 className="h-6 w-6 animate-spin" />
