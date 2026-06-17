@@ -552,13 +552,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   }, [searchProduct, storeId]);
 
   const addToCart = (product: any) => {
-    const existing = cart.find(i => i.product_id === product.id);
-    if (existing) {
-      setCart(cart.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
-    } else {
+    setCart(prev => {
+      const existing = prev.find(i => i.product_id === product.id);
+      if (existing) {
+        return prev.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+
       const basePrice = Number(product.selling_price);
       const price = storefrontPricing ? Math.round(basePrice * STOREFRONT_MARKUP) : basePrice;
-      setCart([...cart, {
+      return [...prev, {
         product_id: product.id,
         name: product.name,
         sku: product.sku,
@@ -571,20 +573,20 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         subcategory: product.subcategory || undefined,
         color: product.color || undefined,
         size: product.size || undefined,
-      }]);
-    }
+      }];
+    });
     setSearchProduct("");
   };
 
   const lookupAndAddBySku = async (code: string) => {
-    const sku = code.trim();
+    const sku = extractScanCode(code);
     if (!sku || !storeId) return;
     const { data: match } = await supabase
       .from("products")
       .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
       .eq("store_id", storeId)
       .eq("is_active", true)
-      .eq("sku", sku)
+      .ilike("sku", sku)
       .maybeSingle();
     if (!match) {
       toast({ title: "No product found", description: sku, variant: "destructive" });
@@ -597,6 +599,23 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
     addToCart({ ...match, _stock: stock });
     toast({ title: "Added", description: match.name });
+  };
+
+  const submitDeviceScan = (rawValue: string, keepOpen = true) => {
+    const code = extractScanCode(rawValue);
+    if (!code) return;
+
+    const now = Date.now();
+    const last = lastDeviceScanRef.current;
+    if (last?.code === code && now - last.at < 700) {
+      setDeviceScannerValue("");
+      return;
+    }
+
+    lastDeviceScanRef.current = { code, at: now };
+    setDeviceScannerValue("");
+    lookupAndAddBySku(code);
+    if (keepOpen) setTimeout(() => deviceScannerInputRef.current?.focus(), 30);
   };
 
   // Global HID barcode scanner listener (Hellett HT410 Lite & similar USB/BT scanners).
