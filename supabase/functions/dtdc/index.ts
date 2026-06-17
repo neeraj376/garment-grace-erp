@@ -249,6 +249,14 @@ serve(async (req) => {
       case "track":
         result = await trackShipment(body.awb_no);
         break;
+      case "debug_auth": {
+        const username = need("DTDC_USERNAME");
+        const password = need("DTDC_PASSWORD");
+        const url = `${SOFTDATA_BASE}/api/dtdc/authenticate?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+        const r = await fetch(url, { method: "GET" });
+        result = { status: r.status, body: await r.text(), envApiKeyLen: (Deno.env.get("DTDC_API_KEY") || "").length };
+        break;
+      }
       default:
         throw new Error(`Unknown action: ${action}`);
     }
