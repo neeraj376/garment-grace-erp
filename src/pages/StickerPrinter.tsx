@@ -319,9 +319,9 @@ export default function StickerPrinter() {
                     width: `${dims.w}mm`,
                     height: `${dims.h}mm`,
                     border: '1px dashed #ccc',
-                    padding: `1.5mm ${PRINT_SAFE_INSET_MM}mm`,
+                    padding: `1mm ${PRINT_SAFE_INSET_MM}mm`,
                     display: 'flex',
-                    gap: '1.2mm',
+                    gap: '1mm',
                     overflow: 'hidden',
                     fontSize: '6.5pt',
                     lineHeight: 1.1,
@@ -334,7 +334,13 @@ export default function StickerPrinter() {
                     <img
                       src={qrMap[p.id]}
                       alt={p.sku}
-                      style={{ width: `${qrSize}mm`, height: `${qrSize}mm`, flexShrink: 0 }}
+                      style={{
+                        width: `${qrSize}mm`,
+                        height: `${qrSize}mm`,
+                        flexShrink: 0,
+                        background: '#fff',
+                        imageRendering: 'pixelated',
+                      }}
                     />
                   )}
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
