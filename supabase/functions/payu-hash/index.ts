@@ -15,6 +15,17 @@ serve(async (req) => {
   }
 
   try {
+    // Internal-only: hash generation must not be callable by the public, otherwise an
+    // attacker could craft a valid hash for an arbitrary (under-)amount and pay almost nothing.
+    // The guest-checkout function already computes hashes server-side from the stored order total.
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || "";
+    if (authHeader.replace(/^Bearer\s+/i, "") !== serviceKey) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { txnid, amount, productinfo, firstname, email, phone, surl, furl } = await req.json();
 
     const key = Deno.env.get("PAYU_MERCHANT_KEY")!;

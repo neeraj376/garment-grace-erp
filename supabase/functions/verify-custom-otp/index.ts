@@ -74,15 +74,29 @@ Deno.serve(async (req) => {
       .update({ used: true })
       .eq("id", otpRecords[0].id);
 
-    // For OTP-only employee accounts, return the internal password so the
-    // client can complete signInWithPassword. Email-control was just proven
-    // by the OTP, so this is a safe handoff for accounts the user does not
-    // know the password for.
+    // For OTP-only employee accounts, perform signInWithPassword server-side
+    // and return a Supabase session — never expose the raw password to the client.
     const { data: empAuth } = await supabaseAdmin
       .from("employee_auth_passwords")
       .select("password")
       .eq("email", normalizedEmail)
       .maybeSingle();
+
+    let session: { access_token: string; refresh_token: string } | null = null;
+    if (empAuth?.password) {
+      const { data: signIn, error: signInErr } = await supabaseAdmin.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: empAuth.password,
+      });
+      if (signInErr) {
+        console.error("OTP-only signIn failed:", signInErr);
+      } else if (signIn?.session) {
+        session = {
+          access_token: signIn.session.access_token,
+          refresh_token: signIn.session.refresh_token,
+        };
+      }
+    }
 
     return new Response(
       JSON.stringify({
@@ -90,7 +104,7 @@ Deno.serve(async (req) => {
         email,
         storeId,
         otpOnly: !!empAuth,
-        otpOnlyPassword: empAuth?.password ?? null,
+        session,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
