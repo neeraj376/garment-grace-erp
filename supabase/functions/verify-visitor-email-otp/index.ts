@@ -14,56 +14,6 @@ function normalizePhone(raw: string): string | null {
   return digits;
 }
 
-async function notifyAdminNewVisitor(name: string, email: string, phone: string | null): Promise<void> {
-  try {
-    const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
-    if (!rawPassword) return;
-    const password = rawPassword.replace(/\s/g, "");
-    const from = "originee.store@gmail.com";
-    const to = "originee.store@gmail.com";
-    const subject = `New shop visitor: ${name}`;
-    const when = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-    const body = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#222">
-      <h2 style="color:#1a1a2e">New visitor registered</h2>
-      <table style="border-collapse:collapse;font-size:14px">
-        <tr><td style="padding:6px 12px;color:#666">Name</td><td style="padding:6px 12px"><b>${name}</b></td></tr>
-        <tr><td style="padding:6px 12px;color:#666">Email</td><td style="padding:6px 12px">${email}</td></tr>
-        <tr><td style="padding:6px 12px;color:#666">Mobile</td><td style="padding:6px 12px">${phone ? "+" + phone : "—"}</td></tr>
-        <tr><td style="padding:6px 12px;color:#666">Time (IST)</td><td style="padding:6px 12px">${when}</td></tr>
-      </table>
-    </div>`;
-
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const conn = await Deno.connectTls({ hostname: "smtp.gmail.com", port: 465 });
-    const read = async () => { const b = new Uint8Array(1024); const n = await conn.read(b); return decoder.decode(b.subarray(0, n || 0)); };
-    const cmd = async (c: string) => { await conn.write(encoder.encode(c + "\r\n")); return await read(); };
-    await read();
-    await cmd("EHLO localhost");
-    await cmd("AUTH LOGIN");
-    await cmd(btoa(from));
-    const auth = await cmd(btoa(password));
-    if (!auth.startsWith("235")) { conn.close(); return; }
-    await cmd(`MAIL FROM:<${from}>`);
-    await cmd(`RCPT TO:<${to}>`);
-    await cmd("DATA");
-    const msg = [
-      `From: Originee Alerts <${from}>`,
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      `MIME-Version: 1.0`,
-      `Content-Type: text/html; charset=UTF-8`,
-      ``,
-      body,
-      `.`,
-    ].join("\r\n");
-    await cmd(msg);
-    await cmd("QUIT");
-    conn.close();
-  } catch (e) {
-    console.error("notifyAdminNewVisitor error:", e);
-  }
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -141,7 +91,7 @@ Deno.serve(async (req) => {
         .single();
       if (insErr) throw insErr;
       visitor = data;
-      await notifyAdminNewVisitor(cleanName, cleanEmail, normalizedPhone);
+      
     }
 
     return new Response(JSON.stringify({ valid: true, visitor }), {
