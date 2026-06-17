@@ -10,7 +10,7 @@ import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
-// Shipping powered by DTDC edge function (dtdc, action: "rate")
+import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
@@ -77,17 +77,16 @@ export default function ShopCheckout() {
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
 
-  // Recompute Nimbuspost shipping whenever pincode or cart changes
+  // Recompute DTDC shipping locally based on state + weight + invoice value
   useEffect(() => {
     const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
-    if (!pincodeValid) {
+    if (!pincodeValid || !form.state) {
       setServiceable(null);
       setSelectedCourier(null);
       setShippingCost(0);
       return;
     }
 
-    // Weight: 400g per item, 0.5kg minimum
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
     const billableKg = Math.max(0.5, totalQuantity * 0.4);
     const invoiceValue = items.reduce(
@@ -95,43 +94,11 @@ export default function ShopCheckout() {
       0
     );
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("dtdc", {
-          body: {
-            action: "rate",
-            destination_pincode: form.pincode,
-            weight_kg: billableKg,
-            invoice_value: invoiceValue,
-            payment_type: "prepaid",
-          },
-        });
-        if (cancelled) return;
-        if (error || !data?.serviceable || !data?.cost) {
-          setServiceable(false);
-          setSelectedCourier(null);
-          setShippingCost(0);
-          return;
-        }
-        setServiceable(true);
-        setShippingCost(Math.round(data.cost));
-        setSelectedCourier({
-          courier_name: "DTDC",
-          rate: Math.round(data.cost),
-        });
-      } catch {
-        if (!cancelled) {
-          setServiceable(false);
-          setSelectedCourier(null);
-          setShippingCost(0);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [form.pincode, items]);
+    const { cost } = calculateDtdcShipping(form.state, billableKg, invoiceValue);
+    setServiceable(true);
+    setShippingCost(cost);
+    setSelectedCourier({ courier_name: "DTDC", rate: cost });
+  }, [form.pincode, form.state, items]);
 
 
 
