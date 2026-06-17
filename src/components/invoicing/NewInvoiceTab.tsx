@@ -593,6 +593,62 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title: "Added", description: match.name });
   };
 
+  // Global HID barcode scanner listener (Hellett HT410 Lite & similar USB/BT scanners).
+  // Scanners emit keystrokes very fast (<30ms apart) followed by Enter. We capture them
+  // even when the search input is not focused, so the user can scan from anywhere on the page.
+  useEffect(() => {
+    let buffer = "";
+    let lastTime = 0;
+    const SCAN_CHAR_GAP_MS = 35; // human typing is far slower than this
+    const MIN_SCAN_LENGTH = 3;
+
+    const isTypingTarget = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      if (!node) return false;
+      const tag = node.tagName;
+      if (tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (tag === "INPUT") {
+        // Allow scanner to drive the product search input itself
+        if (node === searchInputRef.current) return false;
+        return true;
+      }
+      if ((node as any).isContentEditable) return true;
+      return false;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      const now = performance.now();
+      const gap = now - lastTime;
+      lastTime = now;
+
+      if (e.key === "Enter") {
+        const code = buffer.trim();
+        buffer = "";
+        if (code.length >= MIN_SCAN_LENGTH) {
+          e.preventDefault();
+          setSearchProduct("");
+          lookupAndAddBySku(code);
+        }
+        return;
+      }
+
+      // Reset buffer if too slow (human typing)
+      if (gap > SCAN_CHAR_GAP_MS) buffer = "";
+
+      if (e.key.length === 1) {
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [storeId]);
+
+
+
   const getLineTotal = (item: CartItem) => {
     const gross = item.unit_price * item.quantity;
     return gross - item.item_discount;
