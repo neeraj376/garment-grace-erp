@@ -70,3 +70,6 @@ verify_jwt = false
 [functions.razorpay-reconcile]
 verify_jwt = false
 
+[functions.nimbuspost-rates]
+verify_jwt = false
+
