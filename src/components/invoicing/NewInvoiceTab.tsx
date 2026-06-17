@@ -105,9 +105,19 @@ function clearDraft() {
 }
 
 function extractScanCode(value: string) {
-  const normalized = value.trim().replace(/^https?:\/\/[^?#]+[?#]?/i, "");
-  const match = normalized.match(/(?:sku|code|barcode|qr)=([^&\s]+)/i);
-  return decodeURIComponent(match?.[1] ?? normalized).trim();
+  const raw = value.trim();
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw);
+    const param = url.searchParams.get("sku") || url.searchParams.get("code") || url.searchParams.get("barcode") || url.searchParams.get("qr");
+    if (param) return param.trim();
+    const lastPathPart = url.pathname.split("/").filter(Boolean).pop();
+    if (lastPathPart) return decodeURIComponent(lastPathPart).trim();
+  } catch {}
+
+  const match = raw.match(/(?:sku|code|barcode|qr)=([^&\s]+)/i);
+  return decodeURIComponent(match?.[1] ?? raw).trim();
 }
 
 export default function NewInvoiceTab({ storeId, userId }: Props) {
