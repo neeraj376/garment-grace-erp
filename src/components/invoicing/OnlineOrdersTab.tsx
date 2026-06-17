@@ -690,7 +690,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                     setEditCourier("DTDC");
                     setEditAwb(data.awb_no);
                     toast.success(`DTDC AWB created: ${data.awb_no}`);
-                    qc.invalidateQueries({ queryKey: ["online-orders"] });
+                    queryClient.invalidateQueries({ queryKey: ["online-orders"] });
                   } catch (e: any) {
                     toast.error(`DTDC: ${e.message || "Failed to create shipment"}`);
                   } finally {
