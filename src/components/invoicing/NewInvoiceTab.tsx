@@ -812,6 +812,49 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const sessionOk = await ensureFreshSession();
       if (!sessionOk) { setCreatingInvoice(false); return; }
 
+      // Safeguard: prevent duplicate deduction for paid website orders.
+      // If source=online and this customer's phone matches a paid website order in the
+      // last 14 days containing any of the same products, warn before creating an invoice
+      // — razorpay-verify / payu-verify already deducted stock for that order.
+      if (source === "online" && customerMobile && cart.length > 0) {
+        const last10 = customerMobile.replace(/\D/g, "").slice(-10);
+        if (last10.length === 10) {
+          const cartProductIds = cart.map(i => i.product_id).filter(Boolean);
+          const sinceIso = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString();
+          const { data: recentOrders } = await supabase
+            .from("orders")
+            .select("order_number, created_at, shop_customers!inner(phone), order_items!inner(product_id, quantity)")
+            .eq("payment_status", "paid")
+            .gte("created_at", sinceIso)
+            .in("order_items.product_id", cartProductIds);
+          const dup = (recentOrders || []).find((o: any) => {
+            const phone = (o.shop_customers?.phone || "").replace(/\D/g, "").slice(-10);
+            return phone === last10;
+          });
+          if (dup) {
+            const overlap = (dup.order_items || [])
+              .filter((oi: any) => cartProductIds.includes(oi.product_id))
+              .map((oi: any) => {
+                const c = cart.find(x => x.product_id === oi.product_id);
+                return `${c?.name || oi.product_id} (qty ${oi.quantity})`;
+              })
+              .join(", ");
+            const proceed = window.confirm(
+              `⚠️ Possible DUPLICATE invoice.\n\n` +
+              `Customer ${customerMobile} already has a paid website order ${dup.order_number} ` +
+              `(${new Date(dup.created_at).toLocaleDateString()}) containing: ${overlap}.\n\n` +
+              `Stock for that order was ALREADY deducted automatically when payment was verified.\n` +
+              `Creating this invoice will deduct stock a SECOND time.\n\n` +
+              `Click OK only if this is a genuinely separate order. Cancel to abort.`
+            );
+            if (!proceed) {
+              setCreatingInvoice(false);
+              return;
+            }
+          }
+        }
+      }
+
       let customerId: string | null = null;
       if (customerMobile) {
         const { data: existing } = await supabase
