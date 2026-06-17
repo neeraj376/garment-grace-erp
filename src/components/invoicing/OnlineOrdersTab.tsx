@@ -70,6 +70,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [editStatus, setEditStatus] = useState("");
   const [editAwb, setEditAwb] = useState("");
+  const [dtdcBusy, setDtdcBusy] = useState<"create" | "track" | null>(null);
   const [editCourier, setEditCourier] = useState("");
   const [saving, setSaving] = useState(false);
   const [resending, setResending] = useState<"wa" | "email" | null>(null);
