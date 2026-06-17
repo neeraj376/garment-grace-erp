@@ -219,7 +219,7 @@ async function createConsignment(orderId: string) {
 }
 
 async function trackShipment(awbNo: string) {
-  const apiKey = need("DTDC_API_KEY");
+  const apiKey = await getSoftdataToken();
   const res = await fetch(`${SOFTDATA_BASE}/rest/JSONCnTrk/getTrackDetails`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "api-key": apiKey },
