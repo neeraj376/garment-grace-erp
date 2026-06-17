@@ -33,8 +33,34 @@ async function getRateToken(): Promise<string> {
   return token;
 }
 
+// Softdata token (api-key header value) — obtain by authenticating with username/password.
+// DTDC issues a per-session JWT that must be passed in the `api-key` header.
+let softdataToken: { token: string; exp: number } | null = null;
+async function getSoftdataToken(): Promise<string> {
+  if (softdataToken && softdataToken.exp > Date.now()) return softdataToken.token;
+  const username = need("DTDC_USERNAME");
+  const password = need("DTDC_PASSWORD");
+  const url = `${SOFTDATA_BASE}/api/dtdc/authenticate?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+  const res = await fetch(url, { method: "GET" });
+  const text = (await res.text()).trim();
+  let token = text;
+  if (token.startsWith("{")) {
+    try {
+      const j = JSON.parse(token);
+      token = j?.token || j?.access_token || j?.data?.token || "";
+    } catch { /* keep raw */ }
+  }
+  if (!token || /not authorized|unauthorized/i.test(token)) {
+    const fallback = Deno.env.get("DTDC_API_KEY");
+    if (fallback) return fallback;
+    throw new Error(`DTDC softdata authenticate failed: ${text}`);
+  }
+  softdataToken = { token, exp: Date.now() + 1000 * 60 * 60 * 6 };
+  return token;
+}
+
 async function checkServiceability(pincode: string) {
-  const apiKey = need("DTDC_API_KEY");
+  const apiKey = await getSoftdataToken();
   const res = await fetch(`${SOFTDATA_BASE}/rest/JSONCnTrk/pinCodeServiceable`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "api-key": apiKey },
@@ -121,7 +147,7 @@ async function createConsignment(orderId: string) {
   const totalQty = items.reduce((s: number, i: any) => s + (i.quantity || 0), 0);
   const weightKg = Math.max(0.5, totalQty * 0.4);
 
-  const apiKey = need("DTDC_API_KEY");
+  const apiKey = await getSoftdataToken();
   const customerCode = need("DTDC_CUSTOMER_CODE");
   const refNumber = `ORD${String(order.order_number || order.id).replace(/[^A-Z0-9]/gi, "").slice(0, 20)}`;
 
@@ -193,7 +219,7 @@ async function createConsignment(orderId: string) {
 }
 
 async function trackShipment(awbNo: string) {
-  const apiKey = need("DTDC_API_KEY");
+  const apiKey = await getSoftdataToken();
   const res = await fetch(`${SOFTDATA_BASE}/rest/JSONCnTrk/getTrackDetails`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "api-key": apiKey },
@@ -223,6 +249,14 @@ serve(async (req) => {
       case "track":
         result = await trackShipment(body.awb_no);
         break;
+      case "debug_auth": {
+        const username = need("DTDC_USERNAME");
+        const password = need("DTDC_PASSWORD");
+        const url = `${SOFTDATA_BASE}/api/dtdc/authenticate?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+        const r = await fetch(url, { method: "GET" });
+        result = { status: r.status, body: await r.text(), envApiKeyLen: (Deno.env.get("DTDC_API_KEY") || "").length };
+        break;
+      }
       default:
         throw new Error(`Unknown action: ${action}`);
     }
