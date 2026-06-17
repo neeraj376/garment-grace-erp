@@ -327,7 +327,7 @@ export default function ShopCheckout() {
                     maxLength={6}
                     placeholder="110001"
                   />
-                  {form.pincode.length === 6 && form.state && serviceable && (
+                  {form.pincode.length === 6 && serviceable && (
                     <div className="mt-1 flex items-center gap-1 text-xs">
                       <CheckCircle className="h-3 w-3 text-green-600" />
                       <span className="text-green-600">Delivery available</span>
