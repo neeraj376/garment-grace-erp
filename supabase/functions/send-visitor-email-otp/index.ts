@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendGmail } from "../_shared/gmail-smtp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,61 +12,14 @@ function generateOtp(): string {
   return String(a[0] % 1000000).padStart(6, "0");
 }
 
-async function sendEmailViaSMTP(to: string, code: string): Promise<void> {
-  const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
-  if (!rawPassword) throw new Error("GMAIL_APP_PASSWORD not configured");
-  const password = rawPassword.replace(/\s/g, "");
-
-  const from = "originee.store@gmail.com";
-  const subject = "Your Originee Verification Code";
-  const body = `Your one-time verification code is: ${code}\n\nThis code expires in 5 minutes. Do not share it with anyone.`;
-
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  const conn = await Deno.connectTls({ hostname: "smtp.gmail.com", port: 465 });
-
-  async function readResponse(): Promise<string> {
-    const buf = new Uint8Array(1024);
-    const n = await conn.read(buf);
-    return decoder.decode(buf.subarray(0, n || 0));
-  }
-  async function sendCommand(cmd: string): Promise<string> {
-    await conn.write(encoder.encode(cmd + "\r\n"));
-    return await readResponse();
-  }
-
-  await readResponse();
-  await sendCommand("EHLO localhost");
-  await sendCommand("AUTH LOGIN");
-  await sendCommand(btoa(from));
-  const authResult = await sendCommand(btoa(password));
-  if (!authResult.startsWith("235")) {
-    conn.close();
-    throw new Error("SMTP authentication failed");
-  }
-
-  await sendCommand(`MAIL FROM:<${from}>`);
-  await sendCommand(`RCPT TO:<${to}>`);
-  await sendCommand("DATA");
-
-  const message = [
-    `From: Originee <${from}>`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/plain; charset=UTF-8`,
-    ``,
-    body,
-    `.`,
-  ].join("\r\n");
-
-  const dataResult = await sendCommand(message);
-  await sendCommand("QUIT");
-  conn.close();
-
-  if (!dataResult.startsWith("250")) {
-    throw new Error("Failed to send email: " + dataResult);
-  }
+function otpEmailHtml(code: string): string {
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f6f7fb;font-family:Arial,Helvetica,sans-serif;color:#111">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px">
+    <h2 style="margin:0 0 8px 0;color:#0f172a">Your Originee verification code</h2>
+    <p style="margin:0 0 16px 0;color:#475569">Use the code below to verify your email. It expires in 5 minutes.</p>
+    <div style="font-size:32px;font-weight:700;letter-spacing:8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:14px 0;text-align:center;color:#0f172a">${code}</div>
+    <p style="margin:16px 0 0 0;color:#94a3b8;font-size:12px">If you didn't request this, you can ignore this email.</p>
+  </div></body></html>`;
 }
 
 Deno.serve(async (req) => {
@@ -106,7 +60,16 @@ Deno.serve(async (req) => {
       .insert({ email: cleanEmail, code, expires_at: expiresAt });
     if (insErr) throw insErr;
 
-    await sendEmailViaSMTP(cleanEmail, code);
+    try {
+      await sendGmail({
+        to: cleanEmail,
+        subject: "Your Originee Verification Code",
+        html: otpEmailHtml(code),
+      });
+    } catch (mailErr: any) {
+      console.error("Gmail SMTP send failed:", mailErr?.message || mailErr);
+      throw new Error("Could not send verification email. Please try again in a minute.");
+    }
 
     return new Response(JSON.stringify({ success: true, email: cleanEmail }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
