@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { calculateDtdcShipping } from "@/lib/dtdcRates";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
-const DEFAULT_COURIER = "DTDC";
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
