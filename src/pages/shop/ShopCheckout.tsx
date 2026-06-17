@@ -77,33 +77,60 @@ export default function ShopCheckout() {
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
 
-  // Recompute DTDC shipping whenever state, pincode, or cart changes
+  // Recompute Nimbuspost shipping whenever pincode or cart changes
   useEffect(() => {
     const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
-    if (!pincodeValid || !form.state) {
+    if (!pincodeValid) {
       setServiceable(null);
       setSelectedCourier(null);
       setShippingCost(0);
       return;
     }
 
-    // Weight: 400g per item, 0.5kg minimum (DTDC Exp. slabs of 0.5kg)
+    // Weight: 400g per item, 0.5kg minimum
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
     const billableKg = Math.max(0.5, totalQuantity * 0.4);
-
     const invoiceValue = items.reduce(
       (sum, item) => sum + (item.product?.selling_price ?? 0) * item.quantity,
       0
     );
 
-    const { cost, zone } = calculateDtdcShipping(form.state, billableKg, invoiceValue);
-    setServiceable(true);
-    setShippingCost(cost);
-    setSelectedCourier({
-      courier_name: `${DEFAULT_COURIER} Express (${zone})`,
-      rate: cost,
-    });
-  }, [form.pincode, form.state, items]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("nimbuspost-rates", {
+          body: {
+            destination_pincode: form.pincode,
+            weight_kg: billableKg,
+            invoice_value: invoiceValue,
+            payment_type: "prepaid",
+          },
+        });
+        if (cancelled) return;
+        if (error || !data?.serviceable || !data?.cheapest) {
+          setServiceable(false);
+          setSelectedCourier(null);
+          setShippingCost(0);
+          return;
+        }
+        setServiceable(true);
+        setShippingCost(Math.round(data.cheapest.rate));
+        setSelectedCourier({
+          courier_name: data.cheapest.courier_name,
+          rate: Math.round(data.cheapest.rate),
+        });
+      } catch {
+        if (!cancelled) {
+          setServiceable(false);
+          setSelectedCourier(null);
+          setShippingCost(0);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [form.pincode, items]);
 
 
 
