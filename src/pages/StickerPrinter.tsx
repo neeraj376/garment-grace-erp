@@ -35,7 +35,7 @@ const STICKER_SIZES = {
   "50x40": { label: "50 × 40 mm (Hewlett H30C)", w: 50, h: 40 },
 };
 
-const PRINT_SAFE_INSET_MM = 3;
+const PRINT_SAFE_INSET_MM = 2;
 
 export default function StickerPrinter() {
   const { storeId } = useStore();
@@ -144,7 +144,12 @@ export default function StickerPrinter() {
     }
     const map: Record<string, string> = {};
     for (const p of items) {
-      map[p.id] = await QRCode.toDataURL(p.sku, { width: 360, margin: 2, errorCorrectionLevel: "M" });
+      map[p.id] = await QRCode.toDataURL(p.sku.trim(), {
+        width: 720,
+        margin: 4,
+        errorCorrectionLevel: "H",
+        color: { dark: "#000000", light: "#ffffff" },
+      });
     }
     setQrMap(map);
     setShowPreview(true);
@@ -164,9 +169,9 @@ export default function StickerPrinter() {
   }, [showPreview, products, selected]);
 
   const dims = STICKER_SIZES[size];
-  // Keep the QR inside the Hewlett H30C printable area; the first 2–3mm near
-  // the cutter/feed edge can get clipped on 50mm rolls.
-  const qrSize = Math.max(12, dims.h - 7);
+  // Keep the QR as large and high-contrast as possible for handheld scanners.
+  // Small thermal QR prints fail often, especially on 25mm-height labels.
+  const qrSize = Math.max(20, dims.h - 3);
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl">
