@@ -1,5 +1,4 @@
-// Robust Gmail SMTP sender using denomailer.
-// Handles multi-line SMTP responses and TLS close cleanly (unlike our hand-rolled raw socket impl).
+// Robust Gmail SMTP sender using denomailer with STARTTLS on port 587.
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 export interface SendOpts {
@@ -25,6 +24,8 @@ export async function sendGmail(opts: SendOpts): Promise<void> {
       tls: true,
       auth: { username: fromAddress, password },
     },
+    pool: false,
+    debug: { log: false, allowUnsecure: false, encodeLB: true, noStartTLS: false },
   });
 
   try {
@@ -33,6 +34,7 @@ export async function sendGmail(opts: SendOpts): Promise<void> {
       to: opts.to,
       bcc: opts.bcc && opts.bcc.length ? opts.bcc : undefined,
       subject: opts.subject,
+      content: "Order details in HTML.",
       html: opts.html,
     });
   } finally {
