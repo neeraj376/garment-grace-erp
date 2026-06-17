@@ -124,7 +124,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanSourceOpen, setScanSourceOpen] = useState(false);
+  const [deviceScannerOpen, setDeviceScannerOpen] = useState(false);
+  const [deviceScannerValue, setDeviceScannerValue] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const deviceScannerInputRef = useRef<HTMLInputElement>(null);
+  const deviceScannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDeviceScanRef = useRef<{ code: string; at: number } | null>(null);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
