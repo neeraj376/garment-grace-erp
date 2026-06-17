@@ -70,6 +70,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [invoiceOrder, setInvoiceOrder] = useState<any>(null);
   const [editStatus, setEditStatus] = useState("");
   const [editAwb, setEditAwb] = useState("");
+  const [dtdcBusy, setDtdcBusy] = useState<"create" | "track" | null>(null);
   const [editCourier, setEditCourier] = useState("");
   const [saving, setSaving] = useState(false);
   const [resending, setResending] = useState<"wa" | "email" | null>(null);
@@ -673,10 +674,71 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 placeholder="Enter AWB or tracking number"
               />
             </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                disabled={dtdcBusy !== null || !editingOrder?.id}
+                onClick={async () => {
+                  if (!editingOrder?.id) return;
+                  setDtdcBusy("create");
+                  try {
+                    const { data, error } = await supabase.functions.invoke("dtdc", {
+                      body: { action: "create_consignment", order_id: editingOrder.id },
+                    });
+                    if (error || data?.error) throw new Error(data?.error || error?.message);
+                    setEditCourier("DTDC");
+                    setEditAwb(data.awb_no);
+                    toast.success(`DTDC AWB created: ${data.awb_no}`);
+                    queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+                  } catch (e: any) {
+                    toast.error(`DTDC: ${e.message || "Failed to create shipment"}`);
+                  } finally {
+                    setDtdcBusy(null);
+                  }
+                }}
+                className="gap-1.5"
+              >
+                {dtdcBusy === "create" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                Create DTDC Shipment
+              </Button>
+              {(editAwb || editingOrder?.tracking_number) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={dtdcBusy !== null}
+                  onClick={async () => {
+                    const awb = (editAwb || editingOrder?.tracking_number || "").trim();
+                    if (!awb) return;
+                    setDtdcBusy("track");
+                    try {
+                      const { data, error } = await supabase.functions.invoke("dtdc", {
+                        body: { action: "track", awb_no: awb },
+                      });
+                      if (error || data?.error) throw new Error(data?.error || error?.message);
+                      toast.success(`DTDC status: ${data.status}`, {
+                        description: `${(data.scans || []).length} scan(s) recorded`,
+                      });
+                    } catch (e: any) {
+                      toast.error(`DTDC: ${e.message || "Tracking failed"}`);
+                    } finally {
+                      setDtdcBusy(null);
+                    }
+                  }}
+                  className="gap-1.5"
+                >
+                  {dtdcBusy === "track" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Track DTDC
+                </Button>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               When both Courier and AWB are filled (or changed), a WhatsApp tracking
               update is sent automatically to the customer.
             </p>
+
 
             {(editingOrder?.tracking_number || editingOrder?.courier_name || (editAwb && editCourier)) && (
               <div className="border-t pt-3 space-y-2">

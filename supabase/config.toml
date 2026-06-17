@@ -73,3 +73,6 @@ verify_jwt = false
 [functions.nimbuspost-rates]
 verify_jwt = false
 
+[functions.dtdc]
+verify_jwt = false
+

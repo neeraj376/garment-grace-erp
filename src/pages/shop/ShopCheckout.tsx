@@ -10,7 +10,7 @@ import { CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
-// Shipping now powered by Nimbuspost edge function (nimbuspost-rates)
+// Shipping powered by DTDC edge function (dtdc, action: "rate")
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 
@@ -98,8 +98,9 @@ export default function ShopCheckout() {
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("nimbuspost-rates", {
+        const { data, error } = await supabase.functions.invoke("dtdc", {
           body: {
+            action: "rate",
             destination_pincode: form.pincode,
             weight_kg: billableKg,
             invoice_value: invoiceValue,
@@ -107,17 +108,17 @@ export default function ShopCheckout() {
           },
         });
         if (cancelled) return;
-        if (error || !data?.serviceable || !data?.cheapest) {
+        if (error || !data?.serviceable || !data?.cost) {
           setServiceable(false);
           setSelectedCourier(null);
           setShippingCost(0);
           return;
         }
         setServiceable(true);
-        setShippingCost(Math.round(data.cheapest.rate));
+        setShippingCost(Math.round(data.cost));
         setSelectedCourier({
-          courier_name: data.cheapest.courier_name,
-          rate: Math.round(data.cheapest.rate),
+          courier_name: "DTDC",
+          rate: Math.round(data.cost),
         });
       } catch {
         if (!cancelled) {
