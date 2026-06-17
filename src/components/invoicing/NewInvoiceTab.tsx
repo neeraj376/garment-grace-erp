@@ -836,7 +836,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               .filter((oi: any) => cartProductIds.includes(oi.product_id))
               .map((oi: any) => {
                 const c = cart.find(x => x.product_id === oi.product_id);
-                return `${c?.product_name || oi.product_id} (qty ${oi.quantity})`;
+                return `${c?.name || oi.product_id} (qty ${oi.quantity})`;
               })
               .join(", ");
             const proceed = window.confirm(
