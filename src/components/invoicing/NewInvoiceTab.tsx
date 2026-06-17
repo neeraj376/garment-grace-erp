@@ -104,6 +104,12 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
+function extractScanCode(value: string) {
+  const normalized = value.trim().replace(/^https?:\/\/[^?#]+[?#]?/i, "");
+  const match = normalized.match(/(?:sku|code|barcode|qr)=([^&\s]+)/i);
+  return decodeURIComponent(match?.[1] ?? normalized).trim();
+}
+
 export default function NewInvoiceTab({ storeId, userId }: Props) {
   const { toast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
