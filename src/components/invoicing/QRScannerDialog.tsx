@@ -41,7 +41,6 @@ export default function QRScannerDialog({ open, onClose, onScan }: QRScannerDial
             },
             aspectRatio: 1,
             disableFlip: false,
-            experimentalFeatures: { useBarCodeDetectorIfSupported: true },
           },
           (decodedText) => {
             onScan(decodedText.trim());
