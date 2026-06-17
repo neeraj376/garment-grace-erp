@@ -121,19 +121,26 @@ export default function Auth() {
         throw new Error(verifyData?.error || verifyError?.message || "Invalid OTP");
       }
 
-      // OTP-only users get their internal password from the verify response.
-      const effectivePassword: string =
-        verifyData?.otpOnly && verifyData?.otpOnlyPassword
-          ? verifyData.otpOnlyPassword
-          : password;
+      let signedInUser: any = null;
 
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: effectivePassword,
-      });
-      if (signInError) throw signInError;
+      if (verifyData?.otpOnly && verifyData?.session?.access_token && verifyData?.session?.refresh_token) {
+        // OTP-only account: server has already signed in and returned tokens — restore session.
+        const { data: setData, error: setErr } = await supabase.auth.setSession({
+          access_token: verifyData.session.access_token,
+          refresh_token: verifyData.session.refresh_token,
+        });
+        if (setErr) throw setErr;
+        signedInUser = setData.user;
+      } else {
+        // Regular account: user typed their own password; sign in normally.
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        signedInUser = signInData.user;
+      }
 
-      const signedInUser = signInData.user;
       if (!signedInUser) throw new Error("Could not restore your session");
 
       const nextStoreId = typeof verifyData?.storeId === "string" ? verifyData.storeId : null;
