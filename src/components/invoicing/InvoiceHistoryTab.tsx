@@ -166,14 +166,26 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     fetchInvoices();
   }, [storeId]);
 
+  const paymentMethods = Array.from(new Set(invoices.map(i => i.payment_method).filter(Boolean))).sort();
+
   const filtered = invoices.filter(inv => {
     const matchesSearch =
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
       inv.customers?.name?.toLowerCase().includes(search.toLowerCase()) ||
       inv.customers?.mobile?.includes(search);
     const matchesNoteFilter = !filterNotes || (inv.notes && inv.notes.trim().length > 0);
-    return matchesSearch && matchesNoteFilter;
+    const matchesSource = sourceFilter === "all" || inv.source === sourceFilter;
+    const matchesPayment = paymentFilter === "all" || inv.payment_method === paymentFilter;
+    const created = new Date(inv.created_at);
+    const matchesFrom = !dateFrom || created >= new Date(dateFrom + "T00:00:00");
+    const matchesTo = !dateTo || created <= new Date(dateTo + "T23:59:59");
+    return matchesSearch && matchesNoteFilter && matchesSource && matchesPayment && matchesFrom && matchesTo;
   });
+
+  const hasActiveFilters = !!(dateFrom || dateTo || sourceFilter !== "all" || paymentFilter !== "all" || filterNotes || search);
+  const clearFilters = () => {
+    setSearch(""); setDateFrom(""); setDateTo(""); setSourceFilter("all"); setPaymentFilter("all"); setFilterNotes(false);
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
