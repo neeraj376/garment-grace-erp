@@ -119,6 +119,31 @@ function extractScanCode(value: string) {
   return decodeURIComponent(match?.[1] ?? raw).trim();
 }
 
+function getSkuLookupCandidates(code: string) {
+  const cleaned = code.trim();
+  const candidates = new Set<string>();
+  if (!cleaned) return [];
+
+  candidates.add(cleaned);
+
+  if (/^KU-/i.test(cleaned)) {
+    candidates.add(cleaned.replace(/^KU-/i, "SKU-"));
+  }
+
+  if (/^SKU-/i.test(cleaned)) {
+    candidates.add(cleaned.replace(/^SKU-/i, "KU-"));
+  }
+
+  const digits = cleaned.match(/\d{8,}/)?.[0];
+  if (digits) {
+    candidates.add(digits);
+    candidates.add(`SKU-${digits}`);
+    candidates.add(`KU-${digits}`);
+  }
+
+  return [...candidates];
+}
+
 export default function NewInvoiceTab({ storeId, userId }: Props) {
   const { toast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
@@ -589,30 +614,36 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const lookupAndAddBySku = async (code: string) => {
     const sku = extractScanCode(code);
     if (!sku || !storeId) return;
-    console.log("[scan lookup] raw=", JSON.stringify(code), "sku=", JSON.stringify(sku));
+    const candidates = getSkuLookupCandidates(sku);
+    console.log("[scan lookup] raw=", JSON.stringify(code), "sku=", JSON.stringify(sku), "candidates=", candidates);
 
     const cols = "id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand";
     let match: any = null;
 
-    // 1) exact case-insensitive match
-    const exact = await supabase
-      .from("products")
-      .select(cols)
-      .eq("store_id", storeId)
-      .eq("is_active", true)
-      .ilike("sku", sku)
-      .maybeSingle();
-    match = exact.data;
+    // 1) exact case-insensitive match, including common scanner label variants (KU-/SKU-)
+    for (const candidate of candidates) {
+      const exact = await supabase
+        .from("products")
+        .select(cols)
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .ilike("sku", candidate)
+        .maybeSingle();
+      if (exact.data) {
+        match = exact.data;
+        break;
+      }
+    }
 
     // 2) fallback: contains (handles trailing chars, variant suffixes, prefix differences)
     if (!match) {
-      const escaped = sku.replace(/[%_\\]/g, (c) => `\\${c}`);
+      const escapedTerms = candidates.map(candidate => candidate.replace(/[%_\\]/g, (c) => `\\${c}`));
       const { data: list } = await supabase
         .from("products")
         .select(cols)
         .eq("store_id", storeId)
         .eq("is_active", true)
-        .or(`sku.ilike.%${escaped}%,sku.ilike.${escaped}%`)
+        .or(escapedTerms.flatMap(term => [`sku.ilike.%${term}%`, `sku.ilike.${term}`]).join(","))
         .limit(5);
       if (list && list.length === 1) {
         match = list[0];
