@@ -6,9 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine, Camera } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine } from "lucide-react";
 import InvoicePreviewDialog from "./InvoicePreviewDialog";
-import QRScannerDialog from "./QRScannerDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -139,8 +138,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
   const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [scanSourceOpen, setScanSourceOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
@@ -1220,31 +1217,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 autoFocus
                 className="flex-1"
               />
-              <Popover open={scanSourceOpen} onOpenChange={setScanSourceOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    title="Scan options"
-                  >
-                    <ScanLine className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-56 p-2">
-                  <button
-                    type="button"
-                    className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-accent text-sm"
-                    onClick={() => {
-                      setScanSourceOpen(false);
-                      setScannerOpen(true);
-                    }}
-                  >
-                    <Camera className="h-4 w-4" />
-                    Use Camera
-                  </button>
-                </PopoverContent>
-              </Popover>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                title="Focus scanner input"
+                onClick={() => searchInputRef.current?.focus()}
+              >
+                <ScanLine className="h-4 w-4" />
+              </Button>
             </div>
             {searchProduct && (
               <div className="border rounded-lg max-h-60 overflow-y-auto mb-3">
@@ -1713,14 +1694,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       taxAmount={taxAmount}
       discount={discount}
       total={total}
-    />
-    <QRScannerDialog
-      open={scannerOpen}
-      onClose={() => setScannerOpen(false)}
-      onScan={async (text) => {
-        setScannerOpen(false);
-        await lookupAndAddBySku(text);
-      }}
     />
     </div>
   );
