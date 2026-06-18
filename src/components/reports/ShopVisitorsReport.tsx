@@ -115,6 +115,7 @@ export default function ShopVisitorsReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Mobile</TableHead>
                   <TableHead>Verified On</TableHead>
                   <TableHead>Last Seen</TableHead>
@@ -123,7 +124,8 @@ export default function ShopVisitorsReport() {
               <TableBody>
                 {filtered.map((v) => (
                   <TableRow key={v.id}>
-                    <TableCell className="font-medium">{v.name}</TableCell>
+                    <TableCell className="font-medium">{v.name ?? "—"}</TableCell>
+                    <TableCell className="text-sm">{v.email ?? "—"}</TableCell>
                     <TableCell>{formatPhone(v.phone)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateTime(v.verified_at)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateTime(v.last_seen_at)}</TableCell>
