@@ -693,18 +693,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     };
   }, [storeId]);
 
-  useEffect(() => {
-    if (!deviceScannerOpen) return;
-    setDeviceScannerValue("");
-    const focusTimer = setTimeout(() => deviceScannerInputRef.current?.focus(), 80);
-    return () => {
-      clearTimeout(focusTimer);
-      if (deviceScannerTimerRef.current) {
-        clearTimeout(deviceScannerTimerRef.current);
-        deviceScannerTimerRef.current = null;
-      }
-    };
-  }, [deviceScannerOpen]);
 
 
 
@@ -1726,36 +1714,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       discount={discount}
       total={total}
     />
-    <Dialog open={deviceScannerOpen} onOpenChange={setDeviceScannerOpen}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Scanner device</DialogTitle>
-          <DialogDescription>Keep this box selected and scan the product sticker.</DialogDescription>
-        </DialogHeader>
-        <Input
-          ref={deviceScannerInputRef}
-          value={deviceScannerValue}
-          placeholder="Scanner input"
-          autoComplete="off"
-          inputMode="none"
-          onBlur={() => {
-            if (deviceScannerOpen) setTimeout(() => deviceScannerInputRef.current?.focus(), 30);
-          }}
-          onChange={(e) => {
-            const next = e.target.value;
-            setDeviceScannerValue(next);
-            if (deviceScannerTimerRef.current) clearTimeout(deviceScannerTimerRef.current);
-            deviceScannerTimerRef.current = setTimeout(() => submitDeviceScan(next), 250);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === "Tab") {
-              e.preventDefault();
-              submitDeviceScan((e.currentTarget as HTMLInputElement).value);
-            }
-          }}
-        />
-      </DialogContent>
-    </Dialog>
     <QRScannerDialog
       open={scannerOpen}
       onClose={() => setScannerOpen(false)}
