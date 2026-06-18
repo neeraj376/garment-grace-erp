@@ -138,7 +138,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
   const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
-  const [scanSourceOpen, setScanSourceOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
