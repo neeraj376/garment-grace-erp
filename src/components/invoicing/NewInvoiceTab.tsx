@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine, Camera, Keyboard } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine, Camera } from "lucide-react";
 import InvoicePreviewDialog from "./InvoicePreviewDialog";
 import QRScannerDialog from "./QRScannerDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -141,12 +141,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanSourceOpen, setScanSourceOpen] = useState(false);
-  const [deviceScannerOpen, setDeviceScannerOpen] = useState(false);
-  const [deviceScannerValue, setDeviceScannerValue] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const deviceScannerInputRef = useRef<HTMLInputElement>(null);
-  const deviceScannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastDeviceScanRef = useRef<{ code: string; at: number } | null>(null);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
@@ -617,22 +612,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title: "Added", description: match.name });
   };
 
-  const submitDeviceScan = (rawValue: string, keepOpen = true) => {
-    const code = extractScanCode(rawValue);
-    if (!code) return;
-
-    const now = Date.now();
-    const last = lastDeviceScanRef.current;
-    if (last?.code === code && now - last.at < 700) {
-      setDeviceScannerValue("");
-      return;
-    }
-
-    lastDeviceScanRef.current = { code, at: now };
-    setDeviceScannerValue("");
-    lookupAndAddBySku(code);
-    if (keepOpen) setTimeout(() => deviceScannerInputRef.current?.focus(), 30);
-  };
 
   // Global HID barcode scanner listener (Hellett HT410 Lite & similar USB/BT scanners).
   // Scanners stream keystrokes quickly (typically 5-50ms apart) followed by Enter.
@@ -1275,21 +1254,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   >
                     <Camera className="h-4 w-4" />
                     Use Camera
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-accent text-sm"
-                    onClick={() => {
-                      setScanSourceOpen(false);
-                      setDeviceScannerOpen(true);
-                      toast({
-                        title: "Scanner ready",
-                        description: "Scan with your handheld device in the scanner box.",
-                      });
-                    }}
-                  >
-                    <Keyboard className="h-4 w-4" />
-                    Use Scanner Device
                   </button>
                 </PopoverContent>
               </Popover>
