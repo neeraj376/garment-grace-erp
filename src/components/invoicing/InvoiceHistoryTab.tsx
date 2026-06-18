@@ -51,6 +51,10 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterNotes, setFilterNotes] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
