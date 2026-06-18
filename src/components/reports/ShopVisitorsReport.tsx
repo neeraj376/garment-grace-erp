@@ -8,15 +8,16 @@ import { Download, Users, Search } from "lucide-react";
 
 interface Visitor {
   id: string;
-  name: string;
-  phone: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
   verified_at: string;
   last_seen_at: string;
   created_at: string;
 }
 
-function formatPhone(p: string) {
-  // 91XXXXXXXXXX -> +91 XXXXX XXXXX
+function formatPhone(p: string | null) {
+  if (!p) return "—";
   if (p.length === 12 && p.startsWith("91")) return `+91 ${p.slice(2, 7)} ${p.slice(7)}`;
   return `+${p}`;
 }
