@@ -1218,31 +1218,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 autoFocus
                 className="flex-1"
               />
-              <Popover open={scanSourceOpen} onOpenChange={setScanSourceOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    title="Scan options"
-                  >
-                    <ScanLine className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-56 p-2">
-                  <button
-                    type="button"
-                    className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-accent text-sm"
-                    onClick={() => {
-                      setScanSourceOpen(false);
-                      setScannerOpen(true);
-                    }}
-                  >
-                    <Camera className="h-4 w-4" />
-                    Use Camera
-                  </button>
-                </PopoverContent>
-              </Popover>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                title="Focus scanner input"
+                onClick={() => searchInputRef.current?.focus()}
+              >
+                <ScanLine className="h-4 w-4" />
+              </Button>
             </div>
             {searchProduct && (
               <div className="border rounded-lg max-h-60 overflow-y-auto mb-3">
