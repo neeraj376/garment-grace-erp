@@ -39,7 +39,7 @@ export default function ShopVisitorsReport() {
       setLoading(true);
       const { data } = await supabase
         .from("shop_visitors")
-        .select("id, name, phone, verified_at, last_seen_at, created_at")
+        .select("id, name, phone, email, verified_at, last_seen_at, created_at")
         .order("verified_at", { ascending: false })
         .limit(2000);
       setVisitors((data ?? []) as Visitor[]);
@@ -52,15 +52,17 @@ export default function ShopVisitorsReport() {
     if (!s) return visitors;
     return visitors.filter(
       (v) =>
-        v.name.toLowerCase().includes(s) ||
-        v.phone.includes(s.replace(/\D/g, ""))
+        (v.name ?? "").toLowerCase().includes(s) ||
+        (v.email ?? "").toLowerCase().includes(s) ||
+        (v.phone ?? "").includes(s.replace(/\D/g, ""))
     );
   }, [q, visitors]);
 
   function exportCsv() {
-    const header = ["Name", "Phone", "Verified At", "Last Seen At"];
+    const header = ["Name", "Email", "Phone", "Verified At", "Last Seen At"];
     const rows = filtered.map((v) => [
-      `"${v.name.replace(/"/g, '""')}"`,
+      `"${(v.name ?? "").replace(/"/g, '""')}"`,
+      `"${(v.email ?? "").replace(/"/g, '""')}"`,
       formatPhone(v.phone),
       new Date(v.verified_at).toISOString(),
       new Date(v.last_seen_at).toISOString(),
