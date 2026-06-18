@@ -68,10 +68,24 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Invoice fields
-  const [paymentMethods, setPaymentMethods] = useState<string[]>(
-    (invoice.payment_method || "").split(",").map(s => s.trim()).filter(Boolean)
-  );
+  // Invoice fields — parse payment_method which may be "cash", "cash,upi", "cash+upi", or "cash:500+upi:300"
+  const parsedPayments = (() => {
+    const tokens = (invoice.payment_method || "")
+      .split(/[+,]/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    const methods: string[] = [];
+    const amounts: Record<string, string> = {};
+    tokens.forEach(t => {
+      const [m, a] = t.split(":").map(x => x.trim());
+      if (!m) return;
+      methods.push(m);
+      if (a) amounts[m] = a;
+    });
+    return { methods, amounts };
+  })();
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(parsedPayments.methods);
+  const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>(parsedPayments.amounts);
   const [source, setSource] = useState(invoice.source);
   const [courierName, setCourierName] = useState(invoice.courier_name || "");
   const [awbNo, setAwbNo] = useState(invoice.awb_no || "");
