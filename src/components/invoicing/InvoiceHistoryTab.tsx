@@ -365,30 +365,68 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               </Button>
             )}
           </div>
-          <div className="flex gap-2 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by invoice #, customer name or mobile..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9"
-              />
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by invoice #, customer name or mobile..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={filterNotes ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setFilterNotes(!filterNotes)}
+                    >
+                      <Star className={`h-4 w-4 ${filterNotes ? "fill-current" : ""}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{filterNotes ? "Show all invoices" : "Show only invoices with notes"}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={filterNotes ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => setFilterNotes(!filterNotes)}
-                  >
-                    <Star className={`h-4 w-4 ${filterNotes ? "fill-current" : ""}`} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{filterNotes ? "Show all invoices" : "Show only invoices with notes"}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">From</span>
+                <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">To</span>
+                <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Source" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Payment" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Payments</SelectItem>
+                  {paymentMethods.map(pm => (
+                    <SelectItem key={pm} value={pm} className="capitalize">{pm}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                  <X className="h-3 w-3" /> Clear
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground ml-auto">
+                {filtered.length} of {invoices.length} invoices
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
