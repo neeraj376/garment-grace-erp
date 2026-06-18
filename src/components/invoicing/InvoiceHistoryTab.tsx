@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail } from "lucide-react";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePermissions } from "@/hooks/usePermissions";
 import ReturnDialog from "./ReturnDialog";
 import EditInvoiceDialog from "./EditInvoiceDialog";
@@ -50,6 +51,10 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterNotes, setFilterNotes] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
@@ -161,14 +166,26 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     fetchInvoices();
   }, [storeId]);
 
+  const paymentMethods = Array.from(new Set(invoices.map(i => i.payment_method).filter(Boolean))).sort();
+
   const filtered = invoices.filter(inv => {
     const matchesSearch =
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
       inv.customers?.name?.toLowerCase().includes(search.toLowerCase()) ||
       inv.customers?.mobile?.includes(search);
     const matchesNoteFilter = !filterNotes || (inv.notes && inv.notes.trim().length > 0);
-    return matchesSearch && matchesNoteFilter;
+    const matchesSource = sourceFilter === "all" || inv.source === sourceFilter;
+    const matchesPayment = paymentFilter === "all" || inv.payment_method === paymentFilter;
+    const created = new Date(inv.created_at);
+    const matchesFrom = !dateFrom || created >= new Date(dateFrom + "T00:00:00");
+    const matchesTo = !dateTo || created <= new Date(dateTo + "T23:59:59");
+    return matchesSearch && matchesNoteFilter && matchesSource && matchesPayment && matchesFrom && matchesTo;
   });
+
+  const hasActiveFilters = !!(dateFrom || dateTo || sourceFilter !== "all" || paymentFilter !== "all" || filterNotes || search);
+  const clearFilters = () => {
+    setSearch(""); setDateFrom(""); setDateTo(""); setSourceFilter("all"); setPaymentFilter("all"); setFilterNotes(false);
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -348,30 +365,68 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               </Button>
             )}
           </div>
-          <div className="flex gap-2 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by invoice #, customer name or mobile..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9"
-              />
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by invoice #, customer name or mobile..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={filterNotes ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setFilterNotes(!filterNotes)}
+                    >
+                      <Star className={`h-4 w-4 ${filterNotes ? "fill-current" : ""}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{filterNotes ? "Show all invoices" : "Show only invoices with notes"}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={filterNotes ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => setFilterNotes(!filterNotes)}
-                  >
-                    <Star className={`h-4 w-4 ${filterNotes ? "fill-current" : ""}`} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{filterNotes ? "Show all invoices" : "Show only invoices with notes"}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">From</span>
+                <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">To</span>
+                <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Source" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Payment" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Payments</SelectItem>
+                  {paymentMethods.map(pm => (
+                    <SelectItem key={pm} value={pm} className="capitalize">{pm}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                  <X className="h-3 w-3" /> Clear
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground ml-auto">
+                {filtered.length} of {invoices.length} invoices
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
