@@ -8,15 +8,16 @@ import { Download, Users, Search } from "lucide-react";
 
 interface Visitor {
   id: string;
-  name: string;
-  phone: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
   verified_at: string;
   last_seen_at: string;
   created_at: string;
 }
 
-function formatPhone(p: string) {
-  // 91XXXXXXXXXX -> +91 XXXXX XXXXX
+function formatPhone(p: string | null) {
+  if (!p) return "—";
   if (p.length === 12 && p.startsWith("91")) return `+91 ${p.slice(2, 7)} ${p.slice(7)}`;
   return `+${p}`;
 }
@@ -38,7 +39,7 @@ export default function ShopVisitorsReport() {
       setLoading(true);
       const { data } = await supabase
         .from("shop_visitors")
-        .select("id, name, phone, verified_at, last_seen_at, created_at")
+        .select("id, name, phone, email, verified_at, last_seen_at, created_at")
         .order("verified_at", { ascending: false })
         .limit(2000);
       setVisitors((data ?? []) as Visitor[]);
@@ -51,15 +52,17 @@ export default function ShopVisitorsReport() {
     if (!s) return visitors;
     return visitors.filter(
       (v) =>
-        v.name.toLowerCase().includes(s) ||
-        v.phone.includes(s.replace(/\D/g, ""))
+        (v.name ?? "").toLowerCase().includes(s) ||
+        (v.email ?? "").toLowerCase().includes(s) ||
+        (v.phone ?? "").includes(s.replace(/\D/g, ""))
     );
   }, [q, visitors]);
 
   function exportCsv() {
-    const header = ["Name", "Phone", "Verified At", "Last Seen At"];
+    const header = ["Name", "Email", "Phone", "Verified At", "Last Seen At"];
     const rows = filtered.map((v) => [
-      `"${v.name.replace(/"/g, '""')}"`,
+      `"${(v.name ?? "").replace(/"/g, '""')}"`,
+      `"${(v.email ?? "").replace(/"/g, '""')}"`,
       formatPhone(v.phone),
       new Date(v.verified_at).toISOString(),
       new Date(v.last_seen_at).toISOString(),
@@ -112,6 +115,7 @@ export default function ShopVisitorsReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Mobile</TableHead>
                   <TableHead>Verified On</TableHead>
                   <TableHead>Last Seen</TableHead>
@@ -120,7 +124,8 @@ export default function ShopVisitorsReport() {
               <TableBody>
                 {filtered.map((v) => (
                   <TableRow key={v.id}>
-                    <TableCell className="font-medium">{v.name}</TableCell>
+                    <TableCell className="font-medium">{v.name ?? "—"}</TableCell>
+                    <TableCell className="text-sm">{v.email ?? "—"}</TableCell>
                     <TableCell>{formatPhone(v.phone)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateTime(v.verified_at)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateTime(v.last_seen_at)}</TableCell>
