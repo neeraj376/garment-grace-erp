@@ -589,13 +589,39 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const lookupAndAddBySku = async (code: string) => {
     const sku = extractScanCode(code);
     if (!sku || !storeId) return;
-    const { data: match } = await supabase
+    console.log("[scan lookup] raw=", JSON.stringify(code), "sku=", JSON.stringify(sku));
+
+    const cols = "id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand";
+    let match: any = null;
+
+    // 1) exact case-insensitive match
+    const exact = await supabase
       .from("products")
-      .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
+      .select(cols)
       .eq("store_id", storeId)
       .eq("is_active", true)
       .ilike("sku", sku)
       .maybeSingle();
+    match = exact.data;
+
+    // 2) fallback: contains (handles trailing chars, variant suffixes, prefix differences)
+    if (!match) {
+      const escaped = sku.replace(/[%_\\]/g, (c) => `\\${c}`);
+      const { data: list } = await supabase
+        .from("products")
+        .select(cols)
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .or(`sku.ilike.%${escaped}%,sku.ilike.${escaped}%`)
+        .limit(5);
+      if (list && list.length === 1) {
+        match = list[0];
+      } else if (list && list.length > 1) {
+        toast({ title: "Multiple matches", description: `${list.length} products matched "${sku}"`, variant: "destructive" });
+        return;
+      }
+    }
+
     if (!match) {
       toast({ title: "No product found", description: sku, variant: "destructive" });
       return;
