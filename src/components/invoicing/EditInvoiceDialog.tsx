@@ -68,10 +68,24 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Invoice fields
-  const [paymentMethods, setPaymentMethods] = useState<string[]>(
-    (invoice.payment_method || "").split(",").map(s => s.trim()).filter(Boolean)
-  );
+  // Invoice fields — parse payment_method which may be "cash", "cash,upi", "cash+upi", or "cash:500+upi:300"
+  const parsedPayments = (() => {
+    const tokens = (invoice.payment_method || "")
+      .split(/[+,]/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    const methods: string[] = [];
+    const amounts: Record<string, string> = {};
+    tokens.forEach(t => {
+      const [m, a] = t.split(":").map(x => x.trim());
+      if (!m) return;
+      methods.push(m);
+      if (a) amounts[m] = a;
+    });
+    return { methods, amounts };
+  })();
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(parsedPayments.methods);
+  const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>(parsedPayments.amounts);
   const [source, setSource] = useState(invoice.source);
   const [courierName, setCourierName] = useState(invoice.courier_name || "");
   const [awbNo, setAwbNo] = useState(invoice.awb_no || "");
@@ -317,7 +331,9 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       const { error } = await supabase
         .from("invoices")
         .update({
-          payment_method: paymentMethods.join(","),
+          payment_method: paymentMethods.length > 1
+            ? paymentMethods.map(m => `${m}:${Number(paymentAmounts[m]) || 0}`).join("+")
+            : paymentMethods.join(","),
           source,
           courier_name: source === "online" ? normalizedCourierName : null,
           awb_no: source === "online" ? normalizedAwbNo : null,
@@ -410,7 +426,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
 
             {/* Invoice Details */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
+              <div className="space-y-1 col-span-2">
                 <Label>Payment Methods</Label>
                 <div className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
                   {PAYMENT_OPTIONS.map(opt => {
@@ -423,6 +439,13 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                             setPaymentMethods(prev =>
                               v ? Array.from(new Set([...prev, opt.value])) : prev.filter(p => p !== opt.value)
                             );
+                            if (!v) {
+                              setPaymentAmounts(prev => {
+                                const next = { ...prev };
+                                delete next[opt.value];
+                                return next;
+                              });
+                            }
                           }}
                         />
                         {opt.label}
@@ -430,7 +453,41 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                     );
                   })}
                 </div>
+                {paymentMethods.length > 1 && (
+                  <div className="mt-2 space-y-2 rounded-md border border-dashed border-input p-3">
+                    <div className="text-xs text-muted-foreground">
+                      Split amount per payment method. Sum should equal total ₹{grandTotal.toFixed(2)}.
+                    </div>
+                    {paymentMethods.map(m => {
+                      const label = PAYMENT_OPTIONS.find(o => o.value === m)?.label || m;
+                      return (
+                        <div key={m} className="flex items-center gap-2">
+                          <Label className="w-28 text-sm">{label}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={paymentAmounts[m] ?? ""}
+                            onChange={e => setPaymentAmounts(prev => ({ ...prev, [m]: e.target.value }))}
+                            placeholder="0"
+                            className="text-right"
+                          />
+                        </div>
+                      );
+                    })}
+                    {(() => {
+                      const sum = paymentMethods.reduce((s, m) => s + (Number(paymentAmounts[m]) || 0), 0);
+                      const diff = +(grandTotal - sum).toFixed(2);
+                      if (Math.abs(diff) < 0.01) return null;
+                      return (
+                        <div className="text-xs text-destructive">
+                          {diff > 0 ? `Short by ₹${diff.toFixed(2)}` : `Over by ₹${Math.abs(diff).toFixed(2)}`}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
+
               <div className="space-y-1">
                 <Label>Source</Label>
                 <Select value={source} onValueChange={setSource}>
