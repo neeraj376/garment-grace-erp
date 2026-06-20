@@ -554,34 +554,59 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   }, [storeId]);
 
   useEffect(() => {
-    const query = searchProduct.trim();
-    if (!storeId || query.length < 3) return;
+    const rawQuery = searchProduct.trim();
+    if (!storeId || rawQuery.length < 3) return;
+
+    // Sanitize for PostgREST `.or()` filter — commas, parens, and quotes break the parser.
+    // Also escape ilike wildcards % and _ so they're treated literally.
+    const sanitized = rawQuery
+      .replace(/[(),"']/g, " ")
+      .replace(/[%_\\]/g, (m) => `\\${m}`)
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (sanitized.length < 3) return;
+
+    let cancelled = false;
 
     const timeout = setTimeout(async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .or(`sku.ilike.%${query}%,name.ilike.%${query}%`)
-        .limit(20);
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .or(`sku.ilike.%${sanitized}%,name.ilike.%${sanitized}%`)
+          .limit(20);
 
-      if (!data || data.length === 0) return;
+        if (cancelled || error || !data || data.length === 0) return;
 
-      const withStock = await Promise.all(
-        data.map(async (p) => {
-          const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
-          return { ...p, _stock: typeof stock === "number" ? stock : 0 };
-        })
-      );
+        const withStock = await Promise.all(
+          data.map(async (p) => {
+            try {
+              const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
+              return { ...p, _stock: typeof stock === "number" ? stock : 0 };
+            } catch {
+              return { ...p, _stock: 0 };
+            }
+          })
+        );
 
-      const inStockMatches = withStock.filter(p => p._stock > 0);
-      if (inStockMatches.length > 0) {
-        setProducts(prev => [...prev, ...inStockMatches.filter(p => !prev.some(existing => existing.id === p.id))]);
+        if (cancelled) return;
+
+        const inStockMatches = withStock.filter(p => p._stock > 0);
+        if (inStockMatches.length > 0) {
+          setProducts(prev => [...prev, ...inStockMatches.filter(p => !prev.some(existing => existing.id === p.id))]);
+        }
+      } catch (err) {
+        console.warn("Product search failed:", err);
       }
-    }, 250);
+    }, 300);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [searchProduct, storeId]);
 
   const addToCart = (product: any) => {
