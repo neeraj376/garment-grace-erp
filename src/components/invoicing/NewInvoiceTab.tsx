@@ -1306,8 +1306,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   e.preventDefault();
                   const code = searchProduct.trim();
                   if (!code) return;
-                  if (filteredProducts.length === 1) {
-                    addToCart(filteredProducts[0]);
+                  const currentMatches = filterProductMatches(products, code, 2);
+                  if (currentMatches.length === 1) {
+                    addToCart(currentMatches[0]);
                     return;
                   }
                   await lookupAndAddBySku(code);
