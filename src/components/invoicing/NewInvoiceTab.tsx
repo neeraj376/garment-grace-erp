@@ -68,11 +68,14 @@ interface ProductSearchItem {
   id: string;
   sku?: string | null;
   name?: string | null;
+  selling_price?: number | string | null;
+  tax_rate?: number | string | null;
   category?: string | null;
   subcategory?: string | null;
   color?: string | null;
   size?: string | null;
   brand?: string | null;
+  _stock?: number;
 }
 
 interface Props {
