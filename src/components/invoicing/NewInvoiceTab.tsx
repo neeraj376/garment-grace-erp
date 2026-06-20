@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useDeferredValue, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,20 @@ interface Employee {
   email?: string | null;
 }
 
+interface ProductSearchItem {
+  id: string;
+  sku?: string | null;
+  name?: string | null;
+  selling_price?: number | string | null;
+  tax_rate?: number | string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  color?: string | null;
+  size?: string | null;
+  brand?: string | null;
+  _stock?: number;
+}
+
 interface Props {
   storeId: string | null;
   userId: string | undefined;
@@ -101,6 +115,25 @@ function saveDraft(data: any) {
 
 function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
+function filterProductMatches(products: ProductSearchItem[], query: string, limit = 50) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const matches: ProductSearchItem[] = [];
+  for (const p of products) {
+    const searchableText = [
+      p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if (words.every(word => searchableText.includes(word))) {
+      matches.push(p);
+      if (matches.length >= limit) break;
+    }
+  }
+
+  return matches;
 }
 
 function extractScanCode(value: string) {
@@ -163,6 +196,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
   const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
   const [searchProduct, setSearchProduct] = useState("");
+  const deferredSearchProduct = useDeferredValue(searchProduct);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
@@ -1212,14 +1246,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title: "Held invoice removed" });
   };
 
-  const filteredProducts = products.filter(p => {
-    const q = searchProduct.toLowerCase();
-    const words = q.split(/\s+/).filter(Boolean);
-    const searchableText = [
-      p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
-    ].filter(Boolean).join(' ').toLowerCase();
-    return words.every(word => searchableText.includes(word));
-  });
+  const filteredProducts = useMemo(
+    () => filterProductMatches(products, deferredSearchProduct),
+    [deferredSearchProduct, products]
+  );
 
   return (
     <div className="space-y-4">
@@ -1290,8 +1320,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   e.preventDefault();
                   const code = searchProduct.trim();
                   if (!code) return;
-                  if (filteredProducts.length === 1) {
-                    addToCart(filteredProducts[0]);
+                  const currentMatches = filterProductMatches(products, code, 2);
+                  if (currentMatches.length === 1) {
+                    addToCart(currentMatches[0]);
                     return;
                   }
                   await lookupAndAddBySku(code);
