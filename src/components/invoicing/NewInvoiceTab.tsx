@@ -64,6 +64,17 @@ interface Employee {
   email?: string | null;
 }
 
+interface ProductSearchItem {
+  id: string;
+  sku?: string | null;
+  name?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  color?: string | null;
+  size?: string | null;
+  brand?: string | null;
+}
+
 interface Props {
   storeId: string | null;
   userId: string | undefined;
@@ -103,11 +114,11 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
-function filterProductMatches(products: any[], query: string, limit = 50) {
+function filterProductMatches(products: ProductSearchItem[], query: string, limit = 50) {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
 
-  const matches: any[] = [];
+  const matches: ProductSearchItem[] = [];
   for (const p of products) {
     const searchableText = [
       p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
