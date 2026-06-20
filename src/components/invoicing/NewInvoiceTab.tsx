@@ -1213,14 +1213,25 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title: "Held invoice removed" });
   };
 
-  const filteredProducts = products.filter(p => {
-    const q = searchProduct.toLowerCase();
+  const filteredProducts = useMemo(() => {
+    const q = deferredSearchProduct.toLowerCase();
     const words = q.split(/\s+/).filter(Boolean);
-    const searchableText = [
-      p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
-    ].filter(Boolean).join(' ').toLowerCase();
-    return words.every(word => searchableText.includes(word));
-  });
+    if (words.length === 0) return [];
+
+    const matches: any[] = [];
+    for (const p of products) {
+      const searchableText = [
+        p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      if (words.every(word => searchableText.includes(word))) {
+        matches.push(p);
+        if (matches.length >= 50) break;
+      }
+    }
+
+    return matches;
+  }, [deferredSearchProduct, products]);
 
   return (
     <div className="space-y-4">
