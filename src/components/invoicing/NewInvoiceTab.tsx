@@ -103,6 +103,25 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
+function filterProductMatches(products: any[], query: string, limit = 50) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const matches: any[] = [];
+  for (const p of products) {
+    const searchableText = [
+      p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if (words.every(word => searchableText.includes(word))) {
+      matches.push(p);
+      if (matches.length >= limit) break;
+    }
+  }
+
+  return matches;
+}
+
 function extractScanCode(value: string) {
   const raw = value.trim();
   if (!raw) return "";
@@ -1213,25 +1232,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     toast({ title: "Held invoice removed" });
   };
 
-  const filteredProducts = useMemo(() => {
-    const q = deferredSearchProduct.toLowerCase();
-    const words = q.split(/\s+/).filter(Boolean);
-    if (words.length === 0) return [];
-
-    const matches: any[] = [];
-    for (const p of products) {
-      const searchableText = [
-        p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
-      ].filter(Boolean).join(' ').toLowerCase();
-
-      if (words.every(word => searchableText.includes(word))) {
-        matches.push(p);
-        if (matches.length >= 50) break;
-      }
-    }
-
-    return matches;
-  }, [deferredSearchProduct, products]);
+  const filteredProducts = useMemo(
+    () => filterProductMatches(products, deferredSearchProduct),
+    [deferredSearchProduct, products]
+  );
 
   return (
     <div className="space-y-4">
