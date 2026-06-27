@@ -160,16 +160,28 @@ export default function ShopCheckout() {
       toast.error("Please enter a valid 10-digit Indian mobile number");
       return;
     }
-    if (!form.pincode.match(/^[1-9]\d{5}$/)) {
-      toast.error("Please enter a valid 6-digit pincode");
-      return;
-    }
-    if (!serviceable || !selectedCourier) {
-      toast.error("Delivery is not available to this pincode");
-      return;
+    if (deliveryMethod === "ship") {
+      if (!form.pincode.match(/^[1-9]\d{5}$/)) {
+        toast.error("Please enter a valid 6-digit pincode");
+        return;
+      }
+      if (!serviceable || !selectedCourier) {
+        toast.error("Delivery is not available to this pincode");
+        return;
+      }
     }
 
     setLoading(true);
+
+    const addressPayload = deliveryMethod === "pickup"
+      ? { ...STORE_PICKUP_ADDRESS, address_line2: null }
+      : {
+          address_line1: form.address_line1,
+          address_line2: form.address_line2 || null,
+          city: form.city,
+          state: form.state,
+          pincode: form.pincode,
+        };
 
     try {
       const { data, error } = await supabase.functions.invoke("razorpay-create-order", {
@@ -177,15 +189,11 @@ export default function ShopCheckout() {
           guest_name: form.name,
           guest_email: form.email || null,
           guest_phone: form.phone,
-          address_line1: form.address_line1,
-          address_line2: form.address_line2 || null,
-          city: form.city,
-          state: form.state,
-          pincode: form.pincode,
+          ...addressPayload,
           items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
           store_id: STORE_ID,
-          courier_name: selectedCourier.courier_name,
-          shipping_cost: shippingCost,
+          courier_name: deliveryMethod === "pickup" ? "Store Pickup" : selectedCourier!.courier_name,
+          shipping_cost: deliveryMethod === "pickup" ? 0 : shippingCost,
         },
       });
 
