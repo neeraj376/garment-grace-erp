@@ -387,7 +387,6 @@ export default function ShopCheckout() {
           </Card>
 
 
-          {/* Courier: DTDC fixed default — no user selection */}
 
         </div>
 
