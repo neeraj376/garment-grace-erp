@@ -19,6 +19,7 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
   if (!ready) return null;
   if (visitor) return <>{children}</>;
