@@ -45,7 +45,7 @@ export default function StickerPrinter() {
   const [category, setCategory] = useState<string>("all");
   const [selected, setSelected] = useState<Record<string, number>>({});
   const [size, setSize] = useState<keyof typeof STICKER_SIZES>("50x25");
-  const [includeMrp, setIncludeMrp] = useState(true);
+  
   const [loading, setLoading] = useState(false);
   const [qrMap, setQrMap] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
@@ -209,10 +209,6 @@ export default function StickerPrinter() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-end gap-2">
-            <Checkbox id="mrp" checked={includeMrp} onCheckedChange={(v) => setIncludeMrp(Boolean(v))} />
-            <Label htmlFor="mrp" className="cursor-pointer">Show price on sticker</Label>
-          </div>
         </CardContent>
       </Card>
 
@@ -356,11 +352,6 @@ export default function StickerPrinter() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '6pt' }}>
                       <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.sku}</span>
-                      {includeMrp && (
-                        <span style={{ fontWeight: 700 }}>
-                          ₹{Number(p.mrp || p.selling_price).toLocaleString('en-IN')}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
