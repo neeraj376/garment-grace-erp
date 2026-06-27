@@ -302,54 +302,90 @@ export default function ShopCheckout() {
                 <Label htmlFor="email">Email (optional, for order updates)</Label>
                 <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com" />
               </div>
-              <div>
-                <Label htmlFor="address_line1">Address Line 1 *</Label>
-                <Input id="address_line1" name="address_line1" value={form.address_line1} onChange={handleChange} required placeholder="House/Flat No., Building, Street" />
-              </div>
-              <div>
-                <Label htmlFor="address_line2">Address Line 2 (optional)</Label>
-                <Input id="address_line2" name="address_line2" value={form.address_line2} onChange={handleChange} placeholder="Landmark, Area, Colony" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="pincode">Pincode *</Label>
-                  <Input
-                    id="pincode"
-                    name="pincode"
-                    value={form.pincode}
-                    onChange={handleChange}
-                    required
-                    pattern="[1-9]\d{5}"
-                    maxLength={6}
-                    placeholder="110001"
-                  />
-                  {form.pincode.length === 6 && serviceable && (
-                    <div className="mt-1 flex items-center gap-1 text-xs">
-                      <CheckCircle className="h-3 w-3 text-green-600" />
-                      <span className="text-green-600">Delivery available</span>
+
+              <div className="pt-2">
+                <Label className="mb-2 block">Delivery Method *</Label>
+                <RadioGroup
+                  value={deliveryMethod}
+                  onValueChange={(v) => setDeliveryMethod(v as "ship" | "pickup")}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <label className={`flex items-start gap-2 rounded-md border p-3 cursor-pointer ${deliveryMethod === "ship" ? "border-primary bg-primary/5" : "border-input"}`}>
+                    <RadioGroupItem value="ship" id="dm-ship" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1 font-medium text-sm"><Truck className="h-4 w-4" /> Ship to Address</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Delivered via DTDC</div>
                     </div>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="city">City *</Label>
-                  <Input id="city" name="city" value={form.city} onChange={handleChange} required placeholder="New Delhi" />
-                </div>
-                <div>
-                  <Label htmlFor="state">State *</Label>
-                  <Select value={form.state} onValueChange={(val) => setForm((f) => ({ ...f, state: val }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDIAN_STATES.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  </label>
+                  <label className={`flex items-start gap-2 rounded-md border p-3 cursor-pointer ${deliveryMethod === "pickup" ? "border-primary bg-primary/5" : "border-input"}`}>
+                    <RadioGroupItem value="pickup" id="dm-pickup" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1 font-medium text-sm"><Store className="h-4 w-4" /> Store Pickup</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">No shipping charges</div>
+                    </div>
+                  </label>
+                </RadioGroup>
               </div>
+
+              {deliveryMethod === "ship" && (
+                <>
+                  <div>
+                    <Label htmlFor="address_line1">Address Line 1 *</Label>
+                    <Input id="address_line1" name="address_line1" value={form.address_line1} onChange={handleChange} required placeholder="House/Flat No., Building, Street" />
+                  </div>
+                  <div>
+                    <Label htmlFor="address_line2">Address Line 2 (optional)</Label>
+                    <Input id="address_line2" name="address_line2" value={form.address_line2} onChange={handleChange} placeholder="Landmark, Area, Colony" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="pincode">Pincode *</Label>
+                      <Input
+                        id="pincode"
+                        name="pincode"
+                        value={form.pincode}
+                        onChange={handleChange}
+                        required
+                        pattern="[1-9]\d{5}"
+                        maxLength={6}
+                        placeholder="110001"
+                      />
+                      {form.pincode.length === 6 && serviceable && (
+                        <div className="mt-1 flex items-center gap-1 text-xs">
+                          <CheckCircle className="h-3 w-3 text-green-600" />
+                          <span className="text-green-600">Delivery available</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="city">City *</Label>
+                      <Input id="city" name="city" value={form.city} onChange={handleChange} required placeholder="New Delhi" />
+                    </div>
+                    <div>
+                      <Label htmlFor="state">State *</Label>
+                      <Select value={form.state} onValueChange={(val) => setForm((f) => ({ ...f, state: val }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDIAN_STATES.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {deliveryMethod === "pickup" && (
+                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                  Collect your order from our store. We'll notify you on WhatsApp/email once it's ready.
+                </div>
+              )}
             </CardContent>
           </Card>
+
 
           {/* Courier: DTDC fixed default — no user selection */}
 
