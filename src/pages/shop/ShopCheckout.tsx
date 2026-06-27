@@ -418,8 +418,8 @@ export default function ShopCheckout() {
                   <span className="text-muted-foreground">₹{Math.round(taxTotal).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span>{shippingCost > 0 ? `₹${shippingCost}` : serviceable ? "₹0" : "—"}</span>
+                  <span className="text-muted-foreground">{deliveryMethod === "pickup" ? "Store Pickup" : "Shipping"}</span>
+                  <span>{deliveryMethod === "pickup" ? "FREE" : shippingCost > 0 ? `₹${shippingCost}` : serviceable ? "₹0" : "—"}</span>
                 </div>
                 <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
                   <span>Total</span>
@@ -430,7 +430,7 @@ export default function ShopCheckout() {
                 type="submit"
                 className="w-full mt-4"
                 size="lg"
-                disabled={loading || !form.state || !serviceable || !selectedCourier}
+                disabled={loading || (deliveryMethod === "ship" && (!form.state || !serviceable || !selectedCourier))}
               >
                 {loading ? "Processing..." : `Pay ₹${total.toLocaleString("en-IN")} with Razorpay`}
               </Button>
