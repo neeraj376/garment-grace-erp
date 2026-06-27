@@ -48,18 +48,27 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
       return;
     }
     setSending(true);
+    setDeliveryError(null);
     try {
       const { data, error } = await supabase.functions.invoke("send-visitor-email-otp", {
         body: { name: name.trim(), email: cleanEmail },
       });
+      // Edge function returns 400 with friendly message in data.error for delivery failures
+      const fnErr = (data as any)?.error;
+      if (fnErr) {
+        setDeliveryError(fnErr);
+        toast.error(fnErr);
+        return;
+      }
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
       setNormalizedEmail((data as any).email);
       setStep("otp");
       startCooldown();
       toast.success("OTP sent to your email");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to send OTP");
+      const msg = e?.message ?? "Failed to send OTP";
+      setDeliveryError(msg);
+      toast.error(msg);
     } finally {
       setSending(false);
     }
