@@ -67,8 +67,42 @@ Deno.serve(async (req) => {
         html: otpEmailHtml(code),
       });
     } catch (mailErr: any) {
-      console.error("Gmail SMTP send failed:", mailErr?.message || mailErr);
-      throw new Error("Could not send verification email. Please try again in a minute.");
+      const raw = String(mailErr?.message || mailErr || "").toLowerCase();
+      console.error("Gmail SMTP send failed:", raw);
+
+      // Map common SMTP/bounce reasons to user-friendly messages
+      let friendly = "We couldn't deliver the verification email. Please try again in a minute.";
+      let reason = "smtp_error";
+
+      // Mailbox full (552, 452 4.2.2, "quota", "over quota", "mailbox full")
+      if (/(552|4\.2\.2|5\.2\.2|over.?quota|mailbox.*full|insufficient.*storage)/.test(raw)) {
+        friendly = "The recipient mailbox is full. Please clear your inbox and try again, or use a different email address.";
+        reason = "mailbox_full";
+      }
+      // No such user / invalid address (550 5.1.1, 5.1.2, 5.1.3, "user unknown", "does not exist", "no such user", "recipient address rejected")
+      else if (/(550.*5\.1\.[1-3]|5\.1\.[1-3]|user.*unknown|no.*such.*user|does.*not.*exist|recipient.*rejected|address.*rejected|invalid.*recipient|invalid.*address|no.*mailbox|account.*disabled)/.test(raw)) {
+        friendly = "This email address doesn't exist or is no longer active. Please check the spelling or enter a different email address.";
+        reason = "invalid_recipient";
+      }
+      // Domain not found
+      else if (/(domain.*not.*found|no.*mx|host.*not.*found|name.*resolution|enotfound)/.test(raw)) {
+        friendly = "The email domain you entered doesn't exist. Please check the spelling (e.g. gmail.com) and try again.";
+        reason = "invalid_domain";
+      }
+      // Spam / policy rejection
+      else if (/(spam|policy|blocked|denied|reputation|550 5\.7|554)/.test(raw)) {
+        friendly = "The recipient mail server rejected our email. Please try a different email address (e.g. Gmail).";
+        reason = "policy_blocked";
+      }
+      // Rate limit / sender quota
+      else if (/(rate.*limit|too many|daily.*limit|quota.*exceeded|4\.7\.0|421)/.test(raw)) {
+        friendly = "We're sending too many emails right now. Please wait a minute and try again.";
+        reason = "rate_limited";
+      }
+
+      return new Response(JSON.stringify({ error: friendly, reason }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ success: true, email: cleanEmail }), {
