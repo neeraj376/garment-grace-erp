@@ -142,6 +142,11 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
                 autoComplete="email"
               />
             </div>
+            {deliveryError && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 text-destructive text-sm p-3">
+                {deliveryError}
+              </div>
+            )}
             <div>
               <Label htmlFor="v-phone">Mobile number</Label>
               <div className="flex">
