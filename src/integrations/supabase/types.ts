@@ -1510,6 +1510,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_online_order: { Args: { p_order_id: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
