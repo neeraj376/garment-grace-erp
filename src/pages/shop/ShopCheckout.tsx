@@ -6,11 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Truck, Store } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
 import { calculateDtdcShipping } from "@/lib/dtdcRates";
+
+const STORE_PICKUP_ADDRESS = {
+  address_line1: "Originee Store - Pickup",
+  city: "Gurugram",
+  state: "Haryana",
+  pincode: "122001",
+};
 
 
 
@@ -75,12 +83,22 @@ export default function ShopCheckout() {
     }
   }, [visitor]);
 
+  // Delivery method: ship to address, or store pickup
+  const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">("ship");
+
   // Shipping state (DTDC Non-Dox per-kg local calculator)
   const [serviceable, setServiceable] = useState<boolean | null>(null);
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
 
   useEffect(() => {
+    if (deliveryMethod === "pickup") {
+      setServiceable(true);
+      setShippingCost(0);
+      setSelectedCourier({ courier_name: "Store Pickup", rate: 0 });
+      return;
+    }
+
     const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
     if (!pincodeValid || !form.state) {
       setServiceable(null);
@@ -100,7 +118,7 @@ export default function ShopCheckout() {
     setServiceable(true);
     setShippingCost(cost);
     setSelectedCourier({ courier_name: "DTDC", rate: cost });
-  }, [form.pincode, form.state, items]);
+  }, [form.pincode, form.state, items, deliveryMethod]);
 
 
 
@@ -142,16 +160,28 @@ export default function ShopCheckout() {
       toast.error("Please enter a valid 10-digit Indian mobile number");
       return;
     }
-    if (!form.pincode.match(/^[1-9]\d{5}$/)) {
-      toast.error("Please enter a valid 6-digit pincode");
-      return;
-    }
-    if (!serviceable || !selectedCourier) {
-      toast.error("Delivery is not available to this pincode");
-      return;
+    if (deliveryMethod === "ship") {
+      if (!form.pincode.match(/^[1-9]\d{5}$/)) {
+        toast.error("Please enter a valid 6-digit pincode");
+        return;
+      }
+      if (!serviceable || !selectedCourier) {
+        toast.error("Delivery is not available to this pincode");
+        return;
+      }
     }
 
     setLoading(true);
+
+    const addressPayload = deliveryMethod === "pickup"
+      ? { ...STORE_PICKUP_ADDRESS, address_line2: null }
+      : {
+          address_line1: form.address_line1,
+          address_line2: form.address_line2 || null,
+          city: form.city,
+          state: form.state,
+          pincode: form.pincode,
+        };
 
     try {
       const { data, error } = await supabase.functions.invoke("razorpay-create-order", {
@@ -159,15 +189,11 @@ export default function ShopCheckout() {
           guest_name: form.name,
           guest_email: form.email || null,
           guest_phone: form.phone,
-          address_line1: form.address_line1,
-          address_line2: form.address_line2 || null,
-          city: form.city,
-          state: form.state,
-          pincode: form.pincode,
+          ...addressPayload,
           items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
           store_id: STORE_ID,
-          courier_name: selectedCourier.courier_name,
-          shipping_cost: shippingCost,
+          courier_name: deliveryMethod === "pickup" ? "Store Pickup" : selectedCourier!.courier_name,
+          shipping_cost: deliveryMethod === "pickup" ? 0 : shippingCost,
         },
       });
 
@@ -276,56 +302,91 @@ export default function ShopCheckout() {
                 <Label htmlFor="email">Email (optional, for order updates)</Label>
                 <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com" />
               </div>
-              <div>
-                <Label htmlFor="address_line1">Address Line 1 *</Label>
-                <Input id="address_line1" name="address_line1" value={form.address_line1} onChange={handleChange} required placeholder="House/Flat No., Building, Street" />
-              </div>
-              <div>
-                <Label htmlFor="address_line2">Address Line 2 (optional)</Label>
-                <Input id="address_line2" name="address_line2" value={form.address_line2} onChange={handleChange} placeholder="Landmark, Area, Colony" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="pincode">Pincode *</Label>
-                  <Input
-                    id="pincode"
-                    name="pincode"
-                    value={form.pincode}
-                    onChange={handleChange}
-                    required
-                    pattern="[1-9]\d{5}"
-                    maxLength={6}
-                    placeholder="110001"
-                  />
-                  {form.pincode.length === 6 && serviceable && (
-                    <div className="mt-1 flex items-center gap-1 text-xs">
-                      <CheckCircle className="h-3 w-3 text-green-600" />
-                      <span className="text-green-600">Delivery available</span>
+
+              <div className="pt-2">
+                <Label className="mb-2 block">Delivery Method *</Label>
+                <RadioGroup
+                  value={deliveryMethod}
+                  onValueChange={(v) => setDeliveryMethod(v as "ship" | "pickup")}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <label className={`flex items-start gap-2 rounded-md border p-3 cursor-pointer ${deliveryMethod === "ship" ? "border-primary bg-primary/5" : "border-input"}`}>
+                    <RadioGroupItem value="ship" id="dm-ship" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1 font-medium text-sm"><Truck className="h-4 w-4" /> Ship to Address</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Delivered via DTDC</div>
                     </div>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="city">City *</Label>
-                  <Input id="city" name="city" value={form.city} onChange={handleChange} required placeholder="New Delhi" />
-                </div>
-                <div>
-                  <Label htmlFor="state">State *</Label>
-                  <Select value={form.state} onValueChange={(val) => setForm((f) => ({ ...f, state: val }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDIAN_STATES.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  </label>
+                  <label className={`flex items-start gap-2 rounded-md border p-3 cursor-pointer ${deliveryMethod === "pickup" ? "border-primary bg-primary/5" : "border-input"}`}>
+                    <RadioGroupItem value="pickup" id="dm-pickup" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1 font-medium text-sm"><Store className="h-4 w-4" /> Store Pickup</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">No shipping charges</div>
+                    </div>
+                  </label>
+                </RadioGroup>
               </div>
+
+              {deliveryMethod === "ship" && (
+                <>
+                  <div>
+                    <Label htmlFor="address_line1">Address Line 1 *</Label>
+                    <Input id="address_line1" name="address_line1" value={form.address_line1} onChange={handleChange} required placeholder="House/Flat No., Building, Street" />
+                  </div>
+                  <div>
+                    <Label htmlFor="address_line2">Address Line 2 (optional)</Label>
+                    <Input id="address_line2" name="address_line2" value={form.address_line2} onChange={handleChange} placeholder="Landmark, Area, Colony" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="pincode">Pincode *</Label>
+                      <Input
+                        id="pincode"
+                        name="pincode"
+                        value={form.pincode}
+                        onChange={handleChange}
+                        required
+                        pattern="[1-9]\d{5}"
+                        maxLength={6}
+                        placeholder="110001"
+                      />
+                      {form.pincode.length === 6 && serviceable && (
+                        <div className="mt-1 flex items-center gap-1 text-xs">
+                          <CheckCircle className="h-3 w-3 text-green-600" />
+                          <span className="text-green-600">Delivery available</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="city">City *</Label>
+                      <Input id="city" name="city" value={form.city} onChange={handleChange} required placeholder="New Delhi" />
+                    </div>
+                    <div>
+                      <Label htmlFor="state">State *</Label>
+                      <Select value={form.state} onValueChange={(val) => setForm((f) => ({ ...f, state: val }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDIAN_STATES.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {deliveryMethod === "pickup" && (
+                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                  Collect your order from our store. We'll notify you on WhatsApp/email once it's ready.
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Courier: DTDC fixed default — no user selection */}
+
 
         </div>
 
@@ -357,8 +418,8 @@ export default function ShopCheckout() {
                   <span className="text-muted-foreground">₹{Math.round(taxTotal).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span>{shippingCost > 0 ? `₹${shippingCost}` : serviceable ? "₹0" : "—"}</span>
+                  <span className="text-muted-foreground">{deliveryMethod === "pickup" ? "Store Pickup" : "Shipping"}</span>
+                  <span>{deliveryMethod === "pickup" ? "FREE" : shippingCost > 0 ? `₹${shippingCost}` : serviceable ? "₹0" : "—"}</span>
                 </div>
                 <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
                   <span>Total</span>
@@ -369,7 +430,7 @@ export default function ShopCheckout() {
                 type="submit"
                 className="w-full mt-4"
                 size="lg"
-                disabled={loading || !form.state || !serviceable || !selectedCourier}
+                disabled={loading || (deliveryMethod === "ship" && (!form.state || !serviceable || !selectedCourier))}
               >
                 {loading ? "Processing..." : `Pay ₹${total.toLocaleString("en-IN")} with Razorpay`}
               </Button>
