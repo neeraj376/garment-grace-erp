@@ -78,7 +78,26 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [cancelling, setCancelling] = useState(false);
   const labelRef = useRef<HTMLDivElement>(null);
+
+  const handleCancelOrder = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    try {
+      const { data, error } = await supabase.rpc("cancel_online_order", { p_order_id: cancelTarget.id });
+      if (error) throw error;
+      toast.success("Order cancelled — stock restored");
+      setCancelTarget(null);
+      if (editingOrder?.id === cancelTarget.id) setEditingOrder(null);
+      queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to cancel order");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["online-orders", storeId, statusFilter, paymentFilter],
@@ -785,8 +804,18 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingOrder(null)}>Cancel</Button>
+          <DialogFooter className="gap-2 sm:gap-2">
+            {editingOrder?.status !== "cancelled" && (
+              <Button
+                variant="destructive"
+                onClick={() => setCancelTarget(editingOrder)}
+                disabled={saving}
+                className="gap-1.5 mr-auto"
+              >
+                <Trash2 className="h-4 w-4" /> Cancel Order
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setEditingOrder(null)}>Close</Button>
             <Button onClick={handleSaveOrder} disabled={saving} className="gap-1.5">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save
@@ -832,6 +861,30 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
             >
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel order confirmation */}
+      <AlertDialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel order {cancelTarget?.order_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The order will be marked as cancelled and all items will be returned to inventory.
+              Any linked invoice will be removed so reports stay accurate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Keep Order</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelOrder}
+              disabled={cancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelling ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+              Cancel Order & Restore Stock
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
