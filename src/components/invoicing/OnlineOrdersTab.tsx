@@ -804,8 +804,18 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingOrder(null)}>Cancel</Button>
+          <DialogFooter className="gap-2 sm:gap-2">
+            {editingOrder?.status !== "cancelled" && (
+              <Button
+                variant="destructive"
+                onClick={() => setCancelTarget(editingOrder)}
+                disabled={saving}
+                className="gap-1.5 mr-auto"
+              >
+                <Trash2 className="h-4 w-4" /> Cancel Order
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setEditingOrder(null)}>Close</Button>
             <Button onClick={handleSaveOrder} disabled={saving} className="gap-1.5">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save
