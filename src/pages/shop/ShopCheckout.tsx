@@ -83,12 +83,22 @@ export default function ShopCheckout() {
     }
   }, [visitor]);
 
+  // Delivery method: ship to address, or store pickup
+  const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">("ship");
+
   // Shipping state (DTDC Non-Dox per-kg local calculator)
   const [serviceable, setServiceable] = useState<boolean | null>(null);
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
 
   useEffect(() => {
+    if (deliveryMethod === "pickup") {
+      setServiceable(true);
+      setShippingCost(0);
+      setSelectedCourier({ courier_name: "Store Pickup", rate: 0 });
+      return;
+    }
+
     const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
     if (!pincodeValid || !form.state) {
       setServiceable(null);
@@ -108,7 +118,7 @@ export default function ShopCheckout() {
     setServiceable(true);
     setShippingCost(cost);
     setSelectedCourier({ courier_name: "DTDC", rate: cost });
-  }, [form.pincode, form.state, items]);
+  }, [form.pincode, form.state, items, deliveryMethod]);
 
 
 
