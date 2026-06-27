@@ -78,7 +78,26 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [cancelling, setCancelling] = useState(false);
   const labelRef = useRef<HTMLDivElement>(null);
+
+  const handleCancelOrder = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    try {
+      const { data, error } = await supabase.rpc("cancel_online_order", { p_order_id: cancelTarget.id });
+      if (error) throw error;
+      toast.success("Order cancelled — stock restored");
+      setCancelTarget(null);
+      if (editingOrder?.id === cancelTarget.id) setEditingOrder(null);
+      queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to cancel order");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["online-orders", storeId, statusFilter, paymentFilter],
