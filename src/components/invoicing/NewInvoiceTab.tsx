@@ -346,10 +346,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
-      courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
 
   const handleToggleStorefrontPricing = (checked: boolean) => {
     setStorefrontPricing(checked);
