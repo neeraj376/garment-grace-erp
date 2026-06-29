@@ -1041,6 +1041,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setCustomerEmail("");
       setCourierName("");
       setAwbNo("");
+      setDeliveryCost("");
       setSelectedEmployee("");
       setSource("");
       setPaymentMethods([]);
