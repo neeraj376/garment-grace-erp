@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS delivery_cost numeric(12,2) NOT NULL DEFAULT 0;
