@@ -54,7 +54,7 @@ interface ReportBundle {
 type SourceFilter = "all" | "offline" | "online" | "wholesale";
 
 const EMPTY_BUNDLE: ReportBundle = {
-  summary: { revenue: 0, cost: 0, tax: 0, profit: 0 },
+  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0 },
   trend: [],
   paymentSplit: [],
   sourceSplit: [],
