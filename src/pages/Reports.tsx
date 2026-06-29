@@ -355,15 +355,15 @@ export default function Reports() {
   };
 
   // Build comparison trend data aligned by day offset
-  const comparisonTrend = (() => {
-    if (!previous) return current.trend.map(t => ({ date: t.date, current: t.total }));
+  const comparisonTrend: { date: string; current: number | null; previous: number | null }[] = (() => {
+    if (!previous) return current.trend.map(t => ({ date: t.date, current: t.total, previous: null }));
     const maxLen = Math.max(current.trend.length, previous.trend.length);
-    const rows: { date: string; current?: number; previous?: number }[] = [];
+    const rows: { date: string; current: number | null; previous: number | null }[] = [];
     for (let i = 0; i < maxLen; i++) {
       rows.push({
         date: current.trend[i]?.date || previous.trend[i]?.date || `Day ${i + 1}`,
-        current: current.trend[i]?.total,
-        previous: previous.trend[i]?.total,
+        current: current.trend[i]?.total ?? null,
+        previous: previous.trend[i]?.total ?? null,
       });
     }
     return rows;
