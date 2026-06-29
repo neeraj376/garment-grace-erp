@@ -72,7 +72,7 @@ export default function Dashboard() {
       // Monthly sales
       const { data: monthInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, source")
+        .select("total_amount, pending_amount, source, delivery_cost")
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
