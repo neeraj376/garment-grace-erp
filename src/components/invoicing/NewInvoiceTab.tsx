@@ -1160,7 +1160,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       return;
     }
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
-    setCustomerGender(""); setCustomerLocation(""); setCustomerEmail(""); setCourierName(""); setAwbNo(""); setSelectedEmployee("");
+    setCustomerGender(""); setCustomerLocation(""); setCustomerEmail(""); setCourierName(""); setAwbNo(""); setDeliveryCost(""); setSelectedEmployee("");
     setSource(""); setPaymentMethods([]);
     clearDraft();
     fetchHeldInvoices();
