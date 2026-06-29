@@ -410,10 +410,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Customer required", description: "Name and mobile are required", variant: "destructive" });
       return;
     }
-    if (!addressLine1.trim() || !shipCity.trim() || !shipState || !shipPincode.trim()) {
-      toast({ title: "Address required", description: "Fill the complete shipping address", variant: "destructive" });
-      return;
-    }
     if (cart.length === 0) {
       toast({ title: "Cart is empty", description: "Add products before booking", variant: "destructive" });
       return;
@@ -1511,52 +1507,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             </div>
             {source === "online" && (
               <div className="space-y-3 rounded-md border p-3 bg-muted/20">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Shipping Address</div>
-                <div>
-                  <Label className="text-xs">Address Line 1 <span className="text-destructive">*</span></Label>
-                  <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
-                </div>
-                <div>
-                  <Label className="text-xs">Address Line 2</Label>
-                  <Input value={addressLine2} onChange={e => setAddressLine2(e.target.value)} placeholder="Landmark, Area (optional)" />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-xs">Pincode <span className="text-destructive">*</span></Label>
-                    <Input
-                      value={shipPincode}
-                      onChange={e => setShipPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      maxLength={6}
-                      placeholder="110001"
-                    />
-                    {shipPincode.length === 6 && (
-                      <div className="mt-1 flex items-center gap-1 text-[11px]">
-                        {checkingPincode ? (
-                          <><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /><span className="text-muted-foreground">Checking...</span></>
-                        ) : serviceable === true ? (
-                          <><CheckCircle className="h-3 w-3 text-green-600" /><span className="text-green-600">Available</span></>
-                        ) : serviceable === false ? (
-                          <><XCircle className="h-3 w-3 text-destructive" /><span className="text-destructive">Not deliverable</span></>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-xs">City <span className="text-destructive">*</span></Label>
-                    <Input value={shipCity} onChange={e => setShipCity(e.target.value)} placeholder="City" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">State <span className="text-destructive">*</span></Label>
-                    <Select value={shipState} onValueChange={setShipState}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className="z-[9999] max-h-60">
-                        {INDIAN_STATES.map(s => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <div className="text-xs text-muted-foreground">Online order — shipping address not required here.</div>
 
                 {couriers.length > 0 && (
                   <div className="space-y-2">
