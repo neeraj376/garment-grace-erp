@@ -1617,6 +1617,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <Label className="text-xs">AWB No. <span className="text-destructive">*</span></Label>
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
                   </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs">Delivery Cost (₹)</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={deliveryCost}
+                      onChange={e => setDeliveryCost(e.target.value.replace(/[^0-9.]/g, ""))}
+                      placeholder="0"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">Tracked separately as a shipping expense — not added to invoice revenue.</p>
+                  </div>
                 </div>
               </div>
             )}
