@@ -49,7 +49,7 @@ export default function Dashboard() {
       // Today's sales
       const { data: todayInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, payment_method, customer_id, source")
+        .select("total_amount, pending_amount, payment_method, customer_id, source, delivery_cost")
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
