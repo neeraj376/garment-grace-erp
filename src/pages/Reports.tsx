@@ -42,7 +42,7 @@ interface EmployeeSales {
 }
 
 interface ReportBundle {
-  summary: { revenue: number; cost: number; tax: number; profit: number };
+  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number };
   trend: { date: string; total: number }[];
   paymentSplit: PaymentSplit[];
   sourceSplit: PaymentSplit[];
