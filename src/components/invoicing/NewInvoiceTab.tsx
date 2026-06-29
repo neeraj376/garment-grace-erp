@@ -95,6 +95,7 @@ interface HeldInvoice {
   customerEmail?: string;
   courierName?: string;
   awbNo?: string;
+  deliveryCost?: string;
   cart: CartItem[];
   source: string;
   paymentMethod: string;
@@ -188,6 +189,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [customerEmail, setCustomerEmail] = useState(() => loadDraft()?.customerEmail ?? "");
   const [courierName, setCourierName] = useState(() => loadDraft()?.courierName ?? "");
   const [awbNo, setAwbNo] = useState(() => loadDraft()?.awbNo ?? "");
+  const [deliveryCost, setDeliveryCost] = useState(() => loadDraft()?.deliveryCost ?? "");
   const [source, setSource] = useState<string>("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
@@ -344,10 +346,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     saveDraft({
       cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
-      courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
 
   const handleToggleStorefrontPricing = (checked: boolean) => {
     setStorefrontPricing(checked);
@@ -975,6 +977,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           source,
           courier_name: source === "online" && courierName.trim() ? courierName.trim() : null,
           awb_no: source === "online" && awbNo.trim() ? awbNo.trim() : null,
+          delivery_cost: source === "online" ? (Number(deliveryCost) || 0) : 0,
           payment_method: paymentMethods.join("+"),
           notes: breakdownNote || null,
           subtotal,
@@ -1038,6 +1041,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setCustomerEmail("");
       setCourierName("");
       setAwbNo("");
+      setDeliveryCost("");
       setSelectedEmployee("");
       setSource("");
       setPaymentMethods([]);
@@ -1156,7 +1160,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       return;
     }
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
-    setCustomerGender(""); setCustomerLocation(""); setCustomerEmail(""); setCourierName(""); setAwbNo(""); setSelectedEmployee("");
+    setCustomerGender(""); setCustomerLocation(""); setCustomerEmail(""); setCourierName(""); setAwbNo(""); setDeliveryCost(""); setSelectedEmployee("");
     setSource(""); setPaymentMethods([]);
     clearDraft();
     fetchHeldInvoices();
@@ -1612,6 +1616,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   <div>
                     <Label className="text-xs">AWB No. <span className="text-destructive">*</span></Label>
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs">Delivery Cost (₹)</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={deliveryCost}
+                      onChange={e => setDeliveryCost(e.target.value.replace(/[^0-9.]/g, ""))}
+                      placeholder="0"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">Tracked separately as a shipping expense — not added to invoice revenue.</p>
                   </div>
                 </div>
               </div>

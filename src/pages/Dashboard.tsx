@@ -1,4 +1,4 @@
-import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package, AlertTriangle } from "lucide-react";
+import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package, AlertTriangle, Truck } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
@@ -29,6 +29,8 @@ export default function Dashboard() {
     monthlyWholesale: 0,
     dailyAverage: 0,
     totalPending: 0,
+    todayDeliveryCost: 0,
+    monthlyDeliveryCost: 0,
   });
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
@@ -47,7 +49,7 @@ export default function Dashboard() {
       // Today's sales
       const { data: todayInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, payment_method, customer_id, source")
+        .select("total_amount, pending_amount, payment_method, customer_id, source, delivery_cost")
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
@@ -70,7 +72,7 @@ export default function Dashboard() {
       // Monthly sales
       const { data: monthInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, source")
+        .select("total_amount, pending_amount, source, delivery_cost")
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
@@ -136,6 +138,8 @@ export default function Dashboard() {
         monthlyWholesale,
         dailyAverage,
         totalPending,
+        todayDeliveryCost: todayInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0,
+        monthlyDeliveryCost: monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0,
       });
 
       // Payment breakdown (use collected amount, not gross)
@@ -267,6 +271,20 @@ export default function Dashboard() {
             <Package className="h-4 w-4" /> Monthly Wholesale
           </div>
           <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyWholesale)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Truck className="h-4 w-4" /> Today Delivery Cost
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayDeliveryCost)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Excluded from revenue</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Truck className="h-4 w-4" /> Monthly Delivery Cost
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyDeliveryCost)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Excluded from revenue</p>
         </Card>
       </div>
 

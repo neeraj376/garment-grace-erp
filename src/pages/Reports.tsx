@@ -42,7 +42,7 @@ interface EmployeeSales {
 }
 
 interface ReportBundle {
-  summary: { revenue: number; cost: number; tax: number; profit: number };
+  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number };
   trend: { date: string; total: number }[];
   paymentSplit: PaymentSplit[];
   sourceSplit: PaymentSplit[];
@@ -54,7 +54,7 @@ interface ReportBundle {
 type SourceFilter = "all" | "offline" | "online" | "wholesale";
 
 const EMPTY_BUNDLE: ReportBundle = {
-  summary: { revenue: 0, cost: 0, tax: 0, profit: 0 },
+  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0 },
   trend: [],
   paymentSplit: [],
   sourceSplit: [],
@@ -243,7 +243,8 @@ export default function Reports() {
       });
     });
 
-    const summary = { revenue, cost, tax, profit: revenue - cost - tax };
+    const deliveryCost = invData.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0);
+    const summary = { revenue, cost, tax, deliveryCost, profit: revenue - cost - tax - deliveryCost };
 
     const paymentMap: Record<string, number> = {};
     invData.forEach(inv => {
@@ -486,11 +487,12 @@ export default function Reports() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {([
               { label: "Revenue", cur: current.summary.revenue, prev: previous?.summary.revenue ?? 0 },
               { label: "Cost of Goods", cur: current.summary.cost, prev: previous?.summary.cost ?? 0 },
               { label: "GST Collected", cur: current.summary.tax, prev: previous?.summary.tax ?? 0 },
+              { label: "Delivery Cost", cur: current.summary.deliveryCost, prev: previous?.summary.deliveryCost ?? 0 },
               { label: "Net Profit", cur: current.summary.profit, prev: previous?.summary.profit ?? 0, profit: true },
             ] as const).map(card => (
               <Card key={card.label}>
