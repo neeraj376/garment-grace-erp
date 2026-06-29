@@ -977,6 +977,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           source,
           courier_name: source === "online" && courierName.trim() ? courierName.trim() : null,
           awb_no: source === "online" && awbNo.trim() ? awbNo.trim() : null,
+          delivery_cost: source === "online" ? (Number(deliveryCost) || 0) : 0,
           payment_method: paymentMethods.join("+"),
           notes: breakdownNote || null,
           subtotal,
