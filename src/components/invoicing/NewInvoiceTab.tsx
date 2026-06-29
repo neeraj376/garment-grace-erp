@@ -95,6 +95,7 @@ interface HeldInvoice {
   customerEmail?: string;
   courierName?: string;
   awbNo?: string;
+  deliveryCost?: string;
   cart: CartItem[];
   source: string;
   paymentMethod: string;
