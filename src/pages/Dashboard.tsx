@@ -272,6 +272,20 @@ export default function Dashboard() {
           </div>
           <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyWholesale)}</p>
         </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Truck className="h-4 w-4" /> Today Delivery Cost
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayDeliveryCost)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Excluded from revenue</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Truck className="h-4 w-4" /> Monthly Delivery Cost
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyDeliveryCost)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Excluded from revenue</p>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
