@@ -243,7 +243,8 @@ export default function Reports() {
       });
     });
 
-    const summary = { revenue, cost, tax, profit: revenue - cost - tax };
+    const deliveryCost = invData.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0);
+    const summary = { revenue, cost, tax, deliveryCost, profit: revenue - cost - tax - deliveryCost };
 
     const paymentMap: Record<string, number> = {};
     invData.forEach(inv => {
