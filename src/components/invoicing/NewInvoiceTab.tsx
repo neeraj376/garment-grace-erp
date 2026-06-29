@@ -410,10 +410,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Customer required", description: "Name and mobile are required", variant: "destructive" });
       return;
     }
-    if (!addressLine1.trim() || !shipCity.trim() || !shipState || !shipPincode.trim()) {
-      toast({ title: "Address required", description: "Fill the complete shipping address", variant: "destructive" });
-      return;
-    }
     if (cart.length === 0) {
       toast({ title: "Cart is empty", description: "Add products before booking", variant: "destructive" });
       return;
