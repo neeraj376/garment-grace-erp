@@ -138,6 +138,8 @@ export default function Dashboard() {
         monthlyWholesale,
         dailyAverage,
         totalPending,
+        todayDeliveryCost: todayInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0,
+        monthlyDeliveryCost: monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0,
       });
 
       // Payment breakdown (use collected amount, not gross)
