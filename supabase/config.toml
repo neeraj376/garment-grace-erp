@@ -76,6 +76,12 @@ verify_jwt = false
 [functions.dtdc]
 verify_jwt = false
 
+[functions.send-mobile-otp]
+verify_jwt = false
+
+[functions.verify-mobile-otp]
+verify_jwt = false
+
 
 [functions.process-email-queue]
 verify_jwt = true
