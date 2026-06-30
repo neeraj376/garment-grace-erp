@@ -62,32 +62,28 @@ Deno.serve(async (req) => {
     const senderId = Deno.env.get("MSG91_SENDER_ID");
     if (!authKey || !templateId) throw new Error("SMS service not configured");
 
-    const payload: Record<string, unknown> = {
-      template_id: templateId,
-      short_url: "0",
-      recipients: [
-        {
-          mobiles: normalized,
-          otp: code,
-        },
-      ],
-    };
-    if (senderId) (payload as any).sender = senderId;
+    // Use MSG91's dedicated OTP API — it injects the code into the template's ##OTP## variable automatically.
+    const url = new URL("https://control.msg91.com/api/v5/otp");
+    url.searchParams.set("template_id", templateId);
+    url.searchParams.set("mobile", normalized);
+    url.searchParams.set("otp", code);
+    url.searchParams.set("otp_length", "6");
+    url.searchParams.set("otp_expiry", "10");
+    if (senderId) url.searchParams.set("sender", senderId);
 
-    const resp = await fetch("https://control.msg91.com/api/v5/flow/", {
+    const resp = await fetch(url.toString(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         authkey: authKey,
       },
-      body: JSON.stringify(payload),
     });
     const txt = await resp.text();
     if (!resp.ok) {
-      console.error("MSG91 error:", resp.status, txt);
+      console.error("MSG91 OTP API error:", resp.status, txt);
       throw new Error("Failed to send SMS. Please try again.");
     }
-    console.log("MSG91 sent:", txt);
+    console.log("MSG91 OTP sent:", txt);
 
     return new Response(JSON.stringify({ success: true, phone: normalized }), {
       status: 200,
