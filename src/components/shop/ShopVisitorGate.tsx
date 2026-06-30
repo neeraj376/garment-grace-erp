@@ -218,6 +218,29 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
+            <div className="rounded-md border border-border bg-muted/40 p-3">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+                Sample {channel === "email" ? "email" : "SMS"} you'll receive
+              </div>
+              {channel === "email" ? (
+                <div className="text-sm bg-background border border-border rounded p-3 space-y-1">
+                  <div className="font-medium">Your Originee verification code</div>
+                  <div className="text-muted-foreground">Hi {name.trim() || "there"},</div>
+                  <div>
+                    Your one-time code is{" "}
+                    <span className="font-mono font-bold tracking-widest">123456</span>.
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    Valid for 10 minutes. Do not share this code with anyone.
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm bg-background border border-border rounded p-3 font-mono leading-relaxed">
+                  123456 is your OTP for Originee. Valid for 10 minutes. Do not share with anyone.
+                </div>
+              )}
+            </div>
+
             <Button type="submit" className="w-full" disabled={sending}>
               {sending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Send {channel === "email" ? "Email" : "SMS"} OTP
