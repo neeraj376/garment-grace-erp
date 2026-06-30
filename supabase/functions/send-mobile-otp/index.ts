@@ -75,12 +75,9 @@ Deno.serve(async (req) => {
           var: code,
           var1: code,
           "1": code,
-койотVAR1: code,
         },
       ],
     };
-    // Remove the typo key, keep clean payload
-    delete flowBody.recipients[0].койотVAR1;
     if (senderId) flowBody.sender = senderId;
 
     const resp = await fetch("https://control.msg91.com/api/v5/flow/", {
