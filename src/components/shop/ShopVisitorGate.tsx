@@ -236,7 +236,7 @@ export function ShopVisitorGate({ children }: { children: React.ReactNode }) {
                 </div>
               ) : (
                 <div className="text-sm bg-background border border-border rounded p-3 font-mono leading-relaxed">
-                  123456 is your OTP for Originee. Valid for 10 minutes. Do not share with anyone.
+                  123456 is your OTP for verifying you profile with Klout Club by Zirclez Innovation
                 </div>
               )}
             </div>
