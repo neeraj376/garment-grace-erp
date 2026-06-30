@@ -62,28 +62,48 @@ Deno.serve(async (req) => {
     const senderId = Deno.env.get("MSG91_SENDER_ID");
     if (!authKey || !templateId) throw new Error("SMS service not configured");
 
-    // Use MSG91's dedicated OTP API — it injects the code into the template's ##OTP## variable automatically.
-    const url = new URL("https://control.msg91.com/api/v5/otp");
-    url.searchParams.set("template_id", templateId);
-    url.searchParams.set("mobile", normalized);
-    url.searchParams.set("otp", code);
-    url.searchParams.set("otp_length", "6");
-    url.searchParams.set("otp_expiry", "10");
-    if (senderId) url.searchParams.set("sender", senderId);
+    // Use MSG91 Flow API and fill every common variable name so the template's
+    // placeholder (##OTP##, ##otp##, ##var1##, ##1##) gets substituted correctly.
+    const flowBody: any = {
+      template_id: templateId,
+      short_url: "0",
+      recipients: [
+        {
+          mobiles: normalized,
+          OTP: code,
+          otp: code,
+          var: code,
+          var1: code,
+          "1": code,
+койотVAR1: code,
+        },
+      ],
+    };
+    // Remove the typo key, keep clean payload
+    delete flowBody.recipients[0].койотVAR1;
+    if (senderId) flowBody.sender = senderId;
 
-    const resp = await fetch(url.toString(), {
+    const resp = await fetch("https://control.msg91.com/api/v5/flow/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        accept: "application/json",
         authkey: authKey,
       },
+      body: JSON.stringify(flowBody),
     });
     const txt = await resp.text();
     if (!resp.ok) {
-      console.error("MSG91 OTP API error:", resp.status, txt);
+      console.error("MSG91 Flow API error:", resp.status, txt);
       throw new Error("Failed to send SMS. Please try again.");
     }
-    console.log("MSG91 OTP sent:", txt);
+    let parsed: any = null;
+    try { parsed = JSON.parse(txt); } catch {}
+    if (parsed && parsed.type && parsed.type !== "success") {
+      console.error("MSG91 Flow returned non-success:", txt);
+      throw new Error(parsed.message || "SMS provider rejected the request");
+    }
+    console.log("MSG91 OTP sent via Flow:", txt);
 
     return new Response(JSON.stringify({ success: true, phone: normalized }), {
       status: 200,
