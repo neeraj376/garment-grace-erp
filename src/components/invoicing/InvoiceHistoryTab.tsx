@@ -451,16 +451,29 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="section-title">Invoice History</CardTitle>
-            {canEdit && selectedIds.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeleteConfirm({ type: "bulk" })}
-                disabled={deleting}
-              >
-                {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                Delete {selectedIds.size} selected
-              </Button>
+            {selectedIds.size > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintShippingLabels}
+                  disabled={printingLabels}
+                >
+                  {printingLabels ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
+                  Print Shipping Labels ({selectedIds.size})
+                </Button>
+                {canEdit && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteConfirm({ type: "bulk" })}
+                    disabled={deleting}
+                  >
+                    {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                    Delete {selectedIds.size} selected
+                  </Button>
+                )}
+              </div>
             )}
           </div>
           <div className="flex flex-col gap-2">
