@@ -431,6 +431,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       setPrintingLabels(false);
     }
   };
+
+  const statusBadge = (status: string) => {
     switch (status) {
       case "completed":
         return <Badge variant="default" className="bg-green-600">Completed</Badge>;
