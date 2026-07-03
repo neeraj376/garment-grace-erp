@@ -37,12 +37,23 @@ export default function ShopVisitorsReport() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("shop_visitors")
-        .select("id, name, phone, email, verified_at, last_seen_at, created_at")
-        .order("verified_at", { ascending: false })
-        .limit(2000);
-      setVisitors((data ?? []) as Visitor[]);
+      const pageSize = 1000;
+      let from = 0;
+      const all: Visitor[] = [];
+      // Paginate to bypass PostgREST's default row cap and fetch all visitors
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from("shop_visitors")
+          .select("id, name, phone, email, verified_at, last_seen_at, created_at")
+          .order("verified_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        all.push(...(data as Visitor[]));
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      setVisitors(all);
       setLoading(false);
     })();
   }, []);
