@@ -166,7 +166,7 @@ export default function ShopVisitorsReport() {
                 setOpen(true);
               }}
               onFocus={() => setOpen(true)}
-              placeholder="Search name or phone"
+              placeholder="Search name, email or phone"
               className="pl-8 w-[220px]"
             />
             {q && (
