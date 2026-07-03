@@ -13,18 +13,20 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) throw new Error("Missing authorization");
+    const token = authHeader.replace(/^Bearer\s+/i, "");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
+    const adminClient = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
     });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
 
-    const { data: profile } = await userClient
+    const { data: userData, error: userErr } = await adminClient.auth.getUser(token);
+    if (userErr || !userData?.user) throw new Error("Unauthorized");
+    const user = userData.user;
+
+    const { data: profile } = await adminClient
       .from("profiles")
       .select("store_id, role")
       .eq("user_id", user.id)
@@ -40,10 +42,6 @@ Deno.serve(async (req) => {
     const normalizedEmail = String(newEmail).trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(normalizedEmail)) throw new Error("Invalid email address");
-
-    const adminClient = createClient(supabaseUrl, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     // Verify the target user belongs to the same store
     const { data: targetProfile } = await adminClient
