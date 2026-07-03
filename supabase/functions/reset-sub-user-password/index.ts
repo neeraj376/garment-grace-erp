@@ -41,9 +41,6 @@ Deno.serve(async (req) => {
     if (newPassword.length < 6) throw new Error("Password must be at least 6 characters");
 
     // Verify the target user belongs to the same store
-    const adminClient = createClient(supabaseUrl, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     const { data: targetProfile } = await adminClient
       .from("profiles")
