@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X } from "lucide-react";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X, Printer } from "lucide-react";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
+import { saveAs } from "file-saver";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -61,6 +63,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [printingLabels, setPrintingLabels] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "bulk" } | { type: "single"; invoice: Invoice } | null>(null);
   const [restoreStock, setRestoreStock] = useState(true);
   const [noteDialog, setNoteDialog] = useState<Invoice | null>(null);
@@ -334,6 +337,101 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
+  const handlePrintShippingLabels = async () => {
+    const selected = invoices.filter(i => selectedIds.has(i.id));
+    if (selected.length === 0) return;
+    setPrintingLabels(true);
+    try {
+      const customerIds = [...new Set(selected.map(i => i.customer_id).filter(Boolean))] as string[];
+      const addrMap: Record<string, any> = {};
+      if (customerIds.length > 0) {
+        const { data: addrs } = await supabase
+          .from("shipping_addresses")
+          .select("customer_id, name, phone, address_line1, address_line2, city, state, pincode, is_default")
+          .in("customer_id", customerIds);
+        (addrs || []).forEach((a: any) => {
+          const existing = addrMap[a.customer_id];
+          if (!existing || a.is_default) addrMap[a.customer_id] = a;
+        });
+      }
+
+      const labelChildren: Paragraph[] = [];
+      selected.forEach((inv, idx) => {
+        const addr = inv.customer_id ? addrMap[inv.customer_id] : null;
+        const name = addr?.name || inv.customers?.name || "Walk-in Customer";
+        const mobile = addr?.phone || inv.customers?.mobile || "—";
+        const addressParts = addr
+          ? [addr.address_line1, addr.address_line2, [addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")].filter(Boolean)
+          : [];
+        const fullAddress = addressParts.length > 0 ? addressParts.join(", ") : "Address not available";
+
+        const border = { style: BorderStyle.SINGLE, size: 6, color: "999999", space: 6 };
+        labelChildren.push(
+          new Paragraph({
+            spacing: { before: 120, after: 60 },
+            border: { top: border, bottom: border, left: border, right: border },
+            children: [
+              new TextRun({ text: `Invoice: ${inv.invoice_number}`, bold: true, size: 20 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 40 },
+            children: [
+              new TextRun({ text: "Name: ", bold: true, size: 24 }),
+              new TextRun({ text: name, size: 24 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 40 },
+            children: [
+              new TextRun({ text: "Mobile: ", bold: true, size: 24 }),
+              new TextRun({ text: mobile, size: 24 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [
+              new TextRun({ text: "Complete Address: ", bold: true, size: 24 }),
+              new TextRun({ text: fullAddress, size: 24 }),
+            ],
+          }),
+        );
+        if (idx < selected.length - 1) {
+          labelChildren.push(new Paragraph({
+            spacing: { after: 200 },
+            border: { bottom: { style: BorderStyle.DASHED, size: 6, color: "CCCCCC", space: 6 } },
+            children: [new TextRun({ text: "" })],
+          }));
+        }
+      });
+
+      const doc = new Document({
+        styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
+        sections: [{
+          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+          children: [
+            new Paragraph({
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 240 },
+              children: [new TextRun({ text: "Shipping Labels", bold: true, size: 32 })],
+            }),
+            ...labelChildren,
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const ts = new Date().toISOString().slice(0, 10);
+      saveAs(blob, `shipping-labels-${ts}.docx`);
+      toast({ title: "Document created", description: `${selected.length} shipping label(s) generated` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setPrintingLabels(false);
+    }
+  };
+
   const statusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -353,16 +451,29 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="section-title">Invoice History</CardTitle>
-            {canEdit && selectedIds.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeleteConfirm({ type: "bulk" })}
-                disabled={deleting}
-              >
-                {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                Delete {selectedIds.size} selected
-              </Button>
+            {selectedIds.size > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintShippingLabels}
+                  disabled={printingLabels}
+                >
+                  {printingLabels ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
+                  Print Shipping Labels ({selectedIds.size})
+                </Button>
+                {canEdit && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteConfirm({ type: "bulk" })}
+                    disabled={deleting}
+                  >
+                    {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                    Delete {selectedIds.size} selected
+                  </Button>
+                )}
+              </div>
             )}
           </div>
           <div className="flex flex-col gap-2">
