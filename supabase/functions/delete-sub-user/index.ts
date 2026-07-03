@@ -11,21 +11,18 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) throw new Error("Missing authorization header");
+    const token = authHeader.replace(/^Bearer\s+/i, "");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) throw new Error("Unauthorized: " + (userErr?.message ?? "no user"));
-    const user = userData.user;
 
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    const { data: userData, error: userErr } = await admin.auth.getUser(token);
+    if (userErr || !userData?.user) throw new Error("Unauthorized: " + (userErr?.message ?? "no user"));
+    const user = userData.user;
 
     // Use admin client to read profiles (bypass RLS edge cases)
     const { data: profile, error: profileErr } = await admin
