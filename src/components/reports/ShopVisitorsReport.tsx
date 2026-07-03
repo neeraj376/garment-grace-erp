@@ -33,6 +33,8 @@ export default function ShopVisitorsReport() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
