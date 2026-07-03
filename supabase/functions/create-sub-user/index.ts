@@ -42,11 +42,6 @@ Deno.serve(async (req) => {
     const { email, password, fullName, permissions } = await req.json();
     if (!email || !password) throw new Error("Email and password required");
 
-    // Create user with admin API
-    const adminClient = createClient(supabaseUrl, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
