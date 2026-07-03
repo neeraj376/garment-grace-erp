@@ -71,6 +71,34 @@ export default function ShopVisitorsReport() {
     );
   }, [q, visitors]);
 
+  const suggestions = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s || s.length < 1) return [];
+    const seen = new Set<string>();
+    const out: { name: string; phone: string | null }[] = [];
+    for (const v of visitors) {
+      const n = v.name ?? "";
+      if (n.toLowerCase().includes(s) && n.trim()) {
+        if (!seen.has(n)) {
+          seen.add(n);
+          out.push({ name: n, phone: v.phone });
+          if (out.length >= 8) break;
+        }
+      }
+    }
+    return out;
+  }, [q, visitors]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   function exportCsv() {
     const header = ["Name", "Email", "Phone", "Verified At", "Last Seen At"];
     const rows = filtered.map((v) => [
