@@ -182,14 +182,14 @@ export default function ShopVisitorsReport() {
               <ul className="absolute z-50 mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((s) => (
                   <li
-                    key={s.name + (s.phone ?? "")}
+                    key={s.label + "|" + s.sub}
                     className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => { setQ(s.name); setOpen(false); }}
+                    onClick={() => { setQ(s.query); setOpen(false); }}
                   >
-                    {s.name}
-                    {s.phone && (
+                    {s.label}
+                    {s.sub && (
                       <span className="ml-2 text-xs text-muted-foreground">
-                        {formatPhone(s.phone)}
+                        {s.sub}
                       </span>
                     )}
                   </li>
