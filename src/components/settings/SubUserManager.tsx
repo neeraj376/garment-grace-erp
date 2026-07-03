@@ -67,6 +67,42 @@ const getFunctionErrorMessage = async (error: unknown) => {
   }
 };
 
+const getActiveSession = async () => {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) throw error;
+
+  const expiresSoon =
+    !session || !session.expires_at || session.expires_at <= Math.floor(Date.now() / 1000) + 60;
+
+  if (!expiresSoon) return session;
+
+  const {
+    data: { session: refreshedSession },
+    error: refreshError,
+  } = await supabase.auth.refreshSession();
+
+  if (refreshError || !refreshedSession) {
+    throw new Error("Your login session has expired. Please log in again.");
+  }
+
+  return refreshedSession;
+};
+
+const invokeSubUserFunction = async <T = any,>(name: string, body?: Record<string, unknown>) => {
+  const session = await getActiveSession();
+
+  return supabase.functions.invoke<T>(name, {
+    body,
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+};
+
 export default function SubUserManager() {
   const { storeId } = useStore();
   const { role } = usePermissions();
@@ -133,7 +169,7 @@ export default function SubUserManager() {
     // Fetch emails via edge function (admin only has access to auth users)
     let emailMap: Record<string, string> = {};
     try {
-      const { data: emailData } = await supabase.functions.invoke("list-sub-user-emails");
+      const { data: emailData } = await invokeSubUserFunction<{ emails?: { user_id: string; email: string }[] }>("list-sub-user-emails");
       if (emailData?.emails) {
         emailMap = Object.fromEntries(
           emailData.emails.map((e: { user_id: string; email: string }) => [e.user_id, e.email])
@@ -183,26 +219,24 @@ export default function SubUserManager() {
     }
     setCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-sub-user", {
-        body: {
-          email: form.email,
-          password: form.password,
-          fullName: form.fullName,
-          permissions: {
-            can_invoicing: form.can_invoicing,
-            can_inventory: form.can_inventory,
-            can_photos: form.can_photos,
-            can_customers: form.can_customers,
-            can_dashboard: form.can_dashboard,
-            can_reports: form.can_reports,
-            can_loyalty: form.can_loyalty,
-            can_employees: form.can_employees,
-            can_stock_summary: form.can_stock_summary,
-            can_settings: form.can_settings,
-            can_edit_invoices: form.can_edit_invoices,
-            can_upload_inventory: form.can_upload_inventory,
-            can_print_stickers: form.can_print_stickers,
-          },
+      const { data, error } = await invokeSubUserFunction("create-sub-user", {
+        email: form.email,
+        password: form.password,
+        fullName: form.fullName,
+        permissions: {
+          can_invoicing: form.can_invoicing,
+          can_inventory: form.can_inventory,
+          can_photos: form.can_photos,
+          can_customers: form.can_customers,
+          can_dashboard: form.can_dashboard,
+          can_reports: form.can_reports,
+          can_loyalty: form.can_loyalty,
+          can_employees: form.can_employees,
+          can_stock_summary: form.can_stock_summary,
+          can_settings: form.can_settings,
+          can_edit_invoices: form.can_edit_invoices,
+          can_upload_inventory: form.can_upload_inventory,
+          can_print_stickers: form.can_print_stickers,
         },
       });
 
@@ -243,9 +277,7 @@ export default function SubUserManager() {
     }
     setResettingPw(true);
     try {
-      const { data, error } = await supabase.functions.invoke("reset-sub-user-password", {
-        body: { userId: pwUserId, newPassword },
-      });
+      const { data, error } = await invokeSubUserFunction("reset-sub-user-password", { userId: pwUserId, newPassword });
       if (error) throw new Error(await getFunctionErrorMessage(error));
       if (data?.error) throw new Error(data.error);
       toast({ title: "Password updated", description: `Password changed for ${pwUserName || "staff member"}.` });
@@ -269,9 +301,7 @@ export default function SubUserManager() {
     }
     setUpdatingEmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke("update-sub-user-email", {
-        body: { userId: emailUserId, newEmail: trimmed },
-      });
+      const { data, error } = await invokeSubUserFunction("update-sub-user-email", { userId: emailUserId, newEmail: trimmed });
       if (error) throw new Error(await getFunctionErrorMessage(error));
       if (data?.error) throw new Error(data.error);
       toast({
@@ -290,7 +320,7 @@ export default function SubUserManager() {
 
   const handleDelete = async (userId: string, name: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke("delete-sub-user", { body: { userId } });
+      const { data, error } = await invokeSubUserFunction("delete-sub-user", { userId });
       if (error) {
         let msg = error.message;
         try {
