@@ -337,7 +337,100 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const statusBadge = (status: string) => {
+  const handlePrintShippingLabels = async () => {
+    const selected = invoices.filter(i => selectedIds.has(i.id));
+    if (selected.length === 0) return;
+    setPrintingLabels(true);
+    try {
+      const customerIds = [...new Set(selected.map(i => i.customer_id).filter(Boolean))] as string[];
+      const addrMap: Record<string, any> = {};
+      if (customerIds.length > 0) {
+        const { data: addrs } = await supabase
+          .from("shipping_addresses")
+          .select("customer_id, name, phone, address_line1, address_line2, city, state, pincode, is_default")
+          .in("customer_id", customerIds);
+        (addrs || []).forEach((a: any) => {
+          const existing = addrMap[a.customer_id];
+          if (!existing || a.is_default) addrMap[a.customer_id] = a;
+        });
+      }
+
+      const labelChildren: Paragraph[] = [];
+      selected.forEach((inv, idx) => {
+        const addr = inv.customer_id ? addrMap[inv.customer_id] : null;
+        const name = addr?.name || inv.customers?.name || "Walk-in Customer";
+        const mobile = addr?.phone || inv.customers?.mobile || "—";
+        const addressParts = addr
+          ? [addr.address_line1, addr.address_line2, [addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")].filter(Boolean)
+          : [];
+        const fullAddress = addressParts.length > 0 ? addressParts.join(", ") : "Address not available";
+
+        const border = { style: BorderStyle.SINGLE, size: 6, color: "999999", space: 6 };
+        labelChildren.push(
+          new Paragraph({
+            spacing: { before: 120, after: 60 },
+            border: { top: border, bottom: border, left: border, right: border },
+            children: [
+              new TextRun({ text: `Invoice: ${inv.invoice_number}`, bold: true, size: 20 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 40 },
+            children: [
+              new TextRun({ text: "Name: ", bold: true, size: 24 }),
+              new TextRun({ text: name, size: 24 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 40 },
+            children: [
+              new TextRun({ text: "Mobile: ", bold: true, size: 24 }),
+              new TextRun({ text: mobile, size: 24 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [
+              new TextRun({ text: "Complete Address: ", bold: true, size: 24 }),
+              new TextRun({ text: fullAddress, size: 24 }),
+            ],
+          }),
+        );
+        if (idx < selected.length - 1) {
+          labelChildren.push(new Paragraph({
+            spacing: { after: 200 },
+            border: { bottom: { style: BorderStyle.DASHED, size: 6, color: "CCCCCC", space: 6 } },
+            children: [new TextRun({ text: "" })],
+          }));
+        }
+      });
+
+      const doc = new Document({
+        styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
+        sections: [{
+          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+          children: [
+            new Paragraph({
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 240 },
+              children: [new TextRun({ text: "Shipping Labels", bold: true, size: 32 })],
+            }),
+            ...labelChildren,
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const ts = new Date().toISOString().slice(0, 10);
+      saveAs(blob, `shipping-labels-${ts}.docx`);
+      toast({ title: "Document created", description: `${selected.length} shipping label(s) generated` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setPrintingLabels(false);
+    }
+  };
     switch (status) {
       case "completed":
         return <Badge variant="default" className="bg-green-600">Completed</Badge>;
