@@ -72,16 +72,42 @@ export default function ShopVisitorsReport() {
   }, [q, visitors]);
 
   const suggestions = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s || s.length < 1) return [];
+    const raw = q.trim();
+    const s = raw.toLowerCase();
+    if (!s) return [];
     const seen = new Set<string>();
-    const out: { name: string; phone: string | null }[] = [];
+    const out: { label: string; sub: string; query: string }[] = [];
     for (const v of visitors) {
       const n = v.name ?? "";
+      const e = v.email ?? "";
+      const p = v.phone ?? "";
+      let match = false;
+      let label = "";
+      let sub = "";
+      let query = "";
+
       if (n.toLowerCase().includes(s) && n.trim()) {
-        if (!seen.has(n)) {
-          seen.add(n);
-          out.push({ name: n, phone: v.phone });
+        match = true;
+        label = n;
+        sub = formatPhone(p);
+        query = n;
+      } else if (e.toLowerCase().includes(s) && e.trim()) {
+        match = true;
+        label = e;
+        sub = n || formatPhone(p) || "";
+        query = e;
+      } else if (p.includes(raw.replace(/\D/g, "")) && raw.replace(/\D/g, "")) {
+        match = true;
+        label = formatPhone(p);
+        sub = n || e || "";
+        query = p;
+      }
+
+      if (match) {
+        const key = label + "|" + sub;
+        if (!seen.has(key)) {
+          seen.add(key);
+          out.push({ label, sub, query });
           if (out.length >= 8) break;
         }
       }
@@ -140,7 +166,7 @@ export default function ShopVisitorsReport() {
                 setOpen(true);
               }}
               onFocus={() => setOpen(true)}
-              placeholder="Search name or phone"
+              placeholder="Search name, email or phone"
               className="pl-8 w-[220px]"
             />
             {q && (
@@ -156,14 +182,14 @@ export default function ShopVisitorsReport() {
               <ul className="absolute z-50 mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((s) => (
                   <li
-                    key={s.name + (s.phone ?? "")}
+                    key={s.label + "|" + s.sub}
                     className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => { setQ(s.name); setOpen(false); }}
+                    onClick={() => { setQ(s.query); setOpen(false); }}
                   >
-                    {s.name}
-                    {s.phone && (
+                    {s.label}
+                    {s.sub && (
                       <span className="ml-2 text-xs text-muted-foreground">
-                        {formatPhone(s.phone)}
+                        {s.sub}
                       </span>
                     )}
                   </li>
