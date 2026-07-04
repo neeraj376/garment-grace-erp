@@ -1423,7 +1423,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label className="text-xs">Delivery Cost (₹)</Label>
+                    <Label className="text-xs">Delivery Cost (₹) {source === "online" && <span className="text-destructive">*</span>}</Label>
                     <Input
                       type="number"
                       inputMode="decimal"
