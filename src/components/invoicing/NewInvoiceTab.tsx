@@ -1507,7 +1507,48 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
             </div>
             {source === "online" && (
               <div className="space-y-3 rounded-md border p-3 bg-muted/20">
-                <div className="text-xs text-muted-foreground">Online order — shipping address not required here.</div>
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <Truck className="h-3.5 w-3.5" /> Shipping Address
+                </div>
+                <div>
+                  <Label className="text-xs">Address Line 1</Label>
+                  <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
+                </div>
+                <div>
+                  <Label className="text-xs">Address Line 2</Label>
+                  <Input value={addressLine2} onChange={e => setAddressLine2(e.target.value)} placeholder="Landmark, Area (optional)" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Pincode</Label>
+                    <Input
+                      value={shipPincode}
+                      onChange={e => setShipPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="110001"
+                      maxLength={6}
+                    />
+                    {shipPincode.length === 6 && serviceable && (
+                      <div className="mt-1 flex items-center gap-1 text-[10px] text-green-600">
+                        <CheckCircle className="h-3 w-3" /> Serviceable
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs">City</Label>
+                    <Input value={shipCity} onChange={e => setShipCity(e.target.value)} placeholder="City" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">State</Label>
+                    <Select value={shipState} onValueChange={setShipState}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {INDIAN_STATES.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
                 {couriers.length > 0 && (
                   <div className="space-y-2">
