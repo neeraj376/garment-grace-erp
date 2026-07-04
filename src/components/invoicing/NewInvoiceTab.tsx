@@ -216,10 +216,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [shipPincode, setShipPincode] = useState(() => loadDraft()?.shipPincode ?? "");
   const [checkingPincode, setCheckingPincode] = useState(false);
   const [serviceable, setServiceable] = useState<boolean | null>(null);
-  const [couriers, setCouriers] = useState<CourierOption[]>([]);
-  const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
-  const [shippingCost, setShippingCost] = useState(0);
-  const [bookingCourier, setBookingCourier] = useState(false);
 
   const isAuthErrorMessage = (message: string) => /jwt|token|session|expired|refresh/i.test(message);
 
@@ -891,7 +887,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setPaymentMethods([]);
       setPaymentBreakdown({});
       setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode("");
-      setCouriers([]); setSelectedCourier(null); setShippingCost(0); setServiceable(null);
+      setServiceable(null);
       clearDraft();
     } catch (err: any) {
       showMutationError("Error", err?.message ?? "Could not create invoice");
@@ -1398,55 +1394,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   </div>
                 </div>
 
-                {couriers.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      <Truck className="h-3.5 w-3.5" /> Shipping Options
-                    </div>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                      {couriers.slice(0, 5).map(c => (
-                        <label
-                          key={c.courier_company_id}
-                          className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors text-xs ${
-                            selectedCourier?.courier_company_id === c.courier_company_id
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-muted-foreground"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="invoice-courier"
-                              checked={selectedCourier?.courier_company_id === c.courier_company_id}
-                              onChange={() => { setSelectedCourier(c); setShippingCost(c.rate); }}
-                              className="accent-primary"
-                            />
-                            <div>
-                              <p className="font-medium">{c.courier_name}</p>
-                              <p className="text-[10px] text-muted-foreground">Est. {c.etd}</p>
-                            </div>
-                          </div>
-                          <span className="font-semibold">₹{c.rate}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="w-full"
-                      onClick={handleBookCourier}
-                      disabled={bookingCourier || !selectedCourier || !!awbNo}
-                    >
-                      {bookingCourier ? (
-                        <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Booking...</>
-                      ) : awbNo ? (
-                        <>✓ Booked</>
-                      ) : (
-                        <><Truck className="h-3.5 w-3.5 mr-1.5" /> Book Courier (₹{shippingCost})</>
-                      )}
-                    </Button>
-                  </div>
-                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t">
                   <div>
