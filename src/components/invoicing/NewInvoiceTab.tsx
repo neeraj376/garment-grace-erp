@@ -722,6 +722,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         toast({ title: "Error", description: "Shipping state is required", variant: "destructive" });
         return;
       }
+      if (!deliveryCost || Number(deliveryCost) <= 0) {
+        toast({ title: "Error", description: "Delivery cost is required for online invoices", variant: "destructive" });
+        return;
+      }
     }
     // Courier name and AWB are optional for online invoices — they can be added later.
     if (paymentMethods.length === 0) {
@@ -1423,7 +1427,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label className="text-xs">Delivery Cost (₹)</Label>
+                    <Label className="text-xs">Delivery Cost (₹) {source === "online" && <span className="text-destructive">*</span>}</Label>
                     <Input
                       type="number"
                       inputMode="decimal"
