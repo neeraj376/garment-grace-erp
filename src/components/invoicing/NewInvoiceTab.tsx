@@ -1373,7 +1373,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   <Truck className="h-3.5 w-3.5" /> Shipping Address
                 </div>
                 <div>
-                  <Label className="text-xs">Address Line 1</Label>
+                  <Label className="text-xs">Address Line 1 <span className="text-destructive">*</span></Label>
                   <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
                 </div>
                 <div>
@@ -1382,7 +1382,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <Label className="text-xs">Pincode</Label>
+                    <Label className="text-xs">Pincode <span className="text-destructive">*</span></Label>
                     <Input
                       value={shipPincode}
                       onChange={e => setShipPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -1396,11 +1396,11 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     )}
                   </div>
                   <div>
-                    <Label className="text-xs">City</Label>
+                    <Label className="text-xs">City <span className="text-destructive">*</span></Label>
                     <Input value={shipCity} onChange={e => setShipCity(e.target.value)} placeholder="City" />
                   </div>
                   <div>
-                    <Label className="text-xs">State</Label>
+                    <Label className="text-xs">State <span className="text-destructive">*</span></Label>
                     <Select value={shipState} onValueChange={setShipState}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
