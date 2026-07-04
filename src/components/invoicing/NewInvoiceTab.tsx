@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { calculateDtdcShipping } from "@/lib/dtdcRates";
+
 
 const PAYMENT_OPTIONS: { value: string; label: string }[] = [
   { value: "cash", label: "Cash" },
@@ -34,13 +34,6 @@ const INDIAN_STATES = [
   "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
 ];
 
-interface CourierOption {
-  courier_company_id: number;
-  courier_name: string;
-  rate: number;
-  etd: string;
-  estimated_delivery_days: number;
-}
 
 interface CartItem {
   product_id: string;
@@ -223,10 +216,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [shipPincode, setShipPincode] = useState(() => loadDraft()?.shipPincode ?? "");
   const [checkingPincode, setCheckingPincode] = useState(false);
   const [serviceable, setServiceable] = useState<boolean | null>(null);
-  const [couriers, setCouriers] = useState<CourierOption[]>([]);
-  const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
-  const [shippingCost, setShippingCost] = useState(0);
-  const [bookingCourier, setBookingCourier] = useState(false);
 
   const isAuthErrorMessage = (message: string) => /jwt|token|session|expired|refresh/i.test(message);
 
@@ -361,151 +350,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     })));
   };
 
-  // DTDC Non-Dox shipping quote (matches storefront) — based on state, weight & invoice value
-  useEffect(() => {
-    if (source !== "online") {
-      setServiceable(null);
-      setCouriers([]);
-      setSelectedCourier(null);
-      setShippingCost(0);
-      return;
-    }
-    if (shipPincode.length !== 6 || !/^[1-9]\d{5}$/.test(shipPincode) || !shipState) {
-      setServiceable(null);
-      setCouriers([]);
-      setSelectedCourier(null);
-      setShippingCost(0);
-      return;
-    }
-    const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
-    if (totalQty === 0) return;
-
-    // Weight: 400g per item, 1kg minimum (Non-Dox rounds up to nearest kg)
-    const weightKg = Math.max(0.5, totalQty * 0.4);
-    const invoiceValue = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
-
-    const { cost, zone, billableKg } = calculateDtdcShipping(shipState, weightKg, invoiceValue);
-    const option: CourierOption = {
-      courier_company_id: 0,
-      courier_name: `DTDC Non-Dox (${zone})`,
-      rate: cost,
-      etd: "",
-      estimated_delivery_days: 0,
-    };
-    setServiceable(true);
-    setCouriers([option]);
-    setSelectedCourier(option);
-    setShippingCost(cost);
-    // billableKg available if needed later
-    void billableKg;
-  }, [shipPincode, shipState, source, cart]);
-
-
-  const handleBookCourier = async () => {
-    if (!selectedCourier) {
-      toast({ title: "Select a courier", description: "Pick a shipping option first", variant: "destructive" });
-      return;
-    }
-    if (!customerName.trim() || !customerMobile.trim()) {
-      toast({ title: "Customer required", description: "Name and mobile are required", variant: "destructive" });
-      return;
-    }
-    if (cart.length === 0) {
-      toast({ title: "Cart is empty", description: "Add products before booking", variant: "destructive" });
-      return;
-    }
-
-    setBookingCourier(true);
-    try {
-      const orderRef = `INV-PREBOOK-${Date.now().toString(36).toUpperCase()}`;
-      const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
-      const totalWeightKg = Math.max(0.5, totalQty * 0.5);
-      const nameParts = customerName.trim().split(/\s+/);
-      const billingFirst = nameParts[0] || "Customer";
-      const billingLast = nameParts.slice(1).join(" ") || "-";
-
-      const order_data = {
-        order_id: orderRef,
-        order_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-        pickup_location: "work",
-        billing_customer_name: billingFirst,
-        billing_last_name: billingLast,
-        billing_address: addressLine1,
-        billing_address_2: addressLine2 || "",
-        billing_city: shipCity,
-        billing_pincode: shipPincode,
-        billing_state: shipState,
-        billing_country: "India",
-        billing_email: customerEmail || "noreply@originee-store.com",
-        billing_phone: customerMobile.replace(/\D/g, "").slice(-10),
-        shipping_is_billing: true,
-        order_items: cart.map(i => ({
-          name: i.name,
-          sku: i.sku,
-          units: i.quantity,
-          selling_price: i.unit_price,
-          discount: i.item_discount,
-          tax: i.tax_rate,
-          hsn: 0,
-        })),
-        payment_method: "Prepaid",
-        sub_total: cart.reduce((s, i) => s + getLineTotal(i), 0),
-        length: 25,
-        breadth: 20,
-        height: 5,
-        weight: Number(totalWeightKg.toFixed(1)),
-      };
-
-      const { data: created, error: createErr } = await supabase.functions.invoke("shiprocket", {
-        body: { action: "create_order", order_data },
-      });
-      if (createErr) throw createErr;
-
-      // Surface Shiprocket validation errors clearly
-      if (created?.status_code && created.status_code >= 400) {
-        const detail = created?.errors
-          ? Object.entries(created.errors).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ")
-          : created.message || "Shiprocket order creation failed";
-        throw new Error(detail);
-      }
-      if (created?.message && !created?.shipment_id && !created?.order_id) {
-        const detail = created?.errors
-          ? Object.entries(created.errors).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ")
-          : created.message;
-        throw new Error(detail);
-      }
-
-      const shipmentId = created?.shipment_id || created?.payload?.shipment_id;
-      if (!shipmentId || shipmentId === 0) {
-        console.error("Shiprocket create_order response:", created);
-        const hint = created?.errors
-          ? Object.entries(created.errors).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ")
-          : (created?.message || "Check that pickup location 'Primary' exists in your Shiprocket account and address fields are valid.");
-        throw new Error(`No shipment_id returned. ${hint}`);
-      }
-
-      const { data: awbRes, error: awbErr } = await supabase.functions.invoke("shiprocket", {
-        body: {
-          action: "generate_awb",
-          shipment_id: shipmentId,
-          courier_id: selectedCourier.courier_company_id,
-        },
-      });
-      if (awbErr) throw awbErr;
-      const awbData = awbRes?.response?.data;
-      const newAwb = awbData?.awb_code;
-      const newCourier = awbData?.courier_name || selectedCourier.courier_name;
-      if (!newAwb) throw new Error(awbRes?.message || "AWB not generated");
-
-      setCourierName(newCourier);
-      setAwbNo(newAwb);
-      toast({ title: "Courier booked!", description: `${newCourier} • AWB ${newAwb}` });
-    } catch (err: any) {
-      toast({ title: "Booking failed", description: err?.message || "Could not book courier", variant: "destructive" });
-    } finally {
-      setBookingCourier(false);
-    }
-  };
 
   useEffect(() => {
     if (!storeId) return;
@@ -1043,7 +887,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setPaymentMethods([]);
       setPaymentBreakdown({});
       setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode("");
-      setCouriers([]); setSelectedCourier(null); setShippingCost(0); setServiceable(null);
+      setServiceable(null);
       clearDraft();
     } catch (err: any) {
       showMutationError("Error", err?.message ?? "Could not create invoice");
@@ -1550,55 +1394,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   </div>
                 </div>
 
-                {couriers.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      <Truck className="h-3.5 w-3.5" /> Shipping Options
-                    </div>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                      {couriers.slice(0, 5).map(c => (
-                        <label
-                          key={c.courier_company_id}
-                          className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors text-xs ${
-                            selectedCourier?.courier_company_id === c.courier_company_id
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-muted-foreground"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="invoice-courier"
-                              checked={selectedCourier?.courier_company_id === c.courier_company_id}
-                              onChange={() => { setSelectedCourier(c); setShippingCost(c.rate); }}
-                              className="accent-primary"
-                            />
-                            <div>
-                              <p className="font-medium">{c.courier_name}</p>
-                              <p className="text-[10px] text-muted-foreground">Est. {c.etd}</p>
-                            </div>
-                          </div>
-                          <span className="font-semibold">₹{c.rate}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="w-full"
-                      onClick={handleBookCourier}
-                      disabled={bookingCourier || !selectedCourier || !!awbNo}
-                    >
-                      {bookingCourier ? (
-                        <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Booking...</>
-                      ) : awbNo ? (
-                        <>✓ Booked</>
-                      ) : (
-                        <><Truck className="h-3.5 w-3.5 mr-1.5" /> Book Courier (₹{shippingCost})</>
-                      )}
-                    </Button>
-                  </div>
-                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t">
                   <div>
