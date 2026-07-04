@@ -705,6 +705,24 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a source", variant: "destructive" });
       return;
     }
+    if (source === "online") {
+      if (!addressLine1.trim()) {
+        toast({ title: "Error", description: "Shipping address line 1 is required", variant: "destructive" });
+        return;
+      }
+      if (!shipPincode.trim()) {
+        toast({ title: "Error", description: "Shipping pincode is required", variant: "destructive" });
+        return;
+      }
+      if (!shipCity.trim()) {
+        toast({ title: "Error", description: "Shipping city is required", variant: "destructive" });
+        return;
+      }
+      if (!shipState) {
+        toast({ title: "Error", description: "Shipping state is required", variant: "destructive" });
+        return;
+      }
+    }
     // Courier name and AWB are optional for online invoices — they can be added later.
     if (paymentMethods.length === 0) {
       toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
