@@ -722,6 +722,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         toast({ title: "Error", description: "Shipping state is required", variant: "destructive" });
         return;
       }
+      if (!deliveryCost || Number(deliveryCost) <= 0) {
+        toast({ title: "Error", description: "Delivery cost is required for online invoices", variant: "destructive" });
+        return;
+      }
     }
     // Courier name and AWB are optional for online invoices — they can be added later.
     if (paymentMethods.length === 0) {
