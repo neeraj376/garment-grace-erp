@@ -77,6 +77,8 @@ export default function Inventory() {
   const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
   const [loading, setLoading] = useState(true);
   const [thumbProgress, setThumbProgress] = useState<{ current: number; total: number } | null>(null);
+  const [visibleCount, setVisibleCount] = useState(300);
+
 
   const generateMissingThumbnails = async () => {
     if (!storeId) return;
