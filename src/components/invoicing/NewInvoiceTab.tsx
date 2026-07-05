@@ -355,7 +355,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     if (!storeId) return;
     // Fetch all in-stock products with computed stock in a single RPC call.
     const fetchAllProducts = async () => {
-      const { data, error } = await supabase.rpc("get_invoicing_products", { p_store_id: storeId });
+      const { data, error } = await supabase
+        .rpc("get_invoicing_products", { p_store_id: storeId })
+        .range(0, 99999);
       if (error) {
         console.error("Failed to fetch invoicing products", error);
         setProducts([]);
