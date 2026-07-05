@@ -818,7 +818,7 @@ export default function Inventory() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((p) => (
+              filtered.slice(0, visibleCount).map((p) => (
                 <TableRow key={p.id} className={selectedIds.has(p.id) ? "bg-muted/50" : ""}>
                   {canUpload && (
                     <TableCell className="p-2">
