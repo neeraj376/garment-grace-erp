@@ -89,6 +89,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [source, setSource] = useState(invoice.source);
   const [courierName, setCourierName] = useState(invoice.courier_name || "");
   const [awbNo, setAwbNo] = useState(invoice.awb_no || "");
+  // Shipping address (loaded from DB in useEffect)
+  const [shipName, setShipName] = useState("");
+  const [shipPhone, setShipPhone] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [shipCity, setShipCity] = useState("");
+  const [shipState, setShipState] = useState("");
+  const [shipPincode, setShipPincode] = useState("");
   const [status, setStatus] = useState(invoice.status);
   const [notes, setNotes] = useState(invoice.notes || "");
   const [discountAmount, setDiscountAmount] = useState(String(invoice.discount_amount));
@@ -142,12 +150,22 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         })));
       }
 
-      // Fetch employee for this invoice
+      // Fetch employee & shipping fields for this invoice
       const { data: inv } = await supabase
         .from("invoices")
-        .select("employee_id, store_id")
+        .select("employee_id, store_id, shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
         .eq("id", invoice.id)
         .single();
+
+      if (inv) {
+        setShipName((inv as any).shipping_name || "");
+        setShipPhone((inv as any).shipping_phone || "");
+        setAddressLine1((inv as any).shipping_address_line1 || "");
+        setAddressLine2((inv as any).shipping_address_line2 || "");
+        setShipCity((inv as any).shipping_city || "");
+        setShipState((inv as any).shipping_state || "");
+        setShipPincode((inv as any).shipping_pincode || "");
+      }
 
       if (inv?.store_id) {
         const { data: emps } = await supabase
@@ -337,6 +355,13 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           source,
           courier_name: source === "online" ? normalizedCourierName : null,
           awb_no: source === "online" ? normalizedAwbNo : null,
+          shipping_name: source === "online" ? (shipName.trim() || customerName.trim() || null) : null,
+          shipping_phone: source === "online" ? (shipPhone.trim() || customerMobile.trim() || null) : null,
+          shipping_address_line1: source === "online" ? (addressLine1.trim() || null) : null,
+          shipping_address_line2: source === "online" ? (addressLine2.trim() || null) : null,
+          shipping_city: source === "online" ? (shipCity.trim() || null) : null,
+          shipping_state: source === "online" ? (shipState.trim() || null) : null,
+          shipping_pincode: source === "online" ? (shipPincode.trim() || null) : null,
           status,
           notes: notes || null,
           discount_amount: Number(discountAmount) || 0,
@@ -508,6 +533,37 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   <div className="space-y-1">
                     <Label>AWB No. <span className="text-destructive">*</span></Label>
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label className="text-sm font-semibold">Shipping Address</Label>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Recipient Name</Label>
+                    <Input value={shipName} onChange={e => setShipName(e.target.value)} placeholder="Defaults to customer name" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Recipient Phone</Label>
+                    <Input value={shipPhone} onChange={e => setShipPhone(e.target.value)} placeholder="Defaults to customer mobile" />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label>Address Line 1</Label>
+                    <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label>Address Line 2</Label>
+                    <Input value={addressLine2} onChange={e => setAddressLine2(e.target.value)} placeholder="Landmark, Area (optional)" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>City</Label>
+                    <Input value={shipCity} onChange={e => setShipCity(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>State</Label>
+                    <Input value={shipState} onChange={e => setShipState(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Pincode</Label>
+                    <Input value={shipPincode} onChange={e => setShipPincode(e.target.value)} />
                   </div>
                 </>
               )}

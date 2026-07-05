@@ -572,6 +572,13 @@ export type Database = {
           notes: string | null
           payment_method: string
           pending_amount: number
+          shipping_address_line1: string | null
+          shipping_address_line2: string | null
+          shipping_city: string | null
+          shipping_name: string | null
+          shipping_phone: string | null
+          shipping_pincode: string | null
+          shipping_state: string | null
           source: string
           status: string
           store_id: string
@@ -594,6 +601,13 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           pending_amount?: number
+          shipping_address_line1?: string | null
+          shipping_address_line2?: string | null
+          shipping_city?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          shipping_pincode?: string | null
+          shipping_state?: string | null
           source?: string
           status?: string
           store_id: string
@@ -616,6 +630,13 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           pending_amount?: number
+          shipping_address_line1?: string | null
+          shipping_address_line2?: string | null
+          shipping_city?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          shipping_pincode?: string | null
+          shipping_state?: string | null
           source?: string
           status?: string
           store_id?: string

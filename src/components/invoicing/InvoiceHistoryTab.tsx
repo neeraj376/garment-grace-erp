@@ -342,12 +342,30 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     if (selected.length === 0) return;
     setPrintingLabels(true);
     try {
-      // Online orders share an invoice_number/order_number suffix (INV-XXXX ↔ ORD-XXXX)
-      // and store the shipping address on the order, not the POS customer record.
-      // Look up addresses via orders first, then fall back to any shipping_addresses
-      // linked directly to the customer.
-      const suffixes = selected.map(i => (i.invoice_number || "").slice(4)).filter(Boolean);
       const addrByInvoiceId: Record<string, any> = {};
+
+      // Prefer address saved directly on the invoice (new online invoices).
+      selected.forEach(inv => {
+        const anyInv = inv as any;
+        if (anyInv.shipping_address_line1) {
+          addrByInvoiceId[inv.id] = {
+            name: anyInv.shipping_name,
+            phone: anyInv.shipping_phone,
+            address_line1: anyInv.shipping_address_line1,
+            address_line2: anyInv.shipping_address_line2,
+            city: anyInv.shipping_city,
+            state: anyInv.shipping_state,
+            pincode: anyInv.shipping_pincode,
+          };
+        }
+      });
+
+      // Legacy fallback: online orders share an invoice_number/order_number
+      // suffix (INV-XXXX ↔ ORD-XXXX) with the address on the order.
+      const suffixes = selected
+        .filter(i => !addrByInvoiceId[i.id])
+        .map(i => (i.invoice_number || "").slice(4))
+        .filter(Boolean);
 
       if (suffixes.length > 0) {
         const orNumbers = suffixes.map(s => `ORD-${s}`);
