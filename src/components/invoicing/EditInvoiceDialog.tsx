@@ -534,6 +534,37 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                     <Label>AWB No. <span className="text-destructive">*</span></Label>
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
                   </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label className="text-sm font-semibold">Shipping Address</Label>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Recipient Name</Label>
+                    <Input value={shipName} onChange={e => setShipName(e.target.value)} placeholder="Defaults to customer name" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Recipient Phone</Label>
+                    <Input value={shipPhone} onChange={e => setShipPhone(e.target.value)} placeholder="Defaults to customer mobile" />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label>Address Line 1</Label>
+                    <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label>Address Line 2</Label>
+                    <Input value={addressLine2} onChange={e => setAddressLine2(e.target.value)} placeholder="Landmark, Area (optional)" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>City</Label>
+                    <Input value={shipCity} onChange={e => setShipCity(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>State</Label>
+                    <Input value={shipState} onChange={e => setShipState(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Pincode</Label>
+                    <Input value={shipPincode} onChange={e => setShipPincode(e.target.value)} />
+                  </div>
                 </>
               )}
               <div className="space-y-1">
