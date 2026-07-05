@@ -124,88 +124,33 @@ export default function Inventory() {
     if (!storeId) return;
     setLoading(true);
     try {
-    const pageSize = 1000;
-
-    // Helper to fully paginate a query builder factory.
-    const fetchAll = async <T,>(makeQuery: (from: number, to: number) => any): Promise<T[]> => {
-      let all: T[] = [];
-      let from = 0;
-      while (true) {
-        const { data, error } = await makeQuery(from, from + pageSize - 1);
-        if (error) { console.error("[Inventory] fetch error:", error); break; }
-        if (!data || data.length === 0) break;
-        all = all.concat(data);
-        if (data.length < pageSize) break;
-        from += pageSize;
+      // Single RPC computes stock, avg buying price, sold qty, and last stock-added date on the server.
+      const { data, error } = await supabase.rpc("get_inventory_overview", { p_store_id: storeId });
+      if (error) {
+        console.error("[Inventory] fetch error:", error);
+        setProducts([]);
+        return;
       }
-      return all;
-    };
-
-    // Fetch products, batches, and invoice items in parallel.
-    // For invoice_items we use an inner-join filter on invoices.store_id so
-    // we don't need to round-trip invoice IDs separately.
-    const [allProducts, allBatches, allItems] = await Promise.all([
-      fetchAll<any>((f, t) =>
-        supabase
-          .from("products")
-          .select("*")
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .range(f, t)
-      ),
-      fetchAll<any>((f, t) =>
-        supabase
-          .from("inventory_batches")
-          .select("product_id, quantity, buying_price, received_at")
-          .eq("store_id", storeId)
-          .range(f, t)
-      ),
-      fetchAll<any>((f, t) =>
-        supabase
-          .from("invoice_items")
-          .select("product_id, quantity, returned_quantity, invoices!inner(store_id)")
-          .eq("invoices.store_id", storeId)
-          .range(f, t)
-      ),
-    ]);
-
-    const batchesByProduct = new Map<string, { quantity: number; buying_price: number }[]>();
-    const latestBatchDate = new Map<string, string>();
-    for (const b of allBatches) {
-      const arr = batchesByProduct.get(b.product_id) || [];
-      arr.push({ quantity: b.quantity, buying_price: Number(b.buying_price) });
-      batchesByProduct.set(b.product_id, arr);
-      if (b.received_at) {
-        const prev = latestBatchDate.get(b.product_id);
-        if (!prev || new Date(b.received_at) > new Date(prev)) {
-          latestBatchDate.set(b.product_id, b.received_at);
-        }
-      }
-    }
-
-    // Aggregate sold quantities from invoice_items (already filtered by store).
-    const soldByProduct = new Map<string, number>();
-    for (const it of allItems) {
-      const sold = (it.quantity || 0) - (it.returned_quantity || 0);
-      soldByProduct.set(it.product_id, (soldByProduct.get(it.product_id) || 0) + sold);
-    }
-
-    const mapped = allProducts.map((p: any) => {
-      const batches = batchesByProduct.get(p.id) || [];
-      return {
-        ...p,
-        inventory_batches: batches,
-        total_stock: batches.reduce((s, b) => s + b.quantity, 0),
-        sold_quantity: soldByProduct.get(p.id) || 0,
-        last_stock_added_at: latestBatchDate.get(p.id) || null,
-      };
-    });
-    setProducts(mapped);
+      const mapped = (data || []).map((row: any) => {
+        const p = row.product || {};
+        const total_stock = row.total_stock ?? 0;
+        const avg = Number(row.avg_buying_price ?? 0);
+        return {
+          ...p,
+          // Preserve the previous shape so downstream code that reads `inventory_batches` keeps working
+          // (a single synthetic batch representing the aggregate).
+          inventory_batches: total_stock > 0 ? [{ quantity: total_stock, buying_price: avg }] : [],
+          total_stock,
+          sold_quantity: row.sold_quantity ?? 0,
+          last_stock_added_at: row.last_stock_added_at ?? null,
+        };
+      });
+      setProducts(mapped);
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => { fetchProducts(); }, [storeId]);
 
