@@ -346,7 +346,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       }
 
       // Update invoice
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from("invoices")
         .update({
           payment_method: paymentMethods.length > 1
@@ -371,9 +371,13 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           total_amount: parseFloat(grandTotal.toFixed(2)),
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
         })
-        .eq("id", invoice.id);
+        .eq("id", invoice.id)
+        .select("id");
 
       if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error("Update was blocked — your account does not have permission to edit this invoice. Please log in as a user linked to this store.");
+      }
 
       if (shouldSendTrackingMessage) {
         try {
