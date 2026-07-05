@@ -579,6 +579,9 @@ export default function Inventory() {
     });
   }, [products, deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice]);
 
+  useEffect(() => { setVisibleCount(300); }, [deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice]);
+
+
 
   return (
     <div className="space-y-6 animate-fade-in">
