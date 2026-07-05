@@ -415,47 +415,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   }, [searchProduct, storeId]);
 
 
-    let cancelled = false;
 
-    const timeout = setTimeout(async () => {
-      try {
-        const { data, error } = await supabase
-          .from("products")
-          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .or(`sku.ilike.%${sanitized}%,name.ilike.%${sanitized}%`)
-          .limit(20);
-
-        if (cancelled || error || !data || data.length === 0) return;
-
-        const withStock = await Promise.all(
-          data.map(async (p) => {
-            try {
-              const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
-              return { ...p, _stock: typeof stock === "number" ? stock : 0 };
-            } catch {
-              return { ...p, _stock: 0 };
-            }
-          })
-        );
-
-        if (cancelled) return;
-
-        const inStockMatches = withStock.filter(p => p._stock > 0);
-        if (inStockMatches.length > 0) {
-          setProducts(prev => [...prev, ...inStockMatches.filter(p => !prev.some(existing => existing.id === p.id))]);
-        }
-      } catch (err) {
-        console.warn("Product search failed:", err);
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
-  }, [searchProduct, storeId]);
 
   const addToCart = (product: any) => {
     setCart(prev => {
