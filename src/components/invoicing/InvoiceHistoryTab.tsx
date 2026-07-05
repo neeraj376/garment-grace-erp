@@ -629,14 +629,12 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                {canEdit && (
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                  </TableHead>
-                )}
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Customer</TableHead>
@@ -652,22 +650,20 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={canEdit ? 11 : 10} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={canEdit ? 11 : 10} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
-                  {canEdit && (
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.has(inv.id)}
-                        onCheckedChange={() => toggleSelect(inv.id)}
-                      />
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(inv.id)}
+                      onCheckedChange={() => toggleSelect(inv.id)}
+                    />
+                  </TableCell>
                   <TableCell className="px-1">
                     {inv.notes && inv.notes.trim() ? (
                       <TooltipProvider>
