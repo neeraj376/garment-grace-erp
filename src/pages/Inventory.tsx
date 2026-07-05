@@ -525,48 +525,47 @@ export default function Inventory() {
     }
   };
 
-  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[];
-  const brands = [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[];
-  const sizes = [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[];
-  const colors = [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[];
+  const categories = useMemo(() => [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[], [products]);
+  const brands = useMemo(() => [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[], [products]);
+  const sizes = useMemo(() => [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[], [products]);
+  const colors = useMemo(() => [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[], [products]);
 
   const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "" || filterMissingBuyingPrice;
 
-  const clearFilters = () => {
-    setFilterCategory("__all__");
-    setFilterBrand("__all__");
-    setFilterSize("__all__");
-    setFilterColor("__all__");
-    setFilterStock("__all__");
-    setFilterBuyingPriceMin("");
-    setFilterBuyingPriceMax("");
-    setFilterMissingBuyingPrice(false);
-  };
+  // Defer search so keystrokes don't block the render of 4k+ rows.
+  const deferredSearch = useDeferredValue(search);
 
-  const searchWords = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const filtered = products.filter(p => {
-    const searchableText = [
-      p.name, p.sku, p.brand, p.category, (p as any).subcategory, p.color, p.size,
-    ].filter(Boolean).join(" ").toLowerCase();
-    const matchesSearch = searchWords.length === 0 || searchWords.every(w => searchableText.includes(w));
-    const matchesCategory = filterCategory === "__all__" || p.category === filterCategory;
-    const matchesBrand = filterBrand === "__all__" || p.brand === filterBrand;
-    const matchesSize = filterSize === "__all__" || p.size === filterSize;
-    const matchesColor = filterColor === "__all__" || p.color === filterColor;
-    const matchesStock = filterStock === "__all__" ||
-      (filterStock === "in_stock" && (p.total_stock ?? 0) > 0) ||
-      (filterStock === "out_of_stock" && (p.total_stock ?? 0) <= 0);
-    const positiveBatchBuyingPrices = (p.inventory_batches ?? [])
-      .map((b) => Number(b.buying_price))
-      .filter((price) => price > 0);
-    const effectiveBuyingPrice = positiveBatchBuyingPrices.length > 0
-      ? positiveBatchBuyingPrices.reduce((sum, price) => sum + price, 0) / positiveBatchBuyingPrices.length
-      : Number(p.buying_price ?? 0);
-    const matchesBuyingPriceMin = filterBuyingPriceMin === "" || effectiveBuyingPrice >= parseFloat(filterBuyingPriceMin);
-    const matchesBuyingPriceMax = filterBuyingPriceMax === "" || effectiveBuyingPrice <= parseFloat(filterBuyingPriceMax);
-    const matchesMissingBuyingPrice = !filterMissingBuyingPrice || effectiveBuyingPrice === 0;
-    return matchesSearch && matchesCategory && matchesBrand && matchesSize && matchesColor && matchesStock && matchesBuyingPriceMin && matchesBuyingPriceMax && matchesMissingBuyingPrice;
-  });
+  const filtered = useMemo(() => {
+    const searchWords = deferredSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const minPrice = filterBuyingPriceMin === "" ? null : parseFloat(filterBuyingPriceMin);
+    const maxPrice = filterBuyingPriceMax === "" ? null : parseFloat(filterBuyingPriceMax);
+    return products.filter(p => {
+      const searchableText = [
+        p.name, p.sku, p.brand, p.category, (p as any).subcategory, p.color, p.size,
+      ].filter(Boolean).join(" ").toLowerCase();
+      if (searchWords.length && !searchWords.every(w => searchableText.includes(w))) return false;
+      if (filterCategory !== "__all__" && p.category !== filterCategory) return false;
+      if (filterBrand !== "__all__" && p.brand !== filterBrand) return false;
+      if (filterSize !== "__all__" && p.size !== filterSize) return false;
+      if (filterColor !== "__all__" && p.color !== filterColor) return false;
+      if (filterStock === "in_stock" && !((p.total_stock ?? 0) > 0)) return false;
+      if (filterStock === "out_of_stock" && !((p.total_stock ?? 0) <= 0)) return false;
+
+      if (minPrice !== null || maxPrice !== null || filterMissingBuyingPrice) {
+        const positive = (p.inventory_batches ?? [])
+          .map((b) => Number(b.buying_price))
+          .filter((price) => price > 0);
+        const effective = positive.length > 0
+          ? positive.reduce((s, price) => s + price, 0) / positive.length
+          : Number(p.buying_price ?? 0);
+        if (minPrice !== null && effective < minPrice) return false;
+        if (maxPrice !== null && effective > maxPrice) return false;
+        if (filterMissingBuyingPrice && effective !== 0) return false;
+      }
+      return true;
+    });
+  }, [products, deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice]);
+
 
   return (
     <div className="space-y-6 animate-fade-in">
