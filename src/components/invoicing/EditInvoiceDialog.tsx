@@ -89,6 +89,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [source, setSource] = useState(invoice.source);
   const [courierName, setCourierName] = useState(invoice.courier_name || "");
   const [awbNo, setAwbNo] = useState(invoice.awb_no || "");
+  // Shipping address (loaded from DB in useEffect)
+  const [shipName, setShipName] = useState("");
+  const [shipPhone, setShipPhone] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [shipCity, setShipCity] = useState("");
+  const [shipState, setShipState] = useState("");
+  const [shipPincode, setShipPincode] = useState("");
   const [status, setStatus] = useState(invoice.status);
   const [notes, setNotes] = useState(invoice.notes || "");
   const [discountAmount, setDiscountAmount] = useState(String(invoice.discount_amount));
