@@ -150,12 +150,22 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         })));
       }
 
-      // Fetch employee for this invoice
+      // Fetch employee & shipping fields for this invoice
       const { data: inv } = await supabase
         .from("invoices")
-        .select("employee_id, store_id")
+        .select("employee_id, store_id, shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
         .eq("id", invoice.id)
         .single();
+
+      if (inv) {
+        setShipName((inv as any).shipping_name || "");
+        setShipPhone((inv as any).shipping_phone || "");
+        setAddressLine1((inv as any).shipping_address_line1 || "");
+        setAddressLine2((inv as any).shipping_address_line2 || "");
+        setShipCity((inv as any).shipping_city || "");
+        setShipState((inv as any).shipping_state || "");
+        setShipPincode((inv as any).shipping_pincode || "");
+      }
 
       if (inv?.store_id) {
         const { data: emps } = await supabase
