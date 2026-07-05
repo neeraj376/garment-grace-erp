@@ -892,7 +892,21 @@ export default function Inventory() {
             )}
           </TableBody>
         </Table>
+        {filtered.length > visibleCount && (
+          <div className="flex items-center justify-center gap-3 py-4 border-t bg-muted/20">
+            <span className="text-sm text-muted-foreground">
+              Showing {visibleCount.toLocaleString("en-IN")} of {filtered.length.toLocaleString("en-IN")}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setVisibleCount((c) => c + 500)}>
+              Load 500 more
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setVisibleCount(filtered.length)}>
+              Show all
+            </Button>
+          </div>
+        )}
       </Card>
+
 
       {/* Inventory Summary */}
       {(() => {
