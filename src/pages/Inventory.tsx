@@ -525,6 +525,17 @@ export default function Inventory() {
     }
   };
 
+  const clearFilters = () => {
+    setFilterCategory("__all__");
+    setFilterBrand("__all__");
+    setFilterSize("__all__");
+    setFilterColor("__all__");
+    setFilterStock("__all__");
+    setFilterBuyingPriceMin("");
+    setFilterBuyingPriceMax("");
+    setFilterMissingBuyingPrice(false);
+  };
+
   const categories = useMemo(() => [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[], [products]);
   const brands = useMemo(() => [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[], [products]);
   const sizes = useMemo(() => [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[], [products]);
