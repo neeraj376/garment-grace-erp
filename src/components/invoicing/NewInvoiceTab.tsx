@@ -392,15 +392,28 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const rawQuery = searchProduct.trim();
     if (!storeId || rawQuery.length < 3) return;
 
-    // Sanitize for PostgREST `.or()` filter — commas, parens, and quotes break the parser.
-    // Also escape ilike wildcards % and _ so they're treated literally.
-    const sanitized = rawQuery
-      .replace(/[(),"']/g, " ")
-      .replace(/[%_\\]/g, (m) => `\\${m}`)
-      .replace(/\s+/g, " ")
-      .trim();
+    let cancelled = false;
+    const timeout = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc("search_invoicing_products", {
+          p_store_id: storeId,
+          p_query: rawQuery,
+          p_limit: 20,
+        });
+        if (cancelled || error || !data || data.length === 0) return;
+        const withStock = (data as any[]).map(p => ({ ...p, _stock: p.stock ?? 0 }));
+        setProducts(prev => [...prev, ...withStock.filter(p => !prev.some(existing => existing.id === p.id))]);
+      } catch (err) {
+        console.warn("Product search failed:", err);
+      }
+    }, 300);
 
-    if (sanitized.length < 3) return;
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [searchProduct, storeId]);
+
 
     let cancelled = false;
 
