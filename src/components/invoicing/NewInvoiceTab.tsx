@@ -353,57 +353,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   useEffect(() => {
     if (!storeId) return;
-    // Fetch only in-stock products (page inventory rows; RPC responses are capped at 1000)
+    // Fetch all in-stock products with computed stock in a single RPC call.
     const fetchAllProducts = async () => {
-      const inStockIdSet = new Set<string>();
-      const inventoryPageSize = 1000;
-      for (let from = 0; ; from += inventoryPageSize) {
-        const { data: batchRows, error } = await supabase
-          .from("inventory_batches")
-          .select("product_id")
-          .eq("store_id", storeId)
-          .gt("quantity", 0)
-          .order("created_at", { ascending: true })
-          .order("id", { ascending: true })
-          .range(from, from + inventoryPageSize - 1);
-
-        if (error) {
-          console.error("Failed to fetch in-stock product ids", error);
-          break;
-        }
-
-        (batchRows || []).forEach(row => row.product_id && inStockIdSet.add(row.product_id));
-        if (!batchRows || batchRows.length < inventoryPageSize) break;
-      }
-
-      const inStockIds = Array.from(inStockIdSet);
-      if (!inStockIds || inStockIds.length === 0) {
+      const { data, error } = await supabase.rpc("get_invoicing_products", { p_store_id: storeId });
+      if (error) {
+        console.error("Failed to fetch invoicing products", error);
         setProducts([]);
         return;
       }
-
-      let allProducts: any[] = [];
-      const batchSize = 200;
-      for (let i = 0; i < inStockIds.length; i += batchSize) {
-        const idBatch = inStockIds.slice(i, i + batchSize);
-        const { data } = await supabase
-          .from("products")
-          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .in("id", idBatch);
-        if (data) allProducts = allProducts.concat(data);
-      }
-
-      // Fetch stock for each product
-      const stockMap: Record<string, number> = {};
-      await Promise.all(
-        allProducts.map(async (p) => {
-          const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
-          stockMap[p.id] = typeof stock === "number" ? stock : 0;
-        })
-      );
-      setProducts(allProducts.map(p => ({ ...p, _stock: stockMap[p.id] ?? 0 })));
+      setProducts((data || []).map((p: any) => ({ ...p, _stock: p.stock ?? 0 })));
     };
     fetchAllProducts();
     (async () => {
@@ -429,51 +387,22 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     })();
   }, [storeId]);
 
+
   useEffect(() => {
     const rawQuery = searchProduct.trim();
     if (!storeId || rawQuery.length < 3) return;
 
-    // Sanitize for PostgREST `.or()` filter — commas, parens, and quotes break the parser.
-    // Also escape ilike wildcards % and _ so they're treated literally.
-    const sanitized = rawQuery
-      .replace(/[(),"']/g, " ")
-      .replace(/[%_\\]/g, (m) => `\\${m}`)
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (sanitized.length < 3) return;
-
     let cancelled = false;
-
     const timeout = setTimeout(async () => {
       try {
-        const { data, error } = await supabase
-          .from("products")
-          .select("id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand")
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .or(`sku.ilike.%${sanitized}%,name.ilike.%${sanitized}%`)
-          .limit(20);
-
+        const { data, error } = await supabase.rpc("search_invoicing_products", {
+          p_store_id: storeId,
+          p_query: rawQuery,
+          p_limit: 20,
+        });
         if (cancelled || error || !data || data.length === 0) return;
-
-        const withStock = await Promise.all(
-          data.map(async (p) => {
-            try {
-              const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: p.id });
-              return { ...p, _stock: typeof stock === "number" ? stock : 0 };
-            } catch {
-              return { ...p, _stock: 0 };
-            }
-          })
-        );
-
-        if (cancelled) return;
-
-        const inStockMatches = withStock.filter(p => p._stock > 0);
-        if (inStockMatches.length > 0) {
-          setProducts(prev => [...prev, ...inStockMatches.filter(p => !prev.some(existing => existing.id === p.id))]);
-        }
+        const withStock = (data as any[]).map(p => ({ ...p, _stock: p.stock ?? 0 }));
+        setProducts(prev => [...prev, ...withStock.filter(p => !prev.some(existing => existing.id === p.id))]);
       } catch (err) {
         console.warn("Product search failed:", err);
       }
@@ -484,6 +413,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       clearTimeout(timeout);
     };
   }, [searchProduct, storeId]);
+
+
+
 
   const addToCart = (product: any) => {
     setCart(prev => {

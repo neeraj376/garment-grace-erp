@@ -1560,6 +1560,32 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_inventory_overview: {
+        Args: { p_store_id: string }
+        Returns: {
+          avg_buying_price: number
+          last_stock_added_at: string
+          product: Json
+          sold_quantity: number
+          total_stock: number
+        }[]
+      }
+      get_invoicing_products: {
+        Args: { p_store_id: string }
+        Returns: {
+          brand: string
+          category: string
+          color: string
+          id: string
+          name: string
+          selling_price: number
+          size: string
+          sku: string
+          stock: number
+          subcategory: string
+          tax_rate: number
+        }[]
+      }
       get_product_stock: { Args: { p_product_id: string }; Returns: number }
       get_public_invoice: { Args: { p_invoice_id: string }; Returns: Json }
       move_to_dlq: {
@@ -1577,6 +1603,22 @@ export type Database = {
           message: Json
           msg_id: number
           read_ct: number
+        }[]
+      }
+      search_invoicing_products: {
+        Args: { p_limit?: number; p_query: string; p_store_id: string }
+        Returns: {
+          brand: string
+          category: string
+          color: string
+          id: string
+          name: string
+          selling_price: number
+          size: string
+          sku: string
+          stock: number
+          subcategory: string
+          tax_rate: number
         }[]
       }
       shop_customer_in_user_store: {
