@@ -406,7 +406,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       } catch (err) {
         console.warn("Product search failed:", err);
       }
-    }, 300);
+    }, 150);
+
 
     return () => {
       cancelled = true;
