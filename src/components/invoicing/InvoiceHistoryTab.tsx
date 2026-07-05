@@ -377,26 +377,50 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         });
       }
 
-      // Fallback: shipping_addresses linked directly to customer_id
-      const remainingCustomerIds = [...new Set(
-        selected.filter(i => !addrByInvoiceId[i.id] && i.customer_id).map(i => i.customer_id!)
-      )] as string[];
-      if (remainingCustomerIds.length > 0) {
-        const { data: addrs } = await supabase
-          .from("shipping_addresses")
-          .select("customer_id, name, phone, address_line1, address_line2, city, state, pincode, is_default")
-          .in("customer_id", remainingCustomerIds);
-        const byCust: Record<string, any> = {};
-        (addrs || []).forEach((a: any) => {
-          const existing = byCust[a.customer_id];
-          if (!existing || a.is_default) byCust[a.customer_id] = a;
+      // Fallback: match invoice's POS customer by mobile to a shop_customer
+      // and pull their default shipping address.
+      const remainingPhones = [...new Set(
+        selected
+          .filter(i => !addrByInvoiceId[i.id] && i.customers?.mobile)
+          .map(i => (i.customers!.mobile || "").replace(/\D/g, "").slice(-10))
+          .filter(Boolean)
+      )];
+      if (remainingPhones.length > 0) {
+        // Match with or without country code by comparing last 10 digits
+        const { data: shopCustomers } = await supabase
+          .from("shop_customers")
+          .select("id, phone");
+        const phoneToShopIds: Record<string, string[]> = {};
+        (shopCustomers || []).forEach((sc: any) => {
+          const last10 = (sc.phone || "").replace(/\D/g, "").slice(-10);
+          if (!last10) return;
+          (phoneToShopIds[last10] ||= []).push(sc.id);
         });
+        const neededShopIds = [...new Set(
+          remainingPhones.flatMap(p => phoneToShopIds[p] || [])
+        )];
+        const shopIdToAddr: Record<string, any> = {};
+        if (neededShopIds.length > 0) {
+          const { data: addrs } = await supabase
+            .from("shipping_addresses")
+            .select("customer_id, name, phone, address_line1, address_line2, city, state, pincode, is_default")
+            .in("customer_id", neededShopIds);
+          (addrs || []).forEach((a: any) => {
+            const existing = shopIdToAddr[a.customer_id];
+            if (!existing || a.is_default) shopIdToAddr[a.customer_id] = a;
+          });
+        }
         selected.forEach(inv => {
-          if (!addrByInvoiceId[inv.id] && inv.customer_id && byCust[inv.customer_id]) {
-            addrByInvoiceId[inv.id] = byCust[inv.customer_id];
+          if (addrByInvoiceId[inv.id]) return;
+          const last10 = (inv.customers?.mobile || "").replace(/\D/g, "").slice(-10);
+          if (!last10) return;
+          const shopIds = phoneToShopIds[last10] || [];
+          for (const sid of shopIds) {
+            if (shopIdToAddr[sid]) { addrByInvoiceId[inv.id] = shopIdToAddr[sid]; break; }
           }
         });
       }
+
 
       const labelChildren: Paragraph[] = [];
       selected.forEach((inv, idx) => {
