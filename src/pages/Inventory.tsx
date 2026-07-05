@@ -127,7 +127,10 @@ export default function Inventory() {
     setLoading(true);
     try {
       // Single RPC computes stock, avg buying price, sold qty, and last stock-added date on the server.
-      const { data, error } = await supabase.rpc("get_inventory_overview", { p_store_id: storeId });
+      // .range() lifts PostgREST's default 1000-row cap so all products load.
+      const { data, error } = await supabase
+        .rpc("get_inventory_overview", { p_store_id: storeId })
+        .range(0, 99999);
       if (error) {
         console.error("[Inventory] fetch error:", error);
         setProducts([]);
