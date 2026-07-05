@@ -342,22 +342,65 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     if (selected.length === 0) return;
     setPrintingLabels(true);
     try {
-      const customerIds = [...new Set(selected.map(i => i.customer_id).filter(Boolean))] as string[];
-      const addrMap: Record<string, any> = {};
-      if (customerIds.length > 0) {
+      // Online orders share an invoice_number/order_number suffix (INV-XXXX ↔ ORD-XXXX)
+      // and store the shipping address on the order, not the POS customer record.
+      // Look up addresses via orders first, then fall back to any shipping_addresses
+      // linked directly to the customer.
+      const suffixes = selected.map(i => (i.invoice_number || "").slice(4)).filter(Boolean);
+      const addrByInvoiceId: Record<string, any> = {};
+
+      if (suffixes.length > 0) {
+        const orNumbers = suffixes.map(s => `ORD-${s}`);
+        const { data: ordersData } = await supabase
+          .from("orders")
+          .select("order_number, shipping_address_id")
+          .in("order_number", orNumbers);
+        const addrIds = [...new Set((ordersData || []).map((o: any) => o.shipping_address_id).filter(Boolean))] as string[];
+        const addrById: Record<string, any> = {};
+        if (addrIds.length > 0) {
+          const { data: addrs } = await supabase
+            .from("shipping_addresses")
+            .select("id, name, phone, address_line1, address_line2, city, state, pincode")
+            .in("id", addrIds);
+          (addrs || []).forEach((a: any) => { addrById[a.id] = a; });
+        }
+        const suffixToAddr: Record<string, any> = {};
+        (ordersData || []).forEach((o: any) => {
+          const s = (o.order_number || "").slice(4);
+          if (s && o.shipping_address_id && addrById[o.shipping_address_id]) {
+            suffixToAddr[s] = addrById[o.shipping_address_id];
+          }
+        });
+        selected.forEach(inv => {
+          const s = (inv.invoice_number || "").slice(4);
+          if (suffixToAddr[s]) addrByInvoiceId[inv.id] = suffixToAddr[s];
+        });
+      }
+
+      // Fallback: shipping_addresses linked directly to customer_id
+      const remainingCustomerIds = [...new Set(
+        selected.filter(i => !addrByInvoiceId[i.id] && i.customer_id).map(i => i.customer_id!)
+      )] as string[];
+      if (remainingCustomerIds.length > 0) {
         const { data: addrs } = await supabase
           .from("shipping_addresses")
           .select("customer_id, name, phone, address_line1, address_line2, city, state, pincode, is_default")
-          .in("customer_id", customerIds);
+          .in("customer_id", remainingCustomerIds);
+        const byCust: Record<string, any> = {};
         (addrs || []).forEach((a: any) => {
-          const existing = addrMap[a.customer_id];
-          if (!existing || a.is_default) addrMap[a.customer_id] = a;
+          const existing = byCust[a.customer_id];
+          if (!existing || a.is_default) byCust[a.customer_id] = a;
+        });
+        selected.forEach(inv => {
+          if (!addrByInvoiceId[inv.id] && inv.customer_id && byCust[inv.customer_id]) {
+            addrByInvoiceId[inv.id] = byCust[inv.customer_id];
+          }
         });
       }
 
       const labelChildren: Paragraph[] = [];
       selected.forEach((inv, idx) => {
-        const addr = inv.customer_id ? addrMap[inv.customer_id] : null;
+        const addr = addrByInvoiceId[inv.id] || null;
         const name = addr?.name || inv.customers?.name || "Walk-in Customer";
         const mobile = addr?.phone || inv.customers?.mobile || "—";
         const addressParts = addr
