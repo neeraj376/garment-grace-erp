@@ -542,6 +542,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
                   </div>
                   <div className="space-y-1 md:col-span-2">
+                    <Label>Delivery Cost (₹)</Label>
+                    <Input type="number" min={0} value={deliveryCost} onChange={e => setDeliveryCost(e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
                     <Label className="text-sm font-semibold">Shipping Address</Label>
                   </div>
                   <div className="space-y-1">
