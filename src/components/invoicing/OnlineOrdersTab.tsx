@@ -941,6 +941,16 @@ function ShippingLabel({ order }: { order: any }) {
         <span>Payment: <strong>{order.payment_status}</strong></span>
         <span>Total: <strong>₹{Number(order.total_amount).toLocaleString("en-IN")}</strong></span>
       </div>
+
+      <div style={{ borderTop: "2px solid #000", marginTop: "14px", paddingTop: "10px" }}>
+        <p style={{ fontSize: "11px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 6px 0" }}>
+          From / Return Address:
+        </p>
+        <p style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 2px 0" }}>Originee</p>
+        <p style={{ fontSize: "12px", margin: "0 0 2px 0" }}>I-132, Sector 50, South City 2</p>
+        <p style={{ fontSize: "12px", margin: "0 0 2px 0" }}>Gurugram, Haryana — 122018</p>
+        <p style={{ fontSize: "12px", margin: "2px 0 0 0" }}>📞 +91 93109 04557, +91 88828 66833</p>
+      </div>
     </div>
   );
 }
