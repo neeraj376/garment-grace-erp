@@ -154,7 +154,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       // Fetch employee & shipping fields for this invoice
       const { data: inv } = await supabase
         .from("invoices")
-        .select("employee_id, store_id, shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
+        .select("employee_id, store_id, delivery_cost, shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
         .eq("id", invoice.id)
         .single();
 
@@ -166,6 +166,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         setShipCity((inv as any).shipping_city || "");
         setShipState((inv as any).shipping_state || "");
         setShipPincode((inv as any).shipping_pincode || "");
+        setDeliveryCost(String((inv as any).delivery_cost ?? 0));
       }
 
       if (inv?.store_id) {
