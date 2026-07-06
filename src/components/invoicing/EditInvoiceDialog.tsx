@@ -101,6 +101,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [notes, setNotes] = useState(invoice.notes || "");
   const [discountAmount, setDiscountAmount] = useState(String(invoice.discount_amount));
   const [pendingAmount, setPendingAmount] = useState(String(invoice.pending_amount ?? 0));
+  const [deliveryCost, setDeliveryCost] = useState("0");
   const [selectedEmployee, setSelectedEmployee] = useState("");
 
   // Customer fields
@@ -153,7 +154,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       // Fetch employee & shipping fields for this invoice
       const { data: inv } = await supabase
         .from("invoices")
-        .select("employee_id, store_id, shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
+        .select("employee_id, store_id, delivery_cost, shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
         .eq("id", invoice.id)
         .single();
 
@@ -165,6 +166,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         setShipCity((inv as any).shipping_city || "");
         setShipState((inv as any).shipping_state || "");
         setShipPincode((inv as any).shipping_pincode || "");
+        setDeliveryCost(String((inv as any).delivery_cost ?? 0));
       }
 
       if (inv?.store_id) {
@@ -355,6 +357,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           source,
           courier_name: source === "online" ? normalizedCourierName : null,
           awb_no: source === "online" ? normalizedAwbNo : null,
+          delivery_cost: source === "online" ? (Number(deliveryCost) || 0) : 0,
           shipping_name: source === "online" ? (shipName.trim() || customerName.trim() || null) : null,
           shipping_phone: source === "online" ? (shipPhone.trim() || customerMobile.trim() || null) : null,
           shipping_address_line1: source === "online" ? (addressLine1.trim() || null) : null,
@@ -537,6 +540,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   <div className="space-y-1">
                     <Label>AWB No. <span className="text-destructive">*</span></Label>
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label>Delivery Cost (₹)</Label>
+                    <Input type="number" min={0} value={deliveryCost} onChange={e => setDeliveryCost(e.target.value)} placeholder="0" />
                   </div>
                   <div className="space-y-1 md:col-span-2">
                     <Label className="text-sm font-semibold">Shipping Address</Label>
