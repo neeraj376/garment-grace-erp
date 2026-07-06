@@ -1591,6 +1591,16 @@ export type Database = {
           total_stock: number
         }[]
       }
+      get_inventory_overview_paged: {
+        Args: { p_limit: number; p_offset: number; p_store_id: string }
+        Returns: {
+          avg_buying_price: number
+          last_stock_added_at: string
+          product: Json
+          sold_quantity: number
+          total_stock: number
+        }[]
+      }
       get_invoicing_products: {
         Args: { p_store_id: string }
         Returns: {
