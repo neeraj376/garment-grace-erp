@@ -126,17 +126,15 @@ export default function Inventory() {
     if (!storeId) return;
     setLoading(true);
     try {
-      // Single RPC computes stock, avg buying price, sold qty, and last stock-added date on the server.
-      // Paginate in 1000-row chunks because PostgREST caps RPC responses at db-max-rows (default 1000),
-      // even when .range() asks for more.
+      // Paginate via explicit LIMIT/OFFSET RPC params so PostgREST's db-max-rows cap
+      // never truncates the result. Loops until a short page comes back — no arbitrary cap.
       const PAGE = 1000;
       let offset = 0;
       const allRows: any[] = [];
-      // Hard safety cap to avoid infinite loops.
-      while (offset < 200000) {
-        const { data, error } = await supabase
-          .rpc("get_inventory_overview", { p_store_id: storeId })
-          .range(offset, offset + PAGE - 1);
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .rpc("get_inventory_overview_paged", { p_store_id: storeId, p_limit: PAGE, p_offset: offset });
         if (error) {
           console.error("[Inventory] fetch error:", error);
           setProducts([]);
