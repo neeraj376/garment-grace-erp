@@ -127,16 +127,27 @@ export default function Inventory() {
     setLoading(true);
     try {
       // Single RPC computes stock, avg buying price, sold qty, and last stock-added date on the server.
-      // .range() lifts PostgREST's default 1000-row cap so all products load.
-      const { data, error } = await supabase
-        .rpc("get_inventory_overview", { p_store_id: storeId })
-        .range(0, 99999);
-      if (error) {
-        console.error("[Inventory] fetch error:", error);
-        setProducts([]);
-        return;
+      // Paginate in 1000-row chunks because PostgREST caps RPC responses at db-max-rows (default 1000),
+      // even when .range() asks for more.
+      const PAGE = 1000;
+      let offset = 0;
+      const allRows: any[] = [];
+      // Hard safety cap to avoid infinite loops.
+      while (offset < 200000) {
+        const { data, error } = await supabase
+          .rpc("get_inventory_overview", { p_store_id: storeId })
+          .range(offset, offset + PAGE - 1);
+        if (error) {
+          console.error("[Inventory] fetch error:", error);
+          setProducts([]);
+          return;
+        }
+        const chunk = data || [];
+        allRows.push(...chunk);
+        if (chunk.length < PAGE) break;
+        offset += PAGE;
       }
-      const mapped = (data || []).map((row: any) => {
+      const mapped = allRows.map((row: any) => {
         const p = row.product || {};
         const total_stock = row.total_stock ?? 0;
         const avg = Number(row.avg_buying_price ?? 0);
@@ -151,6 +162,7 @@ export default function Inventory() {
         };
       });
       setProducts(mapped);
+
     } finally {
       setLoading(false);
     }
