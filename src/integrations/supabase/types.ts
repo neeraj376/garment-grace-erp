@@ -144,6 +144,75 @@ export type Database = {
           },
         ]
       }
+      deleted_invoices_log: {
+        Row: {
+          customer_id: string | null
+          deleted_at: string
+          deleted_by: string | null
+          delivery_cost: number | null
+          discount_amount: number | null
+          employee_id: string | null
+          id: string
+          invoice_created_at: string | null
+          invoice_created_by: string | null
+          invoice_id: string
+          invoice_number: string | null
+          items: Json | null
+          payment_method: string | null
+          pending_amount: number | null
+          source: string | null
+          status: string | null
+          store_id: string
+          subtotal: number | null
+          tax_amount: number | null
+          total_amount: number | null
+        }
+        Insert: {
+          customer_id?: string | null
+          deleted_at?: string
+          deleted_by?: string | null
+          delivery_cost?: number | null
+          discount_amount?: number | null
+          employee_id?: string | null
+          id?: string
+          invoice_created_at?: string | null
+          invoice_created_by?: string | null
+          invoice_id: string
+          invoice_number?: string | null
+          items?: Json | null
+          payment_method?: string | null
+          pending_amount?: number | null
+          source?: string | null
+          status?: string | null
+          store_id: string
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_amount?: number | null
+        }
+        Update: {
+          customer_id?: string | null
+          deleted_at?: string
+          deleted_by?: string | null
+          delivery_cost?: number | null
+          discount_amount?: number | null
+          employee_id?: string | null
+          id?: string
+          invoice_created_at?: string | null
+          invoice_created_by?: string | null
+          invoice_id?: string
+          invoice_number?: string | null
+          items?: Json | null
+          payment_method?: string | null
+          pending_amount?: number | null
+          source?: string | null
+          status?: string | null
+          store_id?: string
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
