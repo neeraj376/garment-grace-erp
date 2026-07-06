@@ -101,6 +101,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [notes, setNotes] = useState(invoice.notes || "");
   const [discountAmount, setDiscountAmount] = useState(String(invoice.discount_amount));
   const [pendingAmount, setPendingAmount] = useState(String(invoice.pending_amount ?? 0));
+  const [deliveryCost, setDeliveryCost] = useState("0");
   const [selectedEmployee, setSelectedEmployee] = useState("");
 
   // Customer fields
