@@ -480,6 +480,14 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               new TextRun({ text: fullAddress, size: 24 }),
             ],
           }),
+          new Paragraph({
+            spacing: { before: 60, after: 200 },
+            border: { top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC", space: 4 } },
+            children: [
+              new TextRun({ text: "Originee Address: ", bold: true, size: 20 }),
+              new TextRun({ text: "I132, Sector 50, South City 2, Gurugram 122018", size: 20 }),
+            ],
+          }),
         );
         if (idx < selected.length - 1) {
           labelChildren.push(new Paragraph({
