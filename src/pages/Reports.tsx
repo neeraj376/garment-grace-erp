@@ -165,7 +165,7 @@ export default function Reports() {
       while (true) {
         const { data, error } = await supabase
           .from("orders")
-          .select("id, total_amount, subtotal, tax_amount, shipping_amount, payment_method, created_at, order_items(quantity, unit_price, tax_amount, total, product_id)")
+          .select("id, order_number, total_amount, subtotal, tax_amount, shipping_amount, payment_method, created_at, order_items(quantity, unit_price, tax_amount, total, product_id)")
           .eq("store_id", storeId!)
           .eq("payment_status", "paid")
           .gte("created_at", start)
@@ -179,6 +179,12 @@ export default function Reports() {
         oFrom += PAGE;
       }
     }
+    // Skip online orders that already have a matching invoice (same suffix)
+    // so the sale isn't double-counted in reports.
+    const invoiceSuffixes = new Set(invData.map((i: any) => (i.invoice_number || "").slice(4)));
+    const dedupedOrderData = orderData.filter((o: any) => !invoiceSuffixes.has((o.order_number || "").slice(4)));
+    orderData.length = 0;
+    orderData.push(...dedupedOrderData);
 
     const productIds = new Set<string>();
     const batchIds = new Set<string>();
