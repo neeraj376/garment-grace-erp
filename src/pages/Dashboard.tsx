@@ -45,21 +45,28 @@ export default function Dashboard() {
 
       // Collected = total_amount - pending_amount (excludes uncollected wholesale dues)
       const collected = (inv: any) => Number(inv.total_amount) - Number(inv.pending_amount ?? 0);
+      // ORD-XXXX ↔ INV-XXXX share the same suffix. When an online order has been
+      // converted into an invoice (e.g. to credit an employee), skip the order-side
+      // total so the sale isn't counted twice.
+      const suffix = (s: string) => (s || "").slice(4);
+      const hasMatchingInvoice = (invs: any[] | null, orderNumber: string) =>
+        !!invs?.some(i => suffix(i.invoice_number) === suffix(orderNumber));
 
       // Today's sales
       const { data: todayInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, payment_method, customer_id, source, delivery_cost")
+        .select("total_amount, pending_amount, payment_method, customer_id, source, delivery_cost, invoice_number")
         .eq("store_id", storeId)
         .gte("created_at", startOfDay);
 
       // Today's online orders (paid only) — these aren't in invoices table
-      const { data: todayOrders } = await supabase
+      const { data: todayOrdersRaw } = await supabase
         .from("orders")
-        .select("total_amount, payment_method, customer_id")
+        .select("order_number, total_amount, payment_method, customer_id")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
         .gte("created_at", startOfDay);
+      const todayOrders = (todayOrdersRaw ?? []).filter(o => !hasMatchingInvoice(todayInvoices ?? [], o.order_number));
 
       const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const todayOrdersTotal = todayOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
