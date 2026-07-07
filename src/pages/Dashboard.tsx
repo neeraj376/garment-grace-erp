@@ -62,7 +62,7 @@ export default function Dashboard() {
       // Today's online orders (paid only) — these aren't in invoices table
       const { data: todayOrdersRaw } = await supabase
         .from("orders")
-        .select("order_number, total_amount, payment_method, customer_id")
+        .select("order_number, total_amount, payment_method, customer_id, shipping_amount")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
         .gte("created_at", startOfDay);
