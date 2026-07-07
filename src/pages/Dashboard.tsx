@@ -86,7 +86,7 @@ export default function Dashboard() {
       // Monthly online orders (paid)
       const { data: monthOrdersRaw } = await supabase
         .from("orders")
-        .select("order_number, total_amount, customer_id")
+        .select("order_number, total_amount, customer_id, shipping_amount")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
         .gte("created_at", startOfMonth);
