@@ -62,7 +62,7 @@ export default function Dashboard() {
       // Today's online orders (paid only) — these aren't in invoices table
       const { data: todayOrdersRaw } = await supabase
         .from("orders")
-        .select("order_number, total_amount, payment_method, customer_id")
+        .select("order_number, total_amount, payment_method, customer_id, shipping_amount")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
         .gte("created_at", startOfDay);
@@ -86,7 +86,7 @@ export default function Dashboard() {
       // Monthly online orders (paid)
       const { data: monthOrdersRaw } = await supabase
         .from("orders")
-        .select("order_number, total_amount, customer_id")
+        .select("order_number, total_amount, customer_id, shipping_amount")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
         .gte("created_at", startOfMonth);
@@ -146,8 +146,10 @@ export default function Dashboard() {
         monthlyWholesale,
         dailyAverage,
         totalPending,
-        todayDeliveryCost: todayInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0,
-        monthlyDeliveryCost: monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0,
+        todayDeliveryCost: (todayInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
+          + (todayOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
+        monthlyDeliveryCost: (monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
+          + (monthOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
       });
 
       // Payment breakdown (use collected amount, not gross)
