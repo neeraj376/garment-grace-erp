@@ -174,16 +174,17 @@ export default function Dashboard() {
       const weekStart = days[0].toISOString();
       const { data: weekInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, created_at")
+        .select("total_amount, pending_amount, created_at, invoice_number")
         .eq("store_id", storeId)
         .gte("created_at", weekStart);
 
-      const { data: weekOrders } = await supabase
+      const { data: weekOrdersRaw } = await supabase
         .from("orders")
-        .select("total_amount, created_at")
+        .select("order_number, total_amount, created_at")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
         .gte("created_at", weekStart);
+      const weekOrders = (weekOrdersRaw ?? []).filter(o => !hasMatchingInvoice(weekInvoices ?? [], o.order_number));
 
       const weeklyData = days.map((d) => {
         const dayStr = d.toLocaleDateString("en-US", { weekday: "short" });
