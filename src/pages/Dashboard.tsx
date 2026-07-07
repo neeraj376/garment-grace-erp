@@ -79,17 +79,18 @@ export default function Dashboard() {
       // Monthly sales
       const { data: monthInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, source, delivery_cost")
+        .select("total_amount, pending_amount, source, delivery_cost, invoice_number")
         .eq("store_id", storeId)
         .gte("created_at", startOfMonth);
 
       // Monthly online orders (paid)
-      const { data: monthOrders } = await supabase
+      const { data: monthOrdersRaw } = await supabase
         .from("orders")
-        .select("total_amount, customer_id")
+        .select("order_number, total_amount, customer_id")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
         .gte("created_at", startOfMonth);
+      const monthOrders = (monthOrdersRaw ?? []).filter(o => !hasMatchingInvoice(monthInvoices ?? [], o.order_number));
 
       const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const monthOrdersTotal = monthOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
