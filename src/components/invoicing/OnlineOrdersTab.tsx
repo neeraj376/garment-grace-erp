@@ -884,6 +884,19 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         </div>
       )}
 
+      {/* Hidden printable bulk shipping labels */}
+      {bulkLabelOrders.length > 0 && (
+        <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+          <div ref={bulkLabelRef}>
+            {bulkLabelOrders.map((o) => (
+              <div key={o.id} className="label-page">
+                <ShippingLabel order={o} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Full edit dialog */}
       <EditOnlineOrderDialog
         order={fullEditOrder}
