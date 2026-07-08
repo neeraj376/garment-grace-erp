@@ -355,7 +355,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; }
-            .label-page { page-break-after: always; margin-bottom: 24px; }
+            .label-page { page-break-after: always; page-break-inside: avoid; break-inside: avoid; margin-bottom: 24px; }
             .label-page:last-child { page-break-after: auto; margin-bottom: 0; }
             @media print { body { padding: 12px; } }
           </style>
