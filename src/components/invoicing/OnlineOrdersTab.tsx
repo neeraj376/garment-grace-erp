@@ -488,8 +488,16 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+        <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
           <span className="text-sm font-medium">{selectedIds.size} order(s) selected</span>
+          <Button
+            size="sm"
+            variant="default"
+            className="gap-1.5"
+            onClick={handleBulkPrintLabels}
+          >
+            <Printer className="h-3.5 w-3.5" /> Print Shipping Labels
+          </Button>
           <Button
             size="sm"
             variant="destructive"
@@ -503,6 +511,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           </Button>
         </div>
       )}
+
 
       {/* Orders table */}
       {filtered.length === 0 ? (
