@@ -75,12 +75,15 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [saving, setSaving] = useState(false);
   const [resending, setResending] = useState<"wa" | "email" | null>(null);
   const [labelOrder, setLabelOrder] = useState<any>(null);
+  const [bulkLabelOrders, setBulkLabelOrders] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<any>(null);
   const [cancelling, setCancelling] = useState(false);
   const labelRef = useRef<HTMLDivElement>(null);
+  const bulkLabelRef = useRef<HTMLDivElement>(null);
+
 
   const handleCancelOrder = async () => {
     if (!cancelTarget) return;
