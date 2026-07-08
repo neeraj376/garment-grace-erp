@@ -75,12 +75,15 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [saving, setSaving] = useState(false);
   const [resending, setResending] = useState<"wa" | "email" | null>(null);
   const [labelOrder, setLabelOrder] = useState<any>(null);
+  const [bulkLabelOrders, setBulkLabelOrders] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<any>(null);
   const [cancelling, setCancelling] = useState(false);
   const labelRef = useRef<HTMLDivElement>(null);
+  const bulkLabelRef = useRef<HTMLDivElement>(null);
+
 
   const handleCancelOrder = async () => {
     if (!cancelTarget) return;
@@ -332,6 +335,45 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }, 100);
   };
 
+  const handleBulkPrintLabels = () => {
+    const selected = filtered.filter((o: any) => selectedIds.has(o.id));
+    if (selected.length === 0) return;
+    setBulkLabelOrders(selected);
+    setTimeout(() => {
+      const content = bulkLabelRef.current;
+      if (!content) return;
+      const printWindow = window.open("", "_blank", "width=500,height=700");
+      if (!printWindow) {
+        toast.error("Please allow popups to print labels");
+        return;
+      }
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Shipping Labels — ${selected.length} orders</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            .label-page { page-break-after: always; margin-bottom: 24px; }
+            .label-page:last-child { page-break-after: auto; margin-bottom: 0; }
+            @media print { body { padding: 12px; } }
+          </style>
+        </head>
+        <body>${content.innerHTML}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      setTimeout(() => {
+        printWindow.close();
+        setBulkLabelOrders([]);
+      }, 500);
+    }, 100);
+  };
+
+
   const toggleSelect = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setSelectedIds((prev) => {
@@ -446,8 +488,16 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+        <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
           <span className="text-sm font-medium">{selectedIds.size} order(s) selected</span>
+          <Button
+            size="sm"
+            variant="default"
+            className="gap-1.5"
+            onClick={handleBulkPrintLabels}
+          >
+            <Printer className="h-3.5 w-3.5" /> Print Shipping Labels
+          </Button>
           <Button
             size="sm"
             variant="destructive"
@@ -461,6 +511,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           </Button>
         </div>
       )}
+
 
       {/* Orders table */}
       {filtered.length === 0 ? (
@@ -829,6 +880,19 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
           <div ref={labelRef}>
             <ShippingLabel order={labelOrder} />
+          </div>
+        </div>
+      )}
+
+      {/* Hidden printable bulk shipping labels */}
+      {bulkLabelOrders.length > 0 && (
+        <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+          <div ref={bulkLabelRef}>
+            {bulkLabelOrders.map((o) => (
+              <div key={o.id} className="label-page">
+                <ShippingLabel order={o} />
+              </div>
+            ))}
           </div>
         </div>
       )}
