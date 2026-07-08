@@ -335,6 +335,45 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }, 100);
   };
 
+  const handleBulkPrintLabels = () => {
+    const selected = filtered.filter((o: any) => selectedIds.has(o.id));
+    if (selected.length === 0) return;
+    setBulkLabelOrders(selected);
+    setTimeout(() => {
+      const content = bulkLabelRef.current;
+      if (!content) return;
+      const printWindow = window.open("", "_blank", "width=500,height=700");
+      if (!printWindow) {
+        toast.error("Please allow popups to print labels");
+        return;
+      }
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Shipping Labels — ${selected.length} orders</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            .label-page { page-break-after: always; margin-bottom: 24px; }
+            .label-page:last-child { page-break-after: auto; margin-bottom: 0; }
+            @media print { body { padding: 12px; } }
+          </style>
+        </head>
+        <body>${content.innerHTML}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      setTimeout(() => {
+        printWindow.close();
+        setBulkLabelOrders([]);
+      }, 500);
+    }, 100);
+  };
+
+
   const toggleSelect = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setSelectedIds((prev) => {
