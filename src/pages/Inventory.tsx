@@ -797,6 +797,12 @@ export default function Inventory() {
               />
               <Label htmlFor="missing-buying-price" className="text-sm cursor-pointer">No Buying Price</Label>
             </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Uploaded</span>
+              <Input type="date" value={filterUploadDateFrom} onChange={e => setFilterUploadDateFrom(e.target.value)} className="w-40 h-9 bg-background" />
+              <span className="text-xs text-muted-foreground">–</span>
+              <Input type="date" value={filterUploadDateTo} onChange={e => setFilterUploadDateTo(e.target.value)} className="w-40 h-9 bg-background" />
+            </div>
           </div>
         )}
       </div>
