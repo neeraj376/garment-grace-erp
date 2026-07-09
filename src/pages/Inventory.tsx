@@ -59,6 +59,8 @@ export default function Inventory() {
   const [filterBuyingPriceMin, setFilterBuyingPriceMin] = useState("");
   const [filterBuyingPriceMax, setFilterBuyingPriceMax] = useState("");
   const [filterMissingBuyingPrice, setFilterMissingBuyingPrice] = useState(false);
+  const [filterUploadDateFrom, setFilterUploadDateFrom] = useState("");
+  const [filterUploadDateTo, setFilterUploadDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
