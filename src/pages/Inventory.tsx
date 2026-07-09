@@ -560,7 +560,7 @@ export default function Inventory() {
   const sizes = useMemo(() => [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[], [products]);
   const colors = useMemo(() => [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[], [products]);
 
-  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "" || filterMissingBuyingPrice;
+  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "" || filterMissingBuyingPrice || filterUploadDateFrom !== "" || filterUploadDateTo !== "";
 
   // Defer search so keystrokes don't block the render of 4k+ rows.
   const deferredSearch = useDeferredValue(search);
