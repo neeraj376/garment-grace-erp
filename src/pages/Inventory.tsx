@@ -569,6 +569,8 @@ export default function Inventory() {
     const searchWords = deferredSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const minPrice = filterBuyingPriceMin === "" ? null : parseFloat(filterBuyingPriceMin);
     const maxPrice = filterBuyingPriceMax === "" ? null : parseFloat(filterBuyingPriceMax);
+    const fromTs = filterUploadDateFrom ? new Date(filterUploadDateFrom + "T00:00:00").getTime() : null;
+    const toTs = filterUploadDateTo ? new Date(filterUploadDateTo + "T23:59:59.999").getTime() : null;
     return products.filter(p => {
       const searchableText = [
         p.name, p.sku, p.brand, p.category, (p as any).subcategory, p.color, p.size,
@@ -580,6 +582,13 @@ export default function Inventory() {
       if (filterColor !== "__all__" && p.color !== filterColor) return false;
       if (filterStock === "in_stock" && !((p.total_stock ?? 0) > 0)) return false;
       if (filterStock === "out_of_stock" && !((p.total_stock ?? 0) <= 0)) return false;
+
+      if (fromTs !== null || toTs !== null) {
+        if (!p.last_stock_added_at) return false;
+        const ts = new Date(p.last_stock_added_at).getTime();
+        if (fromTs !== null && ts < fromTs) return false;
+        if (toTs !== null && ts > toTs) return false;
+      }
 
       if (minPrice !== null || maxPrice !== null || filterMissingBuyingPrice) {
         const positive = (p.inventory_batches ?? [])
@@ -594,9 +603,9 @@ export default function Inventory() {
       }
       return true;
     });
-  }, [products, deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice]);
+  }, [products, deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice, filterUploadDateFrom, filterUploadDateTo]);
 
-  useEffect(() => { setVisibleCount(300); }, [deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice]);
+  useEffect(() => { setVisibleCount(300); }, [deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice, filterUploadDateFrom, filterUploadDateTo]);
 
 
 
