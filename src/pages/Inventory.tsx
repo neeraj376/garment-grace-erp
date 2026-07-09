@@ -59,6 +59,8 @@ export default function Inventory() {
   const [filterBuyingPriceMin, setFilterBuyingPriceMin] = useState("");
   const [filterBuyingPriceMax, setFilterBuyingPriceMax] = useState("");
   const [filterMissingBuyingPrice, setFilterMissingBuyingPrice] = useState(false);
+  const [filterUploadDateFrom, setFilterUploadDateFrom] = useState("");
+  const [filterUploadDateTo, setFilterUploadDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -549,6 +551,8 @@ export default function Inventory() {
     setFilterBuyingPriceMin("");
     setFilterBuyingPriceMax("");
     setFilterMissingBuyingPrice(false);
+    setFilterUploadDateFrom("");
+    setFilterUploadDateTo("");
   };
 
   const categories = useMemo(() => [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[], [products]);
@@ -556,7 +560,7 @@ export default function Inventory() {
   const sizes = useMemo(() => [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[], [products]);
   const colors = useMemo(() => [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[], [products]);
 
-  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "" || filterMissingBuyingPrice;
+  const hasActiveFilters = filterCategory !== "__all__" || filterBrand !== "__all__" || filterSize !== "__all__" || filterColor !== "__all__" || filterStock !== "__all__" || filterBuyingPriceMin !== "" || filterBuyingPriceMax !== "" || filterMissingBuyingPrice || filterUploadDateFrom !== "" || filterUploadDateTo !== "";
 
   // Defer search so keystrokes don't block the render of 4k+ rows.
   const deferredSearch = useDeferredValue(search);
@@ -565,6 +569,8 @@ export default function Inventory() {
     const searchWords = deferredSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const minPrice = filterBuyingPriceMin === "" ? null : parseFloat(filterBuyingPriceMin);
     const maxPrice = filterBuyingPriceMax === "" ? null : parseFloat(filterBuyingPriceMax);
+    const fromTs = filterUploadDateFrom ? new Date(filterUploadDateFrom + "T00:00:00").getTime() : null;
+    const toTs = filterUploadDateTo ? new Date(filterUploadDateTo + "T23:59:59.999").getTime() : null;
     return products.filter(p => {
       const searchableText = [
         p.name, p.sku, p.brand, p.category, (p as any).subcategory, p.color, p.size,
@@ -576,6 +582,13 @@ export default function Inventory() {
       if (filterColor !== "__all__" && p.color !== filterColor) return false;
       if (filterStock === "in_stock" && !((p.total_stock ?? 0) > 0)) return false;
       if (filterStock === "out_of_stock" && !((p.total_stock ?? 0) <= 0)) return false;
+
+      if (fromTs !== null || toTs !== null) {
+        if (!p.last_stock_added_at) return false;
+        const ts = new Date(p.last_stock_added_at).getTime();
+        if (fromTs !== null && ts < fromTs) return false;
+        if (toTs !== null && ts > toTs) return false;
+      }
 
       if (minPrice !== null || maxPrice !== null || filterMissingBuyingPrice) {
         const positive = (p.inventory_batches ?? [])
@@ -590,9 +603,9 @@ export default function Inventory() {
       }
       return true;
     });
-  }, [products, deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice]);
+  }, [products, deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice, filterUploadDateFrom, filterUploadDateTo]);
 
-  useEffect(() => { setVisibleCount(300); }, [deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice]);
+  useEffect(() => { setVisibleCount(300); }, [deferredSearch, filterCategory, filterBrand, filterSize, filterColor, filterStock, filterBuyingPriceMin, filterBuyingPriceMax, filterMissingBuyingPrice, filterUploadDateFrom, filterUploadDateTo]);
 
 
 
@@ -783,6 +796,12 @@ export default function Inventory() {
                 onCheckedChange={(checked) => setFilterMissingBuyingPrice(Boolean(checked))}
               />
               <Label htmlFor="missing-buying-price" className="text-sm cursor-pointer">No Buying Price</Label>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Uploaded</span>
+              <Input type="date" value={filterUploadDateFrom} onChange={e => setFilterUploadDateFrom(e.target.value)} className="w-40 h-9 bg-background" />
+              <span className="text-xs text-muted-foreground">–</span>
+              <Input type="date" value={filterUploadDateTo} onChange={e => setFilterUploadDateTo(e.target.value)} className="w-40 h-9 bg-background" />
             </div>
           </div>
         )}
