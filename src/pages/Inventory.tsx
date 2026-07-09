@@ -551,6 +551,8 @@ export default function Inventory() {
     setFilterBuyingPriceMin("");
     setFilterBuyingPriceMax("");
     setFilterMissingBuyingPrice(false);
+    setFilterUploadDateFrom("");
+    setFilterUploadDateTo("");
   };
 
   const categories = useMemo(() => [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[], [products]);
