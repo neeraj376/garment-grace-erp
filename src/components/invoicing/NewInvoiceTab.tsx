@@ -834,6 +834,33 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
       setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
+
+      // Auto-send tracking email when online + courier + AWB + customer email are present
+      if (source === "online" && courierName.trim() && awbNo.trim() && customerEmail.trim()) {
+        const c = courierName.trim().toLowerCase();
+        const a = awbNo.trim();
+        const trackingUrl =
+          c.includes("dtdc") ? `https://www.dtdc.in/tracking/tracking_results.asp?strCnno=${a}` :
+          c.includes("bluedart") ? `https://www.bluedart.com/tracking?trackingNumber=${a}` :
+          c.includes("delhivery") ? `https://www.delhivery.com/track-v2/package/${a}` :
+          c.includes("xpressbees") ? `https://www.xpressbees.com/shipment/tracking?awb=${a}` :
+          c.includes("ecom") ? `https://ecomexpress.in/tracking/?awb_field=${a}` :
+          c.includes("shadowfax") ? `https://shadowfax.in/tracking/?awb=${a}` :
+          `https://shiprocket.co/tracking/${a}`;
+        supabase.functions.invoke("send-tracking-email", {
+          body: {
+            to: customerEmail.trim(),
+            customerName: customerName || "Customer",
+            orderNumber: invoiceNumber,
+            courierName: courierName.trim(),
+            awbNo: a,
+            trackingUrl,
+          },
+        }).then(({ error }) => {
+          if (error) toast({ title: "Tracking email not sent", description: error.message, variant: "destructive" });
+          else toast({ title: "Tracking email sent", description: `Sent to ${customerEmail.trim()}` });
+        });
+      }
       setGroupInviteSent(false);
       setCart([]);
       setDiscount(0);
