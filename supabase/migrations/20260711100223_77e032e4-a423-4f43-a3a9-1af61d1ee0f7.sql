@@ -1,0 +1,1 @@
+UPDATE public.products SET photo_url = 'https://kwbbkvfudrzznrhoumej.supabase.co/storage/v1/object/public/product-media/8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6/cleaned/black_bhpc_clean.png' WHERE sku IN ('SKU-1783761501727-6','SKU-1783761500837-5','SKU-1783761500030-4','SKU-1783761499219-3','SKU-1783761498404-2','SKU-1783761496736-1');
