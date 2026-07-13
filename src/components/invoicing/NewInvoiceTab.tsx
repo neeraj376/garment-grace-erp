@@ -835,7 +835,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       }
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
-      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
+      setLastInvoice({
+        id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName, source,
+        shipping: source === "online" ? {
+          name: customerName.trim(), phone: customerMobile.trim(),
+          line1: addressLine1.trim(), line2: addressLine2.trim(),
+          city: shipCity.trim(), state: shipState.trim(), pincode: shipPincode.trim(),
+        } : undefined,
+      });
 
       // Auto-send tracking email when online + courier + AWB + customer email are present
       if (source === "online" && courierName.trim() && awbNo.trim() && customerEmail.trim()) {
