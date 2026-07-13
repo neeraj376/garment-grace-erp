@@ -666,6 +666,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Source</TableHead>
+                <TableHead>Courier / AWB</TableHead>
                 <TableHead>Created By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -674,11 +675,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
