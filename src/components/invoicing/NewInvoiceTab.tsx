@@ -904,6 +904,58 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}`;
   };
 
+  const handlePrintShippingLabel = async () => {
+    if (!lastInvoice?.shipping) return;
+    try {
+      const s = lastInvoice.shipping;
+      const fullAddress = [s.line1, s.line2, [s.city, s.state, s.pincode].filter(Boolean).join(", ")]
+        .filter(Boolean).join(", ") || "Address not available";
+      const border = { style: BorderStyle.SINGLE, size: 6, color: "999999", space: 6 };
+      const doc = new Document({
+        styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
+        sections: [{
+          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+          children: [
+            new Paragraph({
+              heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 240 },
+              children: [new TextRun({ text: "Shipping Label", bold: true, size: 32 })],
+            }),
+            new Paragraph({
+              spacing: { before: 120, after: 60 },
+              border: { top: border, bottom: border, left: border, right: border },
+              children: [new TextRun({ text: `Invoice: ${lastInvoice.invoice_number}`, bold: true, size: 20 })],
+            }),
+            new Paragraph({ spacing: { after: 40 }, children: [
+              new TextRun({ text: "Name: ", bold: true, size: 24 }),
+              new TextRun({ text: s.name || "—", size: 24 }),
+            ]}),
+            new Paragraph({ spacing: { after: 40 }, children: [
+              new TextRun({ text: "Mobile: ", bold: true, size: 24 }),
+              new TextRun({ text: s.phone || "—", size: 24 }),
+            ]}),
+            new Paragraph({ spacing: { after: 200 }, children: [
+              new TextRun({ text: "Complete Address: ", bold: true, size: 24 }),
+              new TextRun({ text: fullAddress, size: 24 }),
+            ]}),
+            new Paragraph({
+              spacing: { before: 60, after: 200 },
+              border: { top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC", space: 4 } },
+              children: [
+                new TextRun({ text: "Originee Address: ", bold: true, size: 20 }),
+                new TextRun({ text: "I132, Sector 50, South City 2, Gurugram 122018", size: 20 }),
+              ],
+            }),
+          ],
+        }],
+      });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `shipping-label-${lastInvoice.invoice_number}.docx`);
+      toast({ title: "Shipping label generated" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const handleSendWhatsApp = async () => {
     if (!lastInvoice) return;
     const phone = lastInvoice.customerMobile;
