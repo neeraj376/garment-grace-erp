@@ -6,13 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine } from "lucide-react";
+import { Trash2, FileText, MessageCircle, Loader2, ExternalLink, PauseCircle, PlayCircle, X, Eye, ChevronDown, Truck, CheckCircle, XCircle, ScanLine, Printer } from "lucide-react";
 import InvoicePreviewDialog from "./InvoicePreviewDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
+import { saveAs } from "file-saver";
 
 
 const PAYMENT_OPTIONS: { value: string; label: string }[] = [
@@ -193,7 +195,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const deferredSearchProduct = useDeferredValue(searchProduct);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
+  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string; source: string; shipping?: { name: string; phone: string; line1: string; line2: string; city: string; state: string; pincode: string } } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
   const [groupInviteSent, setGroupInviteSent] = useState(false);
@@ -833,7 +835,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       }
 
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
-      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName });
+      setLastInvoice({
+        id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName, source,
+        shipping: source === "online" ? {
+          name: customerName.trim(), phone: customerMobile.trim(),
+          line1: addressLine1.trim(), line2: addressLine2.trim(),
+          city: shipCity.trim(), state: shipState.trim(), pincode: shipPincode.trim(),
+        } : undefined,
+      });
 
       // Auto-send tracking email when online + courier + AWB + customer email are present
       if (source === "online" && courierName.trim() && awbNo.trim() && customerEmail.trim()) {
@@ -893,6 +902,58 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   const getInvoiceShareUrl = (invoiceId: string) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}`;
+  };
+
+  const handlePrintShippingLabel = async () => {
+    if (!lastInvoice?.shipping) return;
+    try {
+      const s = lastInvoice.shipping;
+      const fullAddress = [s.line1, s.line2, [s.city, s.state, s.pincode].filter(Boolean).join(", ")]
+        .filter(Boolean).join(", ") || "Address not available";
+      const border = { style: BorderStyle.SINGLE, size: 6, color: "999999", space: 6 };
+      const doc = new Document({
+        styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
+        sections: [{
+          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+          children: [
+            new Paragraph({
+              heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 240 },
+              children: [new TextRun({ text: "Shipping Label", bold: true, size: 32 })],
+            }),
+            new Paragraph({
+              spacing: { before: 120, after: 60 },
+              border: { top: border, bottom: border, left: border, right: border },
+              children: [new TextRun({ text: `Invoice: ${lastInvoice.invoice_number}`, bold: true, size: 20 })],
+            }),
+            new Paragraph({ spacing: { after: 40 }, children: [
+              new TextRun({ text: "Name: ", bold: true, size: 24 }),
+              new TextRun({ text: s.name || "—", size: 24 }),
+            ]}),
+            new Paragraph({ spacing: { after: 40 }, children: [
+              new TextRun({ text: "Mobile: ", bold: true, size: 24 }),
+              new TextRun({ text: s.phone || "—", size: 24 }),
+            ]}),
+            new Paragraph({ spacing: { after: 200 }, children: [
+              new TextRun({ text: "Complete Address: ", bold: true, size: 24 }),
+              new TextRun({ text: fullAddress, size: 24 }),
+            ]}),
+            new Paragraph({
+              spacing: { before: 60, after: 200 },
+              border: { top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC", space: 4 } },
+              children: [
+                new TextRun({ text: "Originee Address: ", bold: true, size: 20 }),
+                new TextRun({ text: "I132, Sector 50, South City 2, Gurugram 122018", size: 20 }),
+              ],
+            }),
+          ],
+        }],
+      });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `shipping-label-${lastInvoice.invoice_number}.docx`);
+      toast({ title: "Shipping label generated" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleSendWhatsApp = async () => {
@@ -1582,6 +1643,16 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                       <MessageCircle className="h-4 w-4 mr-1" />
                     )}
                     {groupInviteSent ? "Group invite sent ✓" : "Send WhatsApp group invite"}
+                  </Button>
+                )}
+                {lastInvoice.source === "online" && lastInvoice.shipping && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handlePrintShippingLabel}
+                  >
+                    <Printer className="h-4 w-4 mr-1" /> Print Shipping Label
                   </Button>
                 )}
               </div>
