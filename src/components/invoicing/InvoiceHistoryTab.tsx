@@ -716,6 +716,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell>
                     <Badge variant="outline" className="capitalize">{inv.source}</Badge>
                   </TableCell>
+                  <TableCell className="text-sm">
+                    {inv.courier_name || inv.awb_no ? (
+                      <div>
+                        <div className="font-medium">{inv.courier_name || "—"}</div>
+                        {inv.awb_no && <div className="text-xs text-muted-foreground">AWB: {inv.awb_no}</div>}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
                   </TableCell>
