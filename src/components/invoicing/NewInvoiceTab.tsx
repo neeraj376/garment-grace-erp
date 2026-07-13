@@ -1645,6 +1645,16 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     {groupInviteSent ? "Group invite sent ✓" : "Send WhatsApp group invite"}
                   </Button>
                 )}
+                {lastInvoice.source === "online" && lastInvoice.shipping && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handlePrintShippingLabel}
+                  >
+                    <Printer className="h-4 w-4 mr-1" /> Print Shipping Label
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
