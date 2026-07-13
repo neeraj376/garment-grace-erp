@@ -451,12 +451,28 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         const fullAddress = addressParts.length > 0 ? addressParts.join(", ") : "Address not available";
 
         const border = { style: BorderStyle.SINGLE, size: 6, color: "999999", space: 6 };
+        const awb = inv.awb_no || "—";
+        const courier = inv.courier_name || "—";
         labelChildren.push(
           new Paragraph({
             spacing: { before: 120, after: 60 },
             border: { top: border, bottom: border, left: border, right: border },
             children: [
               new TextRun({ text: `Invoice: ${inv.invoice_number}`, bold: true, size: 20 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 40 },
+            children: [
+              new TextRun({ text: "Courier: ", bold: true, size: 22 }),
+              new TextRun({ text: courier, size: 22 }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 60 },
+            children: [
+              new TextRun({ text: "AWB No: ", bold: true, size: 22 }),
+              new TextRun({ text: awb, size: 22 }),
             ],
           }),
           new Paragraph({
