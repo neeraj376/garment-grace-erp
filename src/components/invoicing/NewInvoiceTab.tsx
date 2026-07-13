@@ -195,7 +195,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [searchProduct, setSearchProduct] = useState("");
   const deferredSearchProduct = useDeferredValue(searchProduct);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string } | null>(null);
+  const [lastInvoice, setLastInvoice] = useState<{ id: string; invoice_number: string; total: number; customerMobile: string; customerName: string; source: string; shipping?: { name: string; phone: string; line1: string; line2: string; city: string; state: string; pincode: string } } | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [sendingGroupInvite, setSendingGroupInvite] = useState(false);
   const [groupInviteSent, setGroupInviteSent] = useState(false);
