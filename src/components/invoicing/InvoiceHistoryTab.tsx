@@ -666,6 +666,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Source</TableHead>
+                <TableHead>Courier / AWB</TableHead>
                 <TableHead>Created By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -674,11 +675,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
               ) : filtered.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
@@ -714,6 +715,16 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">{inv.source}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {inv.courier_name || inv.awb_no ? (
+                      <div>
+                        <div className="font-medium">{inv.courier_name || "—"}</div>
+                        {inv.awb_no && <div className="text-xs text-muted-foreground">AWB: {inv.awb_no}</div>}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
