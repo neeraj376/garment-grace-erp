@@ -804,7 +804,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      {canEdit && (
+                      {isOwner && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
