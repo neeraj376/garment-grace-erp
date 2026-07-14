@@ -577,7 +577,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   {printingLabels ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
                   Print Shipping Labels ({selectedIds.size})
                 </Button>
-                {canEdit && (
+                {isOwner && (
                   <Button
                     variant="destructive"
                     size="sm"
