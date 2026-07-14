@@ -306,11 +306,17 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         .in("invoice_id", batch);
       if (itemsError) throw itemsError;
 
-      const { error } = await supabase
+      const { data: deletedRows, error } = await supabase
         .from("invoices")
         .delete()
-        .in("id", batch);
+        .in("id", batch)
+        .select("id");
       if (error) throw error;
+      if (!deletedRows || deletedRows.length !== batch.length) {
+        throw new Error(
+          `Delete blocked: only owners can delete invoices. ${deletedRows?.length ?? 0} of ${batch.length} rows were removed.`
+        );
+      }
     }
   };
 
