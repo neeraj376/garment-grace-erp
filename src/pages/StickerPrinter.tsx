@@ -45,9 +45,17 @@ export default function StickerPrinter() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
+  const [filterSubcategory, setFilterSubcategory] = useState("all");
+  const [filterBrand, setFilterBrand] = useState("all");
+  const [filterSize, setFilterSize] = useState("all");
+  const [filterColor, setFilterColor] = useState("all");
+  const [filterStock, setFilterStock] = useState("all");
+  const [filterUploadFrom, setFilterUploadFrom] = useState("");
+  const [filterUploadTo, setFilterUploadTo] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [selected, setSelected] = useState<Record<string, number>>({});
   const [size, setSize] = useState<keyof typeof STICKER_SIZES>("50x25");
-  
+
   const [loading, setLoading] = useState(false);
   const [qrMap, setQrMap] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
