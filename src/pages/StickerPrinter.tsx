@@ -267,9 +267,94 @@ export default function StickerPrinter() {
               autoFocus
               className="flex-1 min-w-[260px]"
             />
+            <Button variant={showFilters ? "default" : "outline"} onClick={() => setShowFilters(!showFilters)}>
+              <Filter className="h-4 w-4 mr-1" /> Filters
+              {hasActiveFilters && <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+                {[category, filterSubcategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "all").length + (filterUploadFrom ? 1 : 0) + (filterUploadTo ? 1 : 0)}
+              </Badge>}
+            </Button>
             <Button variant="outline" onClick={() => toggleAll(true)}>Select all (stock qty)</Button>
             <Button variant="outline" onClick={() => toggleAll(false)}>Clear</Button>
           </div>
+
+          {showFilters && (
+            <div className="flex flex-wrap gap-2 items-end p-3 mb-3 border rounded-lg bg-muted/30">
+              <div>
+                <Label className="text-xs">Category</Label>
+                <Select value={category} onValueChange={(v) => { setCategory(v); setFilterSubcategory("all"); }}>
+                  <SelectTrigger className="h-9 w-40 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All categories</SelectItem>
+                    {facets.categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Subcategory</Label>
+                <Select value={filterSubcategory} onValueChange={setFilterSubcategory}>
+                  <SelectTrigger className="h-9 w-40 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.subcategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Brand</Label>
+                <Select value={filterBrand} onValueChange={setFilterBrand}>
+                  <SelectTrigger className="h-9 w-36 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.brands.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Size</Label>
+                <Select value={filterSize} onValueChange={setFilterSize}>
+                  <SelectTrigger className="h-9 w-28 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.sizes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Color</Label>
+                <Select value={filterColor} onValueChange={setFilterColor}>
+                  <SelectTrigger className="h-9 w-32 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Stock</Label>
+                <Select value={filterStock} onValueChange={setFilterStock}>
+                  <SelectTrigger className="h-9 w-36 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="in_stock">In stock</SelectItem>
+                    <SelectItem value="out_of_stock">Out of stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Uploaded from</Label>
+                <Input type="date" value={filterUploadFrom} onChange={e => setFilterUploadFrom(e.target.value)} className="h-9 w-40 bg-background" />
+              </div>
+              <div>
+                <Label className="text-xs">Uploaded to</Label>
+                <Input type="date" value={filterUploadTo} onChange={e => setFilterUploadTo(e.target.value)} className="h-9 w-40 bg-background" />
+              </div>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" /> Clear filters
+                </Button>
+              )}
+            </div>
+          )}
           <p className="text-xs text-muted-foreground mb-2">
             Showing {filtered.length} of {products.length} products
           </p>
