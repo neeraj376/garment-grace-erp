@@ -144,12 +144,18 @@ export default function StickerPrinter() {
     const words = q.split(/\s+/).filter(Boolean);
     const fromTs = filterUploadFrom ? new Date(filterUploadFrom + "T00:00:00").getTime() : null;
     const toTs = filterUploadTo ? new Date(filterUploadTo + "T23:59:59.999").getTime() : null;
+    const norm = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
+    const wantCategory = category === "all" ? "" : norm(category);
+    const wantSubcat = filterSubcategory === "all" ? "" : norm(filterSubcategory);
+    const wantBrand = filterBrand === "all" ? "" : norm(filterBrand);
+    const wantSize = filterSize === "all" ? "" : norm(filterSize);
+    const wantColor = filterColor === "all" ? "" : norm(filterColor);
     return products.filter(p => {
-      if (category !== "all" && p.category !== category) return false;
-      if (filterSubcategory !== "all" && p.subcategory !== filterSubcategory) return false;
-      if (filterBrand !== "all" && p.brand !== filterBrand) return false;
-      if (filterSize !== "all" && p.size !== filterSize) return false;
-      if (filterColor !== "all" && p.color !== filterColor) return false;
+      if (wantCategory && norm(p.category) !== wantCategory) return false;
+      if (wantSubcat && norm(p.subcategory) !== wantSubcat) return false;
+      if (wantBrand && norm(p.brand) !== wantBrand) return false;
+      if (wantSize && norm(p.size) !== wantSize) return false;
+      if (wantColor && norm(p.color) !== wantColor) return false;
       const stock = p._stock ?? 0;
       if (filterStock === "in_stock" && !(stock > 0)) return false;
       if (filterStock === "out_of_stock" && !(stock <= 0)) return false;
