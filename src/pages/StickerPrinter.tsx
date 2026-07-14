@@ -239,8 +239,8 @@ export default function StickerPrinter() {
             Each label prints on its own page so the printer feeds exactly one sticker at a time.
           </p>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
+        <CardContent>
+          <div className="max-w-xs">
             <Label>Label roll size</Label>
             <Select value={size} onValueChange={(v) => setSize(v as keyof typeof STICKER_SIZES)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -248,16 +248,6 @@ export default function StickerPrinter() {
                 {Object.entries(STICKER_SIZES).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v.label}</SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Filter by category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
