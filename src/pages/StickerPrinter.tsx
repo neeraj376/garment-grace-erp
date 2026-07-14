@@ -71,7 +71,7 @@ export default function StickerPrinter() {
       while (true) {
         const { data, error } = await supabase
           .from("products")
-          .select("id, sku, name, category, subcategory, color, size, brand, selling_price, mrp")
+          .select("id, sku, name, category, subcategory, color, size, brand, selling_price, mrp, created_at")
           .eq("store_id", storeId)
           .eq("is_active", true)
           .order("name")
