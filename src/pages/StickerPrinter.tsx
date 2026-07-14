@@ -23,6 +23,7 @@ type Product = {
   brand: string | null;
   selling_price: number;
   mrp: number | null;
+  created_at?: string | null;
   _stock?: number;
 };
 
