@@ -106,23 +106,65 @@ export default function StickerPrinter() {
     })();
   }, [storeId]);
 
-  const categories = useMemo(() => {
-    const s = new Set<string>();
-    products.forEach(p => p.category && s.add(p.category));
-    return Array.from(s).sort();
-  }, [products]);
+  const facets = useMemo(() => {
+    const categories = new Set<string>();
+    const subcategories = new Set<string>();
+    const brands = new Set<string>();
+    const sizes = new Set<string>();
+    const colors = new Set<string>();
+    products.forEach(p => {
+      if (p.category) categories.add(p.category);
+      if (p.subcategory && (category === "all" || p.category === category)) subcategories.add(p.subcategory);
+      if (p.brand) brands.add(p.brand);
+      if (p.size) sizes.add(p.size);
+      if (p.color) colors.add(p.color);
+    });
+    return {
+      categories: Array.from(categories).sort(),
+      subcategories: Array.from(subcategories).sort(),
+      brands: Array.from(brands).sort(),
+      sizes: Array.from(sizes).sort(),
+      colors: Array.from(colors).sort(),
+    };
+  }, [products, category]);
+  const categories = facets.categories;
+
+  const hasActiveFilters = category !== "all" || filterSubcategory !== "all" || filterBrand !== "all" ||
+    filterSize !== "all" || filterColor !== "all" || filterStock !== "all" ||
+    filterUploadFrom !== "" || filterUploadTo !== "";
+
+  const clearFilters = () => {
+    setCategory("all"); setFilterSubcategory("all"); setFilterBrand("all");
+    setFilterSize("all"); setFilterColor("all"); setFilterStock("all");
+    setFilterUploadFrom(""); setFilterUploadTo("");
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const words = q.split(/\s+/).filter(Boolean);
+    const fromTs = filterUploadFrom ? new Date(filterUploadFrom + "T00:00:00").getTime() : null;
+    const toTs = filterUploadTo ? new Date(filterUploadTo + "T23:59:59.999").getTime() : null;
     return products.filter(p => {
       if (category !== "all" && p.category !== category) return false;
+      if (filterSubcategory !== "all" && p.subcategory !== filterSubcategory) return false;
+      if (filterBrand !== "all" && p.brand !== filterBrand) return false;
+      if (filterSize !== "all" && p.size !== filterSize) return false;
+      if (filterColor !== "all" && p.color !== filterColor) return false;
+      const stock = p._stock ?? 0;
+      if (filterStock === "in_stock" && !(stock > 0)) return false;
+      if (filterStock === "out_of_stock" && !(stock <= 0)) return false;
+      if (fromTs || toTs) {
+        const ts = p.created_at ? new Date(p.created_at).getTime() : null;
+        if (ts === null) return false;
+        if (fromTs && ts < fromTs) return false;
+        if (toTs && ts > toTs) return false;
+      }
       if (words.length === 0) return true;
       const text = [p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand]
         .filter(Boolean).join(" ").toLowerCase();
       return words.every(w => text.includes(w));
     });
-  }, [products, search, category]);
+  }, [products, search, category, filterSubcategory, filterBrand, filterSize, filterColor, filterStock, filterUploadFrom, filterUploadTo]);
 
   const totalStickers = Object.values(selected).reduce((s, n) => s + (n || 0), 0);
 
