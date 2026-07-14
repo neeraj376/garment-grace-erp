@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Printer, QrCode, RefreshCw } from "lucide-react";
+import { Printer, QrCode, RefreshCw, Filter, X } from "lucide-react";
 
 type Product = {
   id: string;
@@ -22,6 +23,7 @@ type Product = {
   brand: string | null;
   selling_price: number;
   mrp: number | null;
+  created_at?: string | null;
   _stock?: number;
 };
 
@@ -43,9 +45,17 @@ export default function StickerPrinter() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
+  const [filterSubcategory, setFilterSubcategory] = useState("all");
+  const [filterBrand, setFilterBrand] = useState("all");
+  const [filterSize, setFilterSize] = useState("all");
+  const [filterColor, setFilterColor] = useState("all");
+  const [filterStock, setFilterStock] = useState("all");
+  const [filterUploadFrom, setFilterUploadFrom] = useState("");
+  const [filterUploadTo, setFilterUploadTo] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [selected, setSelected] = useState<Record<string, number>>({});
   const [size, setSize] = useState<keyof typeof STICKER_SIZES>("50x25");
-  
+
   const [loading, setLoading] = useState(false);
   const [qrMap, setQrMap] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
@@ -61,7 +71,7 @@ export default function StickerPrinter() {
       while (true) {
         const { data, error } = await supabase
           .from("products")
-          .select("id, sku, name, category, subcategory, color, size, brand, selling_price, mrp")
+          .select("id, sku, name, category, subcategory, color, size, brand, selling_price, mrp, created_at")
           .eq("store_id", storeId)
           .eq("is_active", true)
           .order("name")
@@ -96,23 +106,65 @@ export default function StickerPrinter() {
     })();
   }, [storeId]);
 
-  const categories = useMemo(() => {
-    const s = new Set<string>();
-    products.forEach(p => p.category && s.add(p.category));
-    return Array.from(s).sort();
-  }, [products]);
+  const facets = useMemo(() => {
+    const categories = new Set<string>();
+    const subcategories = new Set<string>();
+    const brands = new Set<string>();
+    const sizes = new Set<string>();
+    const colors = new Set<string>();
+    products.forEach(p => {
+      if (p.category) categories.add(p.category);
+      if (p.subcategory && (category === "all" || p.category === category)) subcategories.add(p.subcategory);
+      if (p.brand) brands.add(p.brand);
+      if (p.size) sizes.add(p.size);
+      if (p.color) colors.add(p.color);
+    });
+    return {
+      categories: Array.from(categories).sort(),
+      subcategories: Array.from(subcategories).sort(),
+      brands: Array.from(brands).sort(),
+      sizes: Array.from(sizes).sort(),
+      colors: Array.from(colors).sort(),
+    };
+  }, [products, category]);
+  const categories = facets.categories;
+
+  const hasActiveFilters = category !== "all" || filterSubcategory !== "all" || filterBrand !== "all" ||
+    filterSize !== "all" || filterColor !== "all" || filterStock !== "all" ||
+    filterUploadFrom !== "" || filterUploadTo !== "";
+
+  const clearFilters = () => {
+    setCategory("all"); setFilterSubcategory("all"); setFilterBrand("all");
+    setFilterSize("all"); setFilterColor("all"); setFilterStock("all");
+    setFilterUploadFrom(""); setFilterUploadTo("");
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const words = q.split(/\s+/).filter(Boolean);
+    const fromTs = filterUploadFrom ? new Date(filterUploadFrom + "T00:00:00").getTime() : null;
+    const toTs = filterUploadTo ? new Date(filterUploadTo + "T23:59:59.999").getTime() : null;
     return products.filter(p => {
       if (category !== "all" && p.category !== category) return false;
+      if (filterSubcategory !== "all" && p.subcategory !== filterSubcategory) return false;
+      if (filterBrand !== "all" && p.brand !== filterBrand) return false;
+      if (filterSize !== "all" && p.size !== filterSize) return false;
+      if (filterColor !== "all" && p.color !== filterColor) return false;
+      const stock = p._stock ?? 0;
+      if (filterStock === "in_stock" && !(stock > 0)) return false;
+      if (filterStock === "out_of_stock" && !(stock <= 0)) return false;
+      if (fromTs || toTs) {
+        const ts = p.created_at ? new Date(p.created_at).getTime() : null;
+        if (ts === null) return false;
+        if (fromTs && ts < fromTs) return false;
+        if (toTs && ts > toTs) return false;
+      }
       if (words.length === 0) return true;
       const text = [p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand]
         .filter(Boolean).join(" ").toLowerCase();
       return words.every(w => text.includes(w));
     });
-  }, [products, search, category]);
+  }, [products, search, category, filterSubcategory, filterBrand, filterSize, filterColor, filterStock, filterUploadFrom, filterUploadTo]);
 
   const totalStickers = Object.values(selected).reduce((s, n) => s + (n || 0), 0);
 
@@ -187,8 +239,8 @@ export default function StickerPrinter() {
             Each label prints on its own page so the printer feeds exactly one sticker at a time.
           </p>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
+        <CardContent>
+          <div className="max-w-xs">
             <Label>Label roll size</Label>
             <Select value={size} onValueChange={(v) => setSize(v as keyof typeof STICKER_SIZES)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -196,16 +248,6 @@ export default function StickerPrinter() {
                 {Object.entries(STICKER_SIZES).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v.label}</SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Filter by category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -225,9 +267,94 @@ export default function StickerPrinter() {
               autoFocus
               className="flex-1 min-w-[260px]"
             />
+            <Button variant={showFilters ? "default" : "outline"} onClick={() => setShowFilters(!showFilters)}>
+              <Filter className="h-4 w-4 mr-1" /> Filters
+              {hasActiveFilters && <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+                {[category, filterSubcategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "all").length + (filterUploadFrom ? 1 : 0) + (filterUploadTo ? 1 : 0)}
+              </Badge>}
+            </Button>
             <Button variant="outline" onClick={() => toggleAll(true)}>Select all (stock qty)</Button>
             <Button variant="outline" onClick={() => toggleAll(false)}>Clear</Button>
           </div>
+
+          {showFilters && (
+            <div className="flex flex-wrap gap-2 items-end p-3 mb-3 border rounded-lg bg-muted/30">
+              <div>
+                <Label className="text-xs">Category</Label>
+                <Select value={category} onValueChange={(v) => { setCategory(v); setFilterSubcategory("all"); }}>
+                  <SelectTrigger className="h-9 w-40 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All categories</SelectItem>
+                    {facets.categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Subcategory</Label>
+                <Select value={filterSubcategory} onValueChange={setFilterSubcategory}>
+                  <SelectTrigger className="h-9 w-40 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.subcategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Brand</Label>
+                <Select value={filterBrand} onValueChange={setFilterBrand}>
+                  <SelectTrigger className="h-9 w-36 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.brands.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Size</Label>
+                <Select value={filterSize} onValueChange={setFilterSize}>
+                  <SelectTrigger className="h-9 w-28 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.sizes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Color</Label>
+                <Select value={filterColor} onValueChange={setFilterColor}>
+                  <SelectTrigger className="h-9 w-32 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {facets.colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Stock</Label>
+                <Select value={filterStock} onValueChange={setFilterStock}>
+                  <SelectTrigger className="h-9 w-36 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="in_stock">In stock</SelectItem>
+                    <SelectItem value="out_of_stock">Out of stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Uploaded from</Label>
+                <Input type="date" value={filterUploadFrom} onChange={e => setFilterUploadFrom(e.target.value)} className="h-9 w-40 bg-background" />
+              </div>
+              <div>
+                <Label className="text-xs">Uploaded to</Label>
+                <Input type="date" value={filterUploadTo} onChange={e => setFilterUploadTo(e.target.value)} className="h-9 w-40 bg-background" />
+              </div>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" /> Clear filters
+                </Button>
+              )}
+            </div>
+          )}
           <p className="text-xs text-muted-foreground mb-2">
             Showing {filtered.length} of {products.length} products
           </p>
