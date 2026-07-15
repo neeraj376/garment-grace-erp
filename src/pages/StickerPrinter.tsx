@@ -64,47 +64,45 @@ export default function StickerPrinter() {
     if (!storeId) return;
     setLoading(true);
     (async () => {
+      // Load products + stock in one paged RPC call instead of fetching every
+      // product and every inventory batch separately (was ~186s + 587s of DB time).
       const PAGE = 1000;
-      // Fetch all active products (paged)
-      let from = 0;
+      let offset = 0;
       const all: any[] = [];
+      // eslint-disable-next-line no-constant-condition
       while (true) {
-        const { data, error } = await supabase
-          .from("products")
-          .select("id, sku, name, category, subcategory, color, size, brand, selling_price, mrp, created_at")
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .order("name")
-          .range(from, from + PAGE - 1);
+        const { data, error } = await (supabase as any).rpc(
+          "get_inventory_overview_paged",
+          { p_store_id: storeId, p_limit: PAGE, p_offset: offset }
+        );
         if (error || !data) break;
-        all.push(...data);
-        if (data.length < PAGE) break;
-        from += PAGE;
-      }
-
-      // Fetch all inventory batches for this store (paged) and aggregate.
-      // This avoids firing thousands of parallel RPCs which can fail/return 0.
-      const stockMap: Record<string, number> = {};
-      let bFrom = 0;
-      while (true) {
-        const { data, error } = await supabase
-          .from("inventory_batches")
-          .select("product_id, quantity")
-          .eq("store_id", storeId)
-          .range(bFrom, bFrom + PAGE - 1);
-        if (error || !data) break;
-        for (const b of data as any[]) {
-          stockMap[b.product_id] = (stockMap[b.product_id] || 0) + (b.quantity || 0);
+        for (const row of data as any[]) {
+          const p = row.product || {};
+          all.push({
+            id: p.id,
+            sku: p.sku,
+            name: p.name,
+            category: p.category,
+            subcategory: p.subcategory,
+            color: p.color,
+            size: p.size,
+            brand: p.brand,
+            selling_price: p.selling_price,
+            mrp: p.mrp,
+            created_at: p.created_at,
+            _stock: row.total_stock ?? 0,
+          });
         }
-        if (data.length < PAGE) break;
-        bFrom += PAGE;
+        if ((data as any[]).length < PAGE) break;
+        offset += PAGE;
       }
-
-      const withStock = all.map((p) => ({ ...p, _stock: stockMap[p.id] || 0 }));
-      setProducts(withStock as Product[]);
+      // Preserve the previous sort (by name) since the RPC orders by created_at
+      all.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      setProducts(all as Product[]);
       setLoading(false);
     })();
   }, [storeId]);
+
 
   const facets = useMemo(() => {
     const categories = new Set<string>();

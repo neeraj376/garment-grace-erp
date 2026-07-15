@@ -1688,6 +1688,20 @@ export type Database = {
       }
       get_product_stock: { Args: { p_product_id: string }; Returns: number }
       get_public_invoice: { Args: { p_invoice_id: string }; Returns: Json }
+      get_sold_invoices_for_products: {
+        Args: { p_product_ids: string[]; p_store_id: string }
+        Returns: {
+          created_at: string
+          customer_id: string
+          customer_mobile: string
+          customer_name: string
+          invoice_id: string
+          invoice_number: string
+          sold_qty: number
+          sold_value: number
+          total_amount: number
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

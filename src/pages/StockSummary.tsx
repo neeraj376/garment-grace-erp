@@ -23,33 +23,43 @@ export default function StockSummary() {
     if (!storeId) return;
 
     const fetch = async () => {
-      const { data: products } = await supabase
-        .from("products")
-        .select("id, name, sku, category, selling_price, inventory_batches(buying_price, quantity)")
-        .eq("store_id", storeId)
-        .eq("is_active", true);
-
-      const items: StockItem[] = (products ?? []).map((p: any) => {
-        const batches = p.inventory_batches ?? [];
-        const totalStock = batches.reduce((s: number, b: any) => s + b.quantity, 0);
-        const totalCost = batches.reduce((s: number, b: any) => s + b.buying_price * b.quantity, 0);
-        const avgBuying = totalStock > 0 ? totalCost / totalStock : 0;
-        return {
-          product_name: p.name,
-          sku: p.sku,
-          category: p.category,
-          total_stock: totalStock,
-          avg_buying_price: avgBuying,
-          selling_price: Number(p.selling_price),
-          stock_value: totalCost,
-        };
-      });
-
+      // Use the paged aggregation RPC so we get stock + avg buying price in one
+      // shot instead of loading every product with its full inventory_batches
+      // array (which was ~586s of DB time across the app).
+      const PAGE = 1000;
+      let offset = 0;
+      const items: StockItem[] = [];
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await (supabase as any).rpc(
+          "get_inventory_overview_paged",
+          { p_store_id: storeId, p_limit: PAGE, p_offset: offset }
+        );
+        if (error) { console.error(error); break; }
+        const chunk = (data ?? []) as any[];
+        for (const row of chunk) {
+          const p = row.product || {};
+          const totalStock = row.total_stock ?? 0;
+          const avgBuying = Number(row.avg_buying_price ?? 0);
+          items.push({
+            product_name: p.name,
+            sku: p.sku,
+            category: p.category,
+            total_stock: totalStock,
+            avg_buying_price: avgBuying,
+            selling_price: Number(p.selling_price ?? 0),
+            stock_value: avgBuying * totalStock,
+          });
+        }
+        if (chunk.length < PAGE) break;
+        offset += PAGE;
+      }
       setStock(items);
     };
 
     fetch();
   }, [storeId]);
+
 
   const totalValue = stock.reduce((s, i) => s + i.stock_value, 0);
   const totalUnits = stock.reduce((s, i) => s + i.total_stock, 0);
