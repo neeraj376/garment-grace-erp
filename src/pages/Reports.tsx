@@ -369,7 +369,10 @@ export default function Reports() {
       ["Revenue", current.summary.revenue, previous?.summary.revenue ?? ""],
       ["Cost of Goods", current.summary.cost, previous?.summary.cost ?? ""],
       ["GST Collected", current.summary.tax, previous?.summary.tax ?? ""],
-      ["Net Profit", current.summary.profit, previous?.summary.profit ?? ""],
+      ["Delivery Cost", current.summary.deliveryCost, previous?.summary.deliveryCost ?? ""],
+      ["Gross Profit", current.summary.profit, previous?.summary.profit ?? ""],
+      ["Operating Costs", current.summary.operatingCost, previous?.summary.operatingCost ?? ""],
+      ["Operating Profit", current.summary.operatingProfit, previous?.summary.operatingProfit ?? ""],
     ];
     csv += toCsvString(previous ? ["Metric", "Current", "Previous"] : ["Metric", "Amount"],
       previous ? sumRows : sumRows.map(r => [r[0], r[1]]));
