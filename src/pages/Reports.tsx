@@ -515,13 +515,15 @@ export default function Reports() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {([
               { label: "Revenue", cur: current.summary.revenue, prev: previous?.summary.revenue ?? 0 },
               { label: "Cost of Goods", cur: current.summary.cost, prev: previous?.summary.cost ?? 0 },
               { label: "GST Collected", cur: current.summary.tax, prev: previous?.summary.tax ?? 0 },
               { label: "Delivery Cost", cur: current.summary.deliveryCost, prev: previous?.summary.deliveryCost ?? 0 },
-              { label: "Net Profit", cur: current.summary.profit, prev: previous?.summary.profit ?? 0, profit: true },
+              { label: "Gross Profit", cur: current.summary.profit, prev: previous?.summary.profit ?? 0, profit: true },
+              { label: "Operating Costs", cur: current.summary.operatingCost, prev: previous?.summary.operatingCost ?? 0 },
+              { label: "Operating Profit", cur: current.summary.operatingProfit, prev: previous?.summary.operatingProfit ?? 0, profit: true },
             ] as const).map(card => (
               <Card key={card.label}>
                 <CardContent className="pt-5">
