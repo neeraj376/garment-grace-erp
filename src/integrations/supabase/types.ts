@@ -843,6 +843,59 @@ export type Database = {
           },
         ]
       }
+      operating_costs: {
+        Row: {
+          amount: number
+          cost_type: string
+          created_at: string
+          created_by: string | null
+          frequency: string
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          receipt_url: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cost_type: string
+          created_at?: string
+          created_by?: string | null
+          frequency: string
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          receipt_url?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cost_type?: string
+          created_at?: string
+          created_by?: string | null
+          frequency?: string
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          receipt_url?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operating_costs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           id: string

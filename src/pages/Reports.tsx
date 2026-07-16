@@ -42,7 +42,7 @@ interface EmployeeSales {
 }
 
 interface ReportBundle {
-  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number };
+  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number; operatingCost: number; operatingProfit: number };
   trend: { date: string; total: number }[];
   paymentSplit: PaymentSplit[];
   sourceSplit: PaymentSplit[];
@@ -54,7 +54,7 @@ interface ReportBundle {
 type SourceFilter = "all" | "offline" | "online" | "wholesale";
 
 const EMPTY_BUNDLE: ReportBundle = {
-  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0 },
+  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0, operatingCost: 0, operatingProfit: 0 },
   trend: [],
   paymentSplit: [],
   sourceSplit: [],
@@ -250,7 +250,29 @@ export default function Reports() {
     });
 
     const deliveryCost = invData.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0);
-    const summary = { revenue, cost, tax, deliveryCost, profit: revenue - cost - tax - deliveryCost };
+
+    // Operating costs overlapping this range (prorated by overlap days)
+    const rangeStartDate = new Date(start);
+    const rangeEndDate = new Date(end);
+    const { data: opCostData } = await supabase
+      .from("operating_costs")
+      .select("amount, period_start, period_end")
+      .eq("store_id", storeId!)
+      .lte("period_start", end.slice(0, 10))
+      .gte("period_end", start.slice(0, 10));
+    let operatingCost = 0;
+    (opCostData ?? []).forEach((c: any) => {
+      const ps = new Date(c.period_start);
+      const pe = new Date(c.period_end);
+      const totalDays = Math.max(1, Math.floor((pe.getTime() - ps.getTime()) / 86400000) + 1);
+      const overlapStart = ps > rangeStartDate ? ps : rangeStartDate;
+      const overlapEnd = pe < rangeEndDate ? pe : rangeEndDate;
+      const overlapDays = Math.max(0, Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / 86400000) + 1);
+      operatingCost += Number(c.amount) * (overlapDays / totalDays);
+    });
+
+    const profit = revenue - cost - tax - deliveryCost;
+    const summary = { revenue, cost, tax, deliveryCost, profit, operatingCost, operatingProfit: profit - operatingCost };
 
     const paymentMap: Record<string, number> = {};
     invData.forEach(inv => {
@@ -347,7 +369,10 @@ export default function Reports() {
       ["Revenue", current.summary.revenue, previous?.summary.revenue ?? ""],
       ["Cost of Goods", current.summary.cost, previous?.summary.cost ?? ""],
       ["GST Collected", current.summary.tax, previous?.summary.tax ?? ""],
-      ["Net Profit", current.summary.profit, previous?.summary.profit ?? ""],
+      ["Delivery Cost", current.summary.deliveryCost, previous?.summary.deliveryCost ?? ""],
+      ["Gross Profit", current.summary.profit, previous?.summary.profit ?? ""],
+      ["Operating Costs", current.summary.operatingCost, previous?.summary.operatingCost ?? ""],
+      ["Operating Profit", current.summary.operatingProfit, previous?.summary.operatingProfit ?? ""],
     ];
     csv += toCsvString(previous ? ["Metric", "Current", "Previous"] : ["Metric", "Amount"],
       previous ? sumRows : sumRows.map(r => [r[0], r[1]]));
@@ -493,13 +518,15 @@ export default function Reports() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {([
               { label: "Revenue", cur: current.summary.revenue, prev: previous?.summary.revenue ?? 0 },
               { label: "Cost of Goods", cur: current.summary.cost, prev: previous?.summary.cost ?? 0 },
               { label: "GST Collected", cur: current.summary.tax, prev: previous?.summary.tax ?? 0 },
               { label: "Delivery Cost", cur: current.summary.deliveryCost, prev: previous?.summary.deliveryCost ?? 0 },
-              { label: "Net Profit", cur: current.summary.profit, prev: previous?.summary.profit ?? 0, profit: true },
+              { label: "Gross Profit", cur: current.summary.profit, prev: previous?.summary.profit ?? 0, profit: true },
+              { label: "Operating Costs", cur: current.summary.operatingCost, prev: previous?.summary.operatingCost ?? 0 },
+              { label: "Operating Profit", cur: current.summary.operatingProfit, prev: previous?.summary.operatingProfit ?? 0, profit: true },
             ] as const).map(card => (
               <Card key={card.label}>
                 <CardContent className="pt-5">

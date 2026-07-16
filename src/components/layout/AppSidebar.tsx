@@ -14,6 +14,7 @@ import {
   Megaphone,
   MessageCircle,
   QrCode,
+  Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -52,6 +53,7 @@ export default function AppSidebar() {
     { icon: Users, label: "Customers", path: "/administrator/customers", visible: isOwner || can_customers },
     { icon: Award, label: "Loyalty", path: "/administrator/loyalty", visible: isOwner || can_loyalty },
     { icon: BarChart3, label: "Reports", path: "/administrator/reports", visible: isOwner || can_reports },
+    { icon: Wallet, label: "Expenses", path: "/administrator/expenses", visible: isOwner },
     { icon: UserCog, label: "Employees", path: "/administrator/employees", visible: isOwner || can_employees },
     { icon: ImagePlus, label: "Photo Manager", path: "/administrator/photos", visible: isOwner || can_photos },
     { icon: QrCode, label: "Print Stickers", path: "/administrator/stickers", visible: isOwner || can_print_stickers },
