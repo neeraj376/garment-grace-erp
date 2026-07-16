@@ -250,7 +250,29 @@ export default function Reports() {
     });
 
     const deliveryCost = invData.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0);
-    const summary = { revenue, cost, tax, deliveryCost, profit: revenue - cost - tax - deliveryCost };
+
+    // Operating costs overlapping this range (prorated by overlap days)
+    const rangeStartDate = new Date(start);
+    const rangeEndDate = new Date(end);
+    const { data: opCostData } = await supabase
+      .from("operating_costs")
+      .select("amount, period_start, period_end")
+      .eq("store_id", storeId!)
+      .lte("period_start", end.slice(0, 10))
+      .gte("period_end", start.slice(0, 10));
+    let operatingCost = 0;
+    (opCostData ?? []).forEach((c: any) => {
+      const ps = new Date(c.period_start);
+      const pe = new Date(c.period_end);
+      const totalDays = Math.max(1, Math.floor((pe.getTime() - ps.getTime()) / 86400000) + 1);
+      const overlapStart = ps > rangeStartDate ? ps : rangeStartDate;
+      const overlapEnd = pe < rangeEndDate ? pe : rangeEndDate;
+      const overlapDays = Math.max(0, Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / 86400000) + 1);
+      operatingCost += Number(c.amount) * (overlapDays / totalDays);
+    });
+
+    const profit = revenue - cost - tax - deliveryCost;
+    const summary = { revenue, cost, tax, deliveryCost, profit, operatingCost, operatingProfit: profit - operatingCost };
 
     const paymentMap: Record<string, number> = {};
     invData.forEach(inv => {
