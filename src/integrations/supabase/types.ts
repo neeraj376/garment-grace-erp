@@ -627,6 +627,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          address_token: string | null
+          address_token_expires_at: string | null
           awb_no: string | null
           courier_name: string | null
           created_at: string
@@ -644,6 +646,7 @@ export type Database = {
           shipping_address_line1: string | null
           shipping_address_line2: string | null
           shipping_city: string | null
+          shipping_email: string | null
           shipping_name: string | null
           shipping_phone: string | null
           shipping_pincode: string | null
@@ -656,6 +659,8 @@ export type Database = {
           total_amount: number
         }
         Insert: {
+          address_token?: string | null
+          address_token_expires_at?: string | null
           awb_no?: string | null
           courier_name?: string | null
           created_at?: string
@@ -673,6 +678,7 @@ export type Database = {
           shipping_address_line1?: string | null
           shipping_address_line2?: string | null
           shipping_city?: string | null
+          shipping_email?: string | null
           shipping_name?: string | null
           shipping_phone?: string | null
           shipping_pincode?: string | null
@@ -685,6 +691,8 @@ export type Database = {
           total_amount?: number
         }
         Update: {
+          address_token?: string | null
+          address_token_expires_at?: string | null
           awb_no?: string | null
           courier_name?: string | null
           created_at?: string
@@ -702,6 +710,7 @@ export type Database = {
           shipping_address_line1?: string | null
           shipping_address_line2?: string | null
           shipping_city?: string | null
+          shipping_email?: string | null
           shipping_name?: string | null
           shipping_phone?: string | null
           shipping_pincode?: string | null
@@ -1723,6 +1732,7 @@ export type Database = {
           total_stock: number
         }[]
       }
+      get_invoice_by_address_token: { Args: { p_token: string }; Returns: Json }
       get_invoicing_products: {
         Args: { p_store_id: string }
         Returns: {
@@ -1794,6 +1804,20 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      submit_invoice_address: {
+        Args: {
+          p_city: string
+          p_email: string
+          p_line1: string
+          p_line2: string
+          p_name: string
+          p_phone: string
+          p_pincode: string
+          p_state: string
+          p_token: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

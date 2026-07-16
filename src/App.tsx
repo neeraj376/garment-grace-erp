@@ -28,6 +28,7 @@ import StickerPrinter from "@/pages/StickerPrinter";
 import Expenses from "@/pages/Expenses";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
+import AddressCollection from "@/pages/AddressCollection";
 
 // Shop pages
 import ShopLayout from "@/pages/shop/ShopLayout";
@@ -76,6 +77,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/administrator/auth" element={<Auth />} />
         <Route path="/invoice/:id" element={<InvoicePublic />} />
+        <Route path="/address/:token" element={<AddressCollection />} />
         {shopRoutes}
         <Route path="/administrator/*" element={<Navigate to="/administrator/auth" replace />} />
         <Route path="*" element={<NotFound />} />
@@ -87,6 +89,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/administrator/onboarding" element={<Onboarding />} />
+        <Route path="/address/:token" element={<AddressCollection />} />
         {shopRoutes}
         <Route path="/administrator/*" element={<Navigate to="/administrator/onboarding" replace />} />
         <Route path="*" element={<NotFound />} />
@@ -133,6 +136,7 @@ function AppRoutes() {
       <Route path="/administrator/auth" element={<Navigate to="/administrator" replace />} />
       <Route path="/administrator/onboarding" element={<Navigate to="/administrator" replace />} />
       <Route path="/invoice/:id" element={<InvoicePublic />} />
+      <Route path="/address/:token" element={<AddressCollection />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
