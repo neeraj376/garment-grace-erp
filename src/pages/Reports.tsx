@@ -42,7 +42,7 @@ interface EmployeeSales {
 }
 
 interface ReportBundle {
-  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number };
+  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number; operatingCost: number; operatingProfit: number };
   trend: { date: string; total: number }[];
   paymentSplit: PaymentSplit[];
   sourceSplit: PaymentSplit[];
@@ -54,7 +54,7 @@ interface ReportBundle {
 type SourceFilter = "all" | "offline" | "online" | "wholesale";
 
 const EMPTY_BUNDLE: ReportBundle = {
-  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0 },
+  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0, operatingCost: 0, operatingProfit: 0 },
   trend: [],
   paymentSplit: [],
   sourceSplit: [],
