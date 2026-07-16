@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       let p = phoneTo;
       if (p.length === 10) p = "91" + p;
       const text = encodeURIComponent(
-        `Hi! Please share your delivery address for order ${inv.invoice_number} using this secure link (valid 12 hours): ${url}`
+        `Hi! Please share your delivery address for your new order with Originee using this secure link (valid 12 hours): ${url}.`
       );
       waLink = `https://wa.me/${p}?text=${text}`;
     }
