@@ -25,6 +25,7 @@ import PhotoManager from "@/pages/PhotoManager";
 import Marketing from "@/pages/Marketing";
 import WhatsAppRotation from "@/pages/WhatsAppRotation";
 import StickerPrinter from "@/pages/StickerPrinter";
+import Expenses from "@/pages/Expenses";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
 
