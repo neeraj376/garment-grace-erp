@@ -89,6 +89,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/administrator/onboarding" element={<Onboarding />} />
+        <Route path="/address/:token" element={<AddressCollection />} />
         {shopRoutes}
         <Route path="/administrator/*" element={<Navigate to="/administrator/onboarding" replace />} />
         <Route path="*" element={<NotFound />} />
