@@ -28,6 +28,7 @@ import StickerPrinter from "@/pages/StickerPrinter";
 import Expenses from "@/pages/Expenses";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
+import AddressCollection from "@/pages/AddressCollection";
 
 // Shop pages
 import ShopLayout from "@/pages/shop/ShopLayout";
