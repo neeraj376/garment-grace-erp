@@ -271,6 +271,24 @@ export default function Reports() {
       operatingCost += Number(c.amount) * (overlapDays / totalDays);
     });
 
+    // Employee monthly salaries — prorate by days in the selected range
+    const { data: empData } = await supabase
+      .from("employees")
+      .select("salary, joining_date, is_active")
+      .eq("store_id", storeId!)
+      .eq("is_active", true);
+    const rangeDays = Math.max(1, Math.floor((rangeEndDate.getTime() - rangeStartDate.getTime()) / 86400000) + 1);
+    (empData ?? []).forEach((e: any) => {
+      const monthly = Number(e.salary || 0);
+      if (!monthly) return;
+      const joined = e.joining_date ? new Date(e.joining_date) : rangeStartDate;
+      const effStart = joined > rangeStartDate ? joined : rangeStartDate;
+      const activeDays = Math.max(0, Math.floor((rangeEndDate.getTime() - effStart.getTime()) / 86400000) + 1);
+      const days = Math.min(activeDays, rangeDays);
+      operatingCost += (monthly / 30) * days;
+    });
+
+
     const profit = revenue - cost - tax - deliveryCost;
     const summary = { revenue, cost, tax, deliveryCost, profit, operatingCost, operatingProfit: profit - operatingCost };
 
