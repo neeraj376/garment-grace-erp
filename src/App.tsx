@@ -136,6 +136,7 @@ function AppRoutes() {
       <Route path="/administrator/auth" element={<Navigate to="/administrator" replace />} />
       <Route path="/administrator/onboarding" element={<Navigate to="/administrator" replace />} />
       <Route path="/invoice/:id" element={<InvoicePublic />} />
+      <Route path="/address/:token" element={<AddressCollection />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
