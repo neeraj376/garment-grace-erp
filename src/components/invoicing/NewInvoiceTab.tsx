@@ -1610,6 +1610,23 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 <div className="text-xs font-medium flex items-center gap-1.5">
                   <Truck className="h-3.5 w-3.5" /> Shipping Address
                 </div>
+                <div className="rounded-md bg-background border p-2.5 space-y-2">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Don&apos;t have the address yet? Create a draft invoice and send the customer a secure link to fill their delivery address (valid 12 hours). The invoice will be finalized automatically once they submit it.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    disabled={creatingInvoice}
+                    onClick={handleCreatePendingInvoice}
+                  >
+                    {creatingInvoice ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-1" />}
+                    Send Address Link (WhatsApp + Email)
+                  </Button>
+                </div>
+                <div className="text-[10px] text-muted-foreground">Or enter the address manually below to create the invoice now.</div>
                 <div>
                   <Label className="text-xs">Address Line 1 <span className="text-destructive">*</span></Label>
                   <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />
