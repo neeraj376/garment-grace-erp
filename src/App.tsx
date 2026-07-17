@@ -53,6 +53,16 @@ function BareAddressTokenRedirect() {
   return <Navigate to={`/address/${token}`} replace />;
 }
 
+// Handles WhatsApp template base URL "https://originee-store.com/address"
+// (no trailing slash) → final URL becomes "/address<token>" as one segment.
+function GluedAddressTokenRedirect() {
+  const { rest } = useParams<{ rest: string }>();
+  if (!rest || !/^[a-f0-9]{64}$/i.test(rest)) {
+    return <NotFound />;
+  }
+  return <Navigate to={`/address/${rest}`} replace />;
+}
+
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { storeId, loading: storeLoading } = useStore();
