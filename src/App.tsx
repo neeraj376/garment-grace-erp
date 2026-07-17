@@ -98,6 +98,7 @@ function AppRoutes() {
         <Route path="/administrator/auth" element={<Auth />} />
         <Route path="/invoice/:id" element={<InvoicePublic />} />
         <Route path="/address/:token" element={<AddressCollection />} />
+        <Route path="/address:rest" element={<GluedAddressTokenRedirect />} />
         {shopRoutes}
         <Route path="/administrator/*" element={<Navigate to="/administrator/auth" replace />} />
         <Route path="/:token" element={<BareAddressTokenRedirect />} />
