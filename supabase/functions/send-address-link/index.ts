@@ -168,7 +168,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // WhatsApp deep link (opens WA on staff's device with prefilled message)
+    // WhatsApp Business API template message
+    let waSent = false, waError: string | null = null;
+    if (phoneTo) {
+      const wa = await sendWhatsAppTemplate(phoneTo, url);
+      waSent = wa.ok;
+      waError = wa.error || null;
+      if (!wa.ok) console.warn("WhatsApp template send failed:", wa.error);
+    }
+
+    // Fallback wa.me deep link (opens WA on staff's device with prefilled message)
     let waLink: string | null = null;
     if (phoneTo) {
       let p = phoneTo;
@@ -179,7 +188,16 @@ Deno.serve(async (req) => {
       waLink = `https://wa.me/${p}?text=${text}`;
     }
 
-    return new Response(JSON.stringify({ success: true, url, waLink, emailed, emailError, expires_at: expiresAt }), {
+    return new Response(JSON.stringify({
+      success: true,
+      url,
+      waLink,
+      waSent,
+      waError,
+      emailed,
+      emailError,
+      expires_at: expiresAt,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
@@ -189,3 +207,4 @@ Deno.serve(async (req) => {
     });
   }
 });
+
