@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
     // WhatsApp Business API template message
     let waSent = false, waError: string | null = null;
     if (phoneTo) {
-      const wa = await sendWhatsAppTemplate(phoneTo, url);
+      const wa = await sendWhatsAppTemplate(phoneTo, url, token, customerName);
       waSent = wa.ok;
       waError = wa.error || null;
       if (!wa.ok) console.warn("WhatsApp template send failed:", wa.error);
