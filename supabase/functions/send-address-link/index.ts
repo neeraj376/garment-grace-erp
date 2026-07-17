@@ -148,10 +148,11 @@ Deno.serve(async (req) => {
 
     const { data: inv, error: invErr } = await admin
       .from("invoices")
-      .select("id, store_id, invoice_number, shipping_email, shipping_phone")
+      .select("id, store_id, invoice_number, shipping_email, shipping_phone, customer_id, customers(name)")
       .eq("id", invoice_id).maybeSingle();
     if (invErr || !inv) throw new Error("Invoice not found");
     if (inv.store_id !== profile.store_id) throw new Error("Forbidden");
+    const customerName = ((inv as any).customers?.name as string | undefined) || "Customer";
 
     // Generate token + 12h expiry
     const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
