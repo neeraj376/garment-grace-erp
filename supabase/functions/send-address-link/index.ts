@@ -69,6 +69,9 @@ async function sendWhatsAppTemplate(phone: string, url: string): Promise<{ ok: b
   // The approved get_orderaddress template has exactly one body variable:
   // the complete secure address URL. Do not send button/name parameters —
   // Interakt can accept and queue a mismatched payload before Meta rejects it.
+  // Template "getuseraddress" has a Dynamic URL button whose {{1}} is the
+  // token appended to https://originee-store.com/address/. Body has no vars.
+  const token = url.split("/address/")[1] || url;
   const payload = {
     countryCode,
     phoneNumber,
@@ -77,7 +80,8 @@ async function sendWhatsAppTemplate(phone: string, url: string): Promise<{ ok: b
     template: {
       name: WHATSAPP_TEMPLATE_NAME,
       languageCode: "en",
-      bodyValues: [url],
+      bodyValues: [],
+      buttonValues: { "0": [token] },
     },
   };
 
