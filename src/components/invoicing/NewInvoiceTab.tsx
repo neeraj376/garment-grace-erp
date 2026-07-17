@@ -904,9 +904,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}`;
   };
 
-  const sendAddressLinkForInvoice = async (invoiceId: string, phone: string) => {
+  const sendAddressLinkForInvoice = async (invoiceId: string, phone: string, email?: string) => {
     const { data, error } = await supabase.functions.invoke("send-address-link", {
-      body: { invoice_id: invoiceId, phone },
+      body: { invoice_id: invoiceId, phone, email: email?.trim() || undefined },
     });
     if (error || (data as any)?.error) {
       toast({ title: "Failed to generate link", description: (data as any)?.error || error?.message, variant: "destructive" });
