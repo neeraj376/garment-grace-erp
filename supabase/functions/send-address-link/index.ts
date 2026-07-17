@@ -55,7 +55,7 @@ async function sendEmailViaSMTP(to: string, subject: string, body: string): Prom
   if (!r.startsWith("250")) throw new Error("Failed to send: " + r);
 }
 
-async function sendWhatsAppTemplate(phone: string, url: string, token: string, customerName: string): Promise<{ ok: boolean; error?: string }> {
+async function sendWhatsAppTemplate(phone: string, url: string): Promise<{ ok: boolean; error?: string; messageId?: string }> {
   const apiKey = Deno.env.get("WHATSAPP_API_KEY");
   const apiUrl = Deno.env.get("WHATSAPP_API_URL");
   if (!apiKey || !apiUrl) return { ok: false, error: "WhatsApp API not configured" };
@@ -63,57 +63,39 @@ async function sendWhatsAppTemplate(phone: string, url: string, token: string, c
   let cleanPhone = phone.replace(/\D/g, "");
   if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
   if (cleanPhone.length < 12) return { ok: false, error: `Invalid phone number: ${phone}` };
-  const countryCode = cleanPhone.slice(0, cleanPhone.length - 10);
+  const countryCode = `+${cleanPhone.slice(0, cleanPhone.length - 10)}`;
   const phoneNumber = cleanPhone.slice(-10);
 
-  // Try several template payload shapes so we succeed whether the Interakt
-  // template uses body variables, a dynamic URL button, or both.
-  const buildPayload = (variant: "body_url" | "button_token" | "body_and_button" | "body_name_only") => {
-    const template: Record<string, unknown> = {
+  // The approved get_orderaddress template has exactly one body variable:
+  // the complete secure address URL. Do not send button/name parameters —
+  // Interakt can accept and queue a mismatched payload before Meta rejects it.
+  const payload = {
+    countryCode,
+    phoneNumber,
+    callbackData: `address_${Date.now()}`,
+    type: "Template",
+    template: {
       name: WHATSAPP_TEMPLATE_NAME,
       languageCode: "en",
-    };
-    if (variant === "body_url") template.bodyValues = [url];
-    if (variant === "body_name_only") template.bodyValues = [customerName || "Customer"];
-    if (variant === "button_token") {
-      template.bodyValues = [];
-      template.buttonValues = { "0": [token] };
-    }
-    if (variant === "body_and_button") {
-      template.bodyValues = [customerName || "Customer"];
-      template.buttonValues = { "0": [token] };
-    }
-    return {
-      countryCode,
-      phoneNumber,
-      callbackData: `address_${Date.now()}`,
-      type: "Template",
-      template,
-    };
+      bodyValues: [url],
+    },
   };
 
-  const attempts: Array<"body_and_button" | "button_token" | "body_url" | "body_name_only"> = [
-    "body_and_button", "button_token", "body_url", "body_name_only",
-  ];
-
-  let lastErr = "no attempts";
-  for (const variant of attempts) {
-    try {
-      const payload = buildPayload(variant);
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Basic ${apiKey}` },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      console.log(`WhatsApp[${variant}] to ${countryCode}${phoneNumber}:`, JSON.stringify(data));
-      if (res.ok && data.result !== false) return { ok: true };
-      lastErr = `[${variant}] ${res.status}: ${JSON.stringify(data).slice(0, 240)}`;
-    } catch (e) {
-      lastErr = `[${variant}] ${e instanceof Error ? e.message : "fetch failed"}`;
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Basic ${apiKey}` },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    console.log(`WhatsApp address template to ${countryCode}${phoneNumber}:`, JSON.stringify(data));
+    if (res.ok && data.result !== false) {
+      return { ok: true, messageId: typeof data.id === "string" ? data.id : undefined };
     }
+    return { ok: false, error: `${res.status}: ${JSON.stringify(data).slice(0, 240)}` };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "fetch failed" };
   }
-  return { ok: false, error: lastErr };
 }
 
 
@@ -148,11 +130,10 @@ Deno.serve(async (req) => {
 
     const { data: inv, error: invErr } = await admin
       .from("invoices")
-      .select("id, store_id, invoice_number, shipping_email, shipping_phone, customer_id, customers(name)")
+      .select("id, store_id, invoice_number, shipping_email, shipping_phone, customer_id")
       .eq("id", invoice_id).maybeSingle();
     if (invErr || !inv) throw new Error("Invoice not found");
     if (inv.store_id !== profile.store_id) throw new Error("Forbidden");
-    const customerName = ((inv as any).customers?.name as string | undefined) || "Customer";
 
     // Generate token + 12h expiry
     const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
@@ -194,11 +175,12 @@ Deno.serve(async (req) => {
     }
 
     // WhatsApp Business API template message
-    let waSent = false, waError: string | null = null;
+    let waSent = false, waError: string | null = null, waMessageId: string | null = null;
     if (phoneTo) {
-      const wa = await sendWhatsAppTemplate(phoneTo, url, token, customerName);
+      const wa = await sendWhatsAppTemplate(phoneTo, url);
       waSent = wa.ok;
       waError = wa.error || null;
+      waMessageId = wa.messageId || null;
       if (!wa.ok) console.warn("WhatsApp template send failed:", wa.error);
     }
 
@@ -219,6 +201,7 @@ Deno.serve(async (req) => {
       waLink,
       waSent,
       waError,
+      waMessageId,
       emailed,
       emailError,
       expires_at: expiresAt,
