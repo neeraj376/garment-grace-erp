@@ -103,6 +103,43 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [pendingAmount, setPendingAmount] = useState(String(invoice.pending_amount ?? 0));
   const [deliveryCost, setDeliveryCost] = useState("0");
   const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [sendingAddressLink, setSendingAddressLink] = useState(false);
+
+  const sendAddressLink = async () => {
+    if (!customerMobile.trim()) {
+      toast({ title: "Mobile required", description: "Enter customer mobile first", variant: "destructive" });
+      return;
+    }
+    setSendingAddressLink(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-address-link", {
+        body: {
+          invoice_id: invoice.id,
+          phone: customerMobile.trim(),
+          email: customerEmail.trim() || undefined,
+        },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || "Failed");
+      }
+      const d = data as any;
+      try { await navigator.clipboard.writeText(d.url); } catch {}
+      const parts = [
+        d.emailed ? "emailed" : null,
+        d.waSent ? "WhatsApp sent" : null,
+        "copied to clipboard",
+      ].filter(Boolean);
+      toast({
+        title: "Address link ready (12h)",
+        description: parts.join(", ") + (d.waError ? `. WhatsApp: ${d.waError}` : ""),
+      });
+      if (!d.waSent && d.waLink) window.open(d.waLink, "_blank");
+    } catch (e: any) {
+      toast({ title: "Failed to send link", description: e.message, variant: "destructive" });
+    } finally {
+      setSendingAddressLink(false);
+    }
+  };
 
   // Customer fields
   const [customerMobile, setCustomerMobile] = useState(invoice.customers?.mobile || "");
@@ -575,6 +612,22 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   <div className="space-y-1">
                     <Label>Pincode</Label>
                     <Input value={shipPincode} onChange={e => setShipPincode(e.target.value)} />
+                  </div>
+                  <div className="md:col-span-2 flex flex-col gap-1 rounded-md border bg-muted/30 p-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      Ask the customer to fill/update their delivery address. A secure link (valid 12 hours) will be sent via WhatsApp and email.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="self-start"
+                      disabled={sendingAddressLink || !customerMobile.trim()}
+                      onClick={sendAddressLink}
+                    >
+                      {sendingAddressLink ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                      Send Address Link (WhatsApp + Email)
+                    </Button>
                   </div>
                 </>
               )}
