@@ -576,6 +576,22 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                     <Label>Pincode</Label>
                     <Input value={shipPincode} onChange={e => setShipPincode(e.target.value)} />
                   </div>
+                  <div className="md:col-span-2 flex flex-col gap-1 rounded-md border bg-muted/30 p-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      Ask the customer to fill/update their delivery address. A secure link (valid 12 hours) will be sent via WhatsApp and email.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="self-start"
+                      disabled={sendingAddressLink || !customerMobile.trim()}
+                      onClick={sendAddressLink}
+                    >
+                      {sendingAddressLink ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                      Send Address Link (WhatsApp + Email)
+                    </Button>
+                  </div>
                 </>
               )}
               <div className="space-y-1">
