@@ -148,6 +148,7 @@ export default function Reports() {
         .from("invoices")
         .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
         .eq("store_id", storeId!)
+        .neq("status", "pending_address")
         .gte("created_at", start)
         .lte("created_at", end)
         .order("created_at", { ascending: true })
