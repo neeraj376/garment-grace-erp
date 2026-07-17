@@ -904,6 +904,210 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}`;
   };
 
+  const sendAddressLinkForInvoice = async (invoiceId: string, phone: string) => {
+    const { data, error } = await supabase.functions.invoke("send-address-link", {
+      body: { invoice_id: invoiceId, phone },
+    });
+    if (error || (data as any)?.error) {
+      toast({ title: "Failed to generate link", description: (data as any)?.error || error?.message, variant: "destructive" });
+      return null;
+    }
+    const url = (data as any).url as string;
+    const waLink = (data as any).waLink as string | null;
+    const waSent = (data as any).waSent as boolean;
+    const waError = (data as any).waError as string | null;
+    const emailed = (data as any).emailed as boolean;
+    try { await navigator.clipboard.writeText(url); } catch {}
+    const parts = [
+      emailed ? "emailed to customer" : null,
+      waSent ? "WhatsApp sent" : null,
+      "copied to clipboard",
+    ].filter(Boolean);
+    toast({
+      title: "Address link ready (valid 12 hours)",
+      description: parts.join(", ") + (waError ? `. WhatsApp fallback: ${waError}` : ""),
+    });
+    if (!waSent && waLink) window.open(waLink, "_blank");
+    return { url, waLink, waSent, waError, emailed };
+  };
+
+  const handleCreatePendingInvoice = async () => {
+    if (!storeId) {
+      toast({ title: "Error", description: "Store not loaded. Please refresh the page.", variant: "destructive" });
+      return;
+    }
+    if (!userId) {
+      toast({ title: "Error", description: "Session expired. Please log in again.", variant: "destructive" });
+      return;
+    }
+    if (cart.length === 0) {
+      toast({ title: "Error", description: "Please add at least one product", variant: "destructive" });
+      return;
+    }
+    if (!customerMobile.trim()) {
+      toast({ title: "Error", description: "Customer mobile number is required", variant: "destructive" });
+      return;
+    }
+    if (!customerName.trim()) {
+      toast({ title: "Error", description: "Customer name is required", variant: "destructive" });
+      return;
+    }
+    if (!customerGender) {
+      toast({ title: "Error", description: "Customer gender is required", variant: "destructive" });
+      return;
+    }
+    if (!customerLocation.trim()) {
+      toast({ title: "Error", description: "Customer location is required", variant: "destructive" });
+      return;
+    }
+    if (!selectedEmployee || selectedEmployee === "none") {
+      toast({ title: "Error", description: "Please select a sales employee", variant: "destructive" });
+      return;
+    }
+    if (paymentMethods.length === 0) {
+      toast({ title: "Error", description: "Please select at least one payment method", variant: "destructive" });
+      return;
+    }
+
+    const paidAmountTarget = total - pendingAmount;
+    let breakdownNote = "";
+    if (paymentMethods.length > 1) {
+      const sum = paymentMethods.reduce((s, m) => s + (Number(paymentBreakdown[m]) || 0), 0);
+      if (Math.abs(sum - paidAmountTarget) > 0.5) {
+        toast({
+          title: "Payment breakdown mismatch",
+          description: `Breakdown total ₹${sum.toFixed(2)} must equal ₹${paidAmountTarget.toFixed(2)} (Total − Pending).`,
+          variant: "destructive",
+        });
+        return;
+      }
+      breakdownNote = paymentMethods
+        .map(m => {
+          const label = PAYMENT_OPTIONS.find(o => o.value === m)?.label ?? m;
+          return `${label}: ₹${(Number(paymentBreakdown[m]) || 0).toFixed(2)}`;
+        })
+        .join(", ");
+    }
+
+    setCreatingInvoice(true);
+    try {
+      const sessionOk = await ensureFreshSession();
+      if (!sessionOk) { setCreatingInvoice(false); return; }
+
+      // Upsert customer
+      let customerId: string | null = null;
+      const mobileClean = customerMobile.replace(/\D/g, "");
+      const { data: existingCustomers } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("store_id", storeId)
+        .eq("mobile", mobileClean)
+        .limit(1);
+      if (existingCustomers && existingCustomers.length > 0) {
+        customerId = existingCustomers[0].id;
+        await supabase.from("customers").update({
+          name: customerName.trim(),
+          gender: customerGender,
+          location: customerLocation.trim(),
+          email: customerEmail.trim() || null,
+        }).eq("id", customerId);
+      } else {
+        const { data: newCust } = await supabase
+          .from("customers")
+          .insert({
+            store_id: storeId,
+            name: customerName.trim(),
+            mobile: mobileClean,
+            gender: customerGender,
+            location: customerLocation.trim(),
+            email: customerEmail.trim() || null,
+          })
+          .select()
+          .single();
+        customerId = newCust?.id ?? null;
+      }
+
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+      const { data: invoice, error } = await supabase
+        .from("invoices")
+        .insert({
+          store_id: storeId,
+          invoice_number: invoiceNumber,
+          customer_id: customerId,
+          employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
+          source: "online",
+          status: "pending_address",
+          courier_name: null,
+          awb_no: null,
+          delivery_cost: Number(deliveryCost) || 0,
+          shipping_name: null,
+          shipping_phone: null,
+          shipping_address_line1: null,
+          shipping_address_line2: null,
+          shipping_city: null,
+          shipping_state: null,
+          shipping_pincode: null,
+          payment_method: paymentMethods.join("+"),
+          notes: breakdownNote || null,
+          subtotal,
+          tax_amount: taxAmount,
+          discount_amount: discount,
+          total_amount: total,
+          pending_amount: pendingAmount,
+          created_by: userId ?? null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const items = cart.map(i => {
+        const lineTotal = getLineTotal(i);
+        const priceExclTax = lineTotal / (1 + i.tax_rate / 100);
+        const lineTax = lineTotal - priceExclTax;
+        return {
+          invoice_id: invoice.id,
+          product_id: i.product_id,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          discount: i.item_discount,
+          tax_amount: parseFloat(lineTax.toFixed(2)),
+          total: lineTotal,
+        };
+      });
+      const { error: itemsError } = await supabase.from("invoice_items").insert(items);
+      if (itemsError) throw itemsError;
+
+      await sendAddressLinkForInvoice(invoice.id, mobileClean);
+
+      toast({ title: "Draft invoice created", description: `${invoiceNumber} — address link sent. Invoice will be finalized once the customer submits their address.` });
+      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile: mobileClean, customerName, source: "online" });
+      setGroupInviteSent(false);
+      setCart([]);
+      setDiscount(0);
+      setPendingAmount(0);
+      setCustomerMobile("");
+      setCustomerName("");
+      setCustomerGender("");
+      setCustomerLocation("");
+      setCustomerEmail("");
+      setCourierName("");
+      setAwbNo("");
+      setDeliveryCost("");
+      setSelectedEmployee("");
+      setSource("");
+      setPaymentMethods([]);
+      setPaymentBreakdown({});
+      setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode("");
+      setServiceable(null);
+      clearDraft();
+    } catch (err: any) {
+      showMutationError("Error", err?.message ?? "Could not create draft invoice");
+    } finally {
+      setCreatingInvoice(false);
+    }
+  };
+
   const handlePrintShippingLabel = async () => {
     if (!lastInvoice?.shipping) return;
     try {
