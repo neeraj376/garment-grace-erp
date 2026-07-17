@@ -555,6 +555,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         return <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">Partial Return</Badge>;
       case "fully_returned":
         return <Badge variant="destructive">Returned</Badge>;
+      case "pending_address":
+        return <Badge variant="outline" className="text-blue-600 border-blue-300">Pending Address</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
