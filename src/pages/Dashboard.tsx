@@ -181,6 +181,7 @@ export default function Dashboard() {
         .from("invoices")
         .select("total_amount, pending_amount, created_at, invoice_number")
         .eq("store_id", storeId)
+        .neq("status", "pending_address")
         .gte("created_at", weekStart);
 
       const { data: weekOrdersRaw } = await supabase
