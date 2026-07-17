@@ -1,6 +1,7 @@
 // Generate a 12h address-collection token for an invoice, save it, and
-// (optionally) email the link. Returns the link + a wa.me deep link so the
-// staff user can share it on WhatsApp from their own device.
+// (optionally) email the link. Also sends a WhatsApp Business API template
+// message using the configured Meta template (default: "get_orderaddress").
+// Returns the link + a wa.me deep link fallback so staff can still share manually.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -11,6 +12,7 @@ const corsHeaders = {
 
 const FROM = "originee.store@gmail.com";
 const SITE_URL = "https://originee-store.com";
+const WHATSAPP_TEMPLATE_NAME = "get_orderaddress";
 
 async function sendEmailViaSMTP(to: string, subject: string, body: string): Promise<void> {
   const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
@@ -52,6 +54,44 @@ async function sendEmailViaSMTP(to: string, subject: string, body: string): Prom
   await sendCommand("QUIT"); conn.close();
   if (!r.startsWith("250")) throw new Error("Failed to send: " + r);
 }
+
+async function sendWhatsAppTemplate(phone: string, url: string): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = Deno.env.get("WHATSAPP_API_KEY");
+  const apiUrl = Deno.env.get("WHATSAPP_API_URL");
+  if (!apiKey || !apiUrl) return { ok: false, error: "WhatsApp API not configured" };
+
+  let cleanPhone = phone.replace(/\s+/g, "").replace(/[^0-9+]/g, "");
+  if (!cleanPhone.startsWith("+")) cleanPhone = "+91" + cleanPhone;
+  const phoneNumber = cleanPhone.replace("+", "");
+  if (phoneNumber.length < 10) return { ok: false, error: "Invalid phone number" };
+
+  const payload = {
+    countryCode: phoneNumber.substring(0, phoneNumber.length - 10),
+    phoneNumber: phoneNumber.substring(phoneNumber.length - 10),
+    callbackData: `address_${Date.now()}`,
+    type: "Template",
+    template: {
+      name: WHATSAPP_TEMPLATE_NAME,
+      languageCode: "en",
+      bodyValues: [url],
+    },
+  };
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Basic ${apiKey}` },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    console.log("WhatsApp template response:", JSON.stringify(data));
+    if (res.ok && data.result !== false) return { ok: true };
+    return { ok: false, error: `API ${res.status}: ${JSON.stringify(data).slice(0, 200)}` };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "fetch failed" };
+  }
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
