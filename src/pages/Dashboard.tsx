@@ -111,6 +111,7 @@ export default function Dashboard() {
         .from("invoices")
         .select("customer_id")
         .eq("store_id", storeId)
+        .neq("status", "pending_address")
         .gte("created_at", startOfMonth)
         .not("customer_id", "is", null);
 
