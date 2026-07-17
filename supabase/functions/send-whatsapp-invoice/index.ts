@@ -74,28 +74,37 @@ serve(async (req) => {
     }
     const phoneNumber = cleanPhone.replace("+", "");
 
-    // Convert SVG image URL to PNG via svg2png proxy for WhatsApp compatibility
-    // Verify the proxy URL is reachable before using it
+    // Convert SVG → PNG for WhatsApp (Meta rejects SVG in template headers).
+    // Try providers in order and use the first one that returns 200 with an image/* content-type.
     let headerMediaUrl = invoiceImageUrl || invoiceUrl;
     if (headerMediaUrl && headerMediaUrl.includes("format=image")) {
-      const proxyUrl = `https://svg2png.deno.dev/${headerMediaUrl}`;
-      try {
-        // Quick HEAD check to verify proxy is reachable (3s timeout)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const probeRes = await fetch(proxyUrl, {
-          method: "HEAD",
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        if (probeRes.ok) {
-          headerMediaUrl = proxyUrl;
-        } else {
-          console.warn(`SVG proxy returned ${probeRes.status}, using direct SVG URL`);
-          // Fall back to direct SVG — WhatsApp may still render it
+      const originalSvgUrl = headerMediaUrl;
+      const candidates = [
+        `https://images.weserv.nl/?url=${encodeURIComponent(originalSvgUrl.replace(/^https?:\/\//, ""))}&output=png&w=1080`,
+        `https://wsrv.nl/?url=${encodeURIComponent(originalSvgUrl.replace(/^https?:\/\//, ""))}&output=png&w=1080`,
+        `https://svg2png.deno.dev/${originalSvgUrl}`,
+      ];
+      for (const candidate of candidates) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
+          const probeRes = await fetch(candidate, { method: "GET", signal: controller.signal });
+          clearTimeout(timeoutId);
+          const ct = probeRes.headers.get("content-type") || "";
+          if (probeRes.ok && ct.startsWith("image/")) {
+            headerMediaUrl = candidate;
+            console.log(`Using SVG→PNG proxy: ${candidate.split("?")[0]} (${ct})`);
+            try { await probeRes.body?.cancel(); } catch { /* ignore */ }
+            break;
+          }
+          try { await probeRes.body?.cancel(); } catch { /* ignore */ }
+          console.warn(`Proxy ${candidate.split("?")[0]} returned ${probeRes.status} ${ct}`);
+        } catch (probeErr) {
+          console.warn(`Proxy ${candidate.split("?")[0]} unreachable:`, probeErr);
         }
-      } catch (probeErr) {
-        console.warn("SVG proxy unreachable, using direct URL:", probeErr);
+      }
+      if (headerMediaUrl === originalSvgUrl) {
+        console.warn("All SVG→PNG proxies failed; will retry without header image.");
       }
     }
 
