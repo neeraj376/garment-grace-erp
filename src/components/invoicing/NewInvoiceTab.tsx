@@ -915,20 +915,23 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const url = (data as any).url as string;
     const waLink = (data as any).waLink as string | null;
     const waSent = (data as any).waSent as boolean;
+    const waStatus = (data as any).waStatus as string | undefined;
     const waError = (data as any).waError as string | null;
     const emailed = (data as any).emailed as boolean;
     try { await navigator.clipboard.writeText(url); } catch {}
     const parts = [
       emailed ? "emailed to customer" : null,
-      waSent ? "WhatsApp sent" : null,
+      waSent ? "WhatsApp queued (delivery not confirmed)" : null,
       "copied to clipboard",
     ].filter(Boolean);
     toast({
       title: "Address link ready (valid 12 hours)",
       description: parts.join(", ") + (waError ? `. WhatsApp fallback: ${waError}` : ""),
     });
-    if (!waSent && waLink) window.open(waLink, "_blank");
-    return { url, waLink, waSent, waError, emailed };
+    // Interakt's API only acknowledges queuing; it can still be rejected later
+    // by WhatsApp. Open the prefilled fallback so staff can send it reliably.
+    if (waLink && (waStatus === "queued" || !waSent)) window.open(waLink, "_blank");
+    return { url, waLink, waSent, waStatus, waError, emailed };
   };
 
   const handleCreatePendingInvoice = async () => {
