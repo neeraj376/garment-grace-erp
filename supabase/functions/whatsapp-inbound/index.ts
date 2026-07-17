@@ -33,6 +33,28 @@ function parseInbound(payload: any): { fromPhone: string | null; text: string | 
   return { fromPhone, text };
 }
 
+function parseDeliveryStatus(payload: any): {
+  isStatus: boolean;
+  phone: string | null;
+  status: string | null;
+  messageId: string | null;
+  reason: string | null;
+} {
+  const eventType = String(payload?.type || payload?.event || "").toLowerCase();
+  const message = payload?.data?.message || payload?.message || {};
+  const rawStatus = message?.message_status || message?.status || payload?.status || null;
+  const isStatus = eventType.startsWith("message_api_") || Boolean(rawStatus && message?.id);
+  const phone = payload?.data?.customer?.phone_number || payload?.phone_number || null;
+  const reason = message?.channel_failure_reason || message?.failure_reason || payload?.error?.message || null;
+  return {
+    isStatus,
+    phone: phone ? String(phone).replace(/[^0-9]/g, "") : null,
+    status: rawStatus ? String(rawStatus) : eventType.replace(/^message_api_/, "") || null,
+    messageId: message?.id ? String(message.id) : null,
+    reason: reason ? String(reason) : null,
+  };
+}
+
 async function forwardToAgent(num: any, fromPhone: string, text: string) {
   if (!num.api_url || !num.api_key) {
     return { ok: false, error: "Number missing api_url or api_key" };
@@ -124,6 +146,29 @@ Deno.serve(async (req) => {
 
   let payload: any = {};
   try { payload = await req.json(); } catch (_) {}
+
+  // Interakt sends Sent / Delivered / Read / Failed asynchronously. Record
+  // these before inbound-message routing so failed templates are diagnosable.
+  const delivery = parseDeliveryStatus(payload);
+  if (delivery.isStatus) {
+    const summary = [
+      `WhatsApp ${delivery.status || "status"}`,
+      delivery.messageId ? `message ${delivery.messageId}` : null,
+      delivery.reason ? `reason: ${delivery.reason}` : null,
+    ].filter(Boolean).join(" · ");
+    await supabase.from("whatsapp_inbound_log").insert({
+      store_id: storeId,
+      from_phone: delivery.phone,
+      message_text: summary,
+      raw_payload: payload,
+      forwarded_ok: delivery.status?.toLowerCase() !== "failed",
+      error: delivery.status?.toLowerCase() === "failed" ? (delivery.reason || "WhatsApp delivery failed") : null,
+    });
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const { fromPhone, text } = parseInbound(payload);
 
   // Always log
