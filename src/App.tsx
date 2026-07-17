@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { StoreProvider, useStore } from "@/hooks/useStore";
 import { CartProvider } from "@/hooks/useCart";
@@ -43,6 +43,16 @@ import ShopPaymentResult from "@/pages/shop/ShopPaymentResult";
 
 const queryClient = new QueryClient();
 
+function BareAddressTokenRedirect() {
+  const { token } = useParams<{ token: string }>();
+
+  if (!token || !/^[a-f0-9]{64}$/i.test(token)) {
+    return <NotFound />;
+  }
+
+  return <Navigate to={`/address/${token}`} replace />;
+}
+
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { storeId, loading: storeLoading } = useStore();
@@ -80,6 +90,7 @@ function AppRoutes() {
         <Route path="/address/:token" element={<AddressCollection />} />
         {shopRoutes}
         <Route path="/administrator/*" element={<Navigate to="/administrator/auth" replace />} />
+        <Route path="/:token" element={<BareAddressTokenRedirect />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     );
@@ -92,6 +103,7 @@ function AppRoutes() {
         <Route path="/address/:token" element={<AddressCollection />} />
         {shopRoutes}
         <Route path="/administrator/*" element={<Navigate to="/administrator/onboarding" replace />} />
+        <Route path="/:token" element={<BareAddressTokenRedirect />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     );
@@ -137,6 +149,7 @@ function AppRoutes() {
       <Route path="/administrator/onboarding" element={<Navigate to="/administrator" replace />} />
       <Route path="/invoice/:id" element={<InvoicePublic />} />
       <Route path="/address/:token" element={<AddressCollection />} />
+      <Route path="/:token" element={<BareAddressTokenRedirect />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
