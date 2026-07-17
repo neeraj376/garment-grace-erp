@@ -12,7 +12,7 @@ const corsHeaders = {
 
 const FROM = "originee.store@gmail.com";
 const SITE_URL = "https://originee-store.com";
-const WHATSAPP_TEMPLATE_NAME = "get_orderaddress";
+const WHATSAPP_TEMPLATE_NAME = "getuseraddress";
 
 async function sendEmailViaSMTP(to: string, subject: string, body: string): Promise<void> {
   const rawPassword = Deno.env.get("GMAIL_APP_PASSWORD");
