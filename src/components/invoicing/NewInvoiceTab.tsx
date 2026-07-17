@@ -1662,7 +1662,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     className="w-full"
                     onClick={async () => {
                       const { data, error } = await supabase.functions.invoke("send-address-link", {
-                        body: { invoice_id: lastInvoice.id },
+                        body: { invoice_id: lastInvoice.id, phone: lastInvoice.customerMobile },
                       });
                       if (error || (data as any)?.error) {
                         toast({ title: "Failed to generate link", description: (data as any)?.error || error?.message, variant: "destructive" });
@@ -1670,18 +1670,27 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                       }
                       const url = (data as any).url as string;
                       const waLink = (data as any).waLink as string | null;
+                      const waSent = (data as any).waSent as boolean;
+                      const waError = (data as any).waError as string | null;
                       const emailed = (data as any).emailed as boolean;
                       try { await navigator.clipboard.writeText(url); } catch {}
+                      const parts = [
+                        emailed ? "emailed to customer" : null,
+                        waSent ? "WhatsApp sent" : null,
+                        "copied to clipboard",
+                      ].filter(Boolean);
                       toast({
                         title: "Address link ready (valid 12 hours)",
-                        description: emailed ? "Link emailed to customer and copied to clipboard." : "Link copied to clipboard.",
+                        description: parts.join(", ") + (waError ? `. WhatsApp fallback: ${waError}` : ""),
                       });
-                      if (waLink) window.open(waLink, "_blank");
+                      // Only open the manual WA deep link if the API template was not sent
+                      if (!waSent && waLink) window.open(waLink, "_blank");
                     }}
                   >
                     <MessageCircle className="h-4 w-4 mr-1" /> Send Address Link (WhatsApp + Email)
                   </Button>
                 )}
+
               </div>
             )}
           </CardContent>
