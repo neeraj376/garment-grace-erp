@@ -45,12 +45,20 @@ const queryClient = new QueryClient();
 
 function BareAddressTokenRedirect() {
   const { token } = useParams<{ token: string }>();
+  if (!token) return <NotFound />;
 
-  if (!token || !/^[a-f0-9]{64}$/i.test(token)) {
+  // Handles two WhatsApp template shapes:
+  //   /<64hex>           (base URL ended with "/")
+  //   /address<64hex>    (base URL was "https://originee-store.com/address" with no trailing slash)
+  const stripped = token.toLowerCase().startsWith("address")
+    ? token.slice("address".length)
+    : token;
+
+  if (!/^[a-f0-9]{64}$/i.test(stripped)) {
     return <NotFound />;
   }
 
-  return <Navigate to={`/address/${token}`} replace />;
+  return <Navigate to={`/address/${stripped}`} replace />;
 }
 
 function AppRoutes() {
@@ -88,6 +96,7 @@ function AppRoutes() {
         <Route path="/administrator/auth" element={<Auth />} />
         <Route path="/invoice/:id" element={<InvoicePublic />} />
         <Route path="/address/:token" element={<AddressCollection />} />
+        
         {shopRoutes}
         <Route path="/administrator/*" element={<Navigate to="/administrator/auth" replace />} />
         <Route path="/:token" element={<BareAddressTokenRedirect />} />
