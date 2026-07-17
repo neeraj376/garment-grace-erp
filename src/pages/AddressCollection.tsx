@@ -43,15 +43,16 @@ export default function AddressCollection() {
       else if (d?.error === "expired") setError("This link has expired. Please request a new one.");
       else {
         setInfo(d as InvoiceInfo);
+        const s = d.shipping || {};
         setForm({
-          name: d.shipping.name || "",
-          phone: d.shipping.phone || "",
-          email: d.shipping.email || "",
-          line1: d.shipping.address_line1 || "",
-          line2: d.shipping.address_line2 || "",
-          city: d.shipping.city || "",
-          state: d.shipping.state || "",
-          pincode: d.shipping.pincode || "",
+          name: s.name || "",
+          phone: s.phone || "",
+          email: s.email || "",
+          line1: s.address_line1 || "",
+          line2: s.address_line2 || "",
+          city: s.city || "",
+          state: s.state || "",
+          pincode: s.pincode || "",
         });
       }
       setLoading(false);
