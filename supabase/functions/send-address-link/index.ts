@@ -90,7 +90,13 @@ async function sendWhatsAppTemplate(phone: string, url: string): Promise<{ ok: b
     const data = await res.json();
     console.log(`WhatsApp address template to ${countryCode}${phoneNumber}:`, JSON.stringify(data));
     if (res.ok && data.result !== false) {
-      return { ok: true, messageId: typeof data.id === "string" ? data.id : undefined };
+      const messageId = typeof data.id === "string" ? data.id : undefined;
+      if (!messageId) {
+        return { ok: false, error: `WhatsApp provider did not return a message ID: ${JSON.stringify(data).slice(0, 240)}` };
+      }
+      // Interakt only confirms that the message was queued here. Actual
+      // Sent/Delivered/Failed state arrives asynchronously through its webhook.
+      return { ok: true, messageId };
     }
     return { ok: false, error: `${res.status}: ${JSON.stringify(data).slice(0, 240)}` };
   } catch (e) {
@@ -174,7 +180,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // WhatsApp Business API template message
+    // WhatsApp Business API template message. A successful API response means
+    // queued by Interakt, not delivered to the customer's phone.
     let waSent = false, waError: string | null = null, waMessageId: string | null = null;
     if (phoneTo) {
       const wa = await sendWhatsAppTemplate(phoneTo, url);
@@ -200,6 +207,7 @@ Deno.serve(async (req) => {
       url,
       waLink,
       waSent,
+      waStatus: waSent ? "queued" : "failed",
       waError,
       waMessageId,
       emailed,

@@ -126,14 +126,16 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       try { await navigator.clipboard.writeText(d.url); } catch {}
       const parts = [
         d.emailed ? "emailed" : null,
-        d.waSent ? "WhatsApp sent" : null,
+        d.waSent ? "WhatsApp queued (delivery not confirmed)" : null,
         "copied to clipboard",
       ].filter(Boolean);
       toast({
         title: "Address link ready (12h)",
         description: parts.join(", ") + (d.waError ? `. WhatsApp: ${d.waError}` : ""),
       });
-      if (!d.waSent && d.waLink) window.open(d.waLink, "_blank");
+      // Interakt confirms only that the template was queued. Open the
+      // prefilled fallback so staff can send it if WhatsApp later rejects it.
+      if (d.waLink && (d.waStatus === "queued" || !d.waSent)) window.open(d.waLink, "_blank");
     } catch (e: any) {
       toast({ title: "Failed to send link", description: e.message, variant: "destructive" });
     } finally {
