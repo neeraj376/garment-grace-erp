@@ -45,22 +45,20 @@ const queryClient = new QueryClient();
 
 function BareAddressTokenRedirect() {
   const { token } = useParams<{ token: string }>();
+  if (!token) return <NotFound />;
 
-  if (!token || !/^[a-f0-9]{64}$/i.test(token)) {
+  // Handles two WhatsApp template shapes:
+  //   /<64hex>           (base URL ended with "/")
+  //   /address<64hex>    (base URL was "https://originee-store.com/address" with no trailing slash)
+  const stripped = token.toLowerCase().startsWith("address")
+    ? token.slice("address".length)
+    : token;
+
+  if (!/^[a-f0-9]{64}$/i.test(stripped)) {
     return <NotFound />;
   }
 
-  return <Navigate to={`/address/${token}`} replace />;
-}
-
-// Handles WhatsApp template base URL "https://originee-store.com/address"
-// (no trailing slash) → final URL becomes "/address<token>" as one segment.
-function GluedAddressTokenRedirect() {
-  const { rest } = useParams<{ rest: string }>();
-  if (!rest || !/^[a-f0-9]{64}$/i.test(rest)) {
-    return <NotFound />;
-  }
-  return <Navigate to={`/address/${rest}`} replace />;
+  return <Navigate to={`/address/${stripped}`} replace />;
 }
 
 function AppRoutes() {
