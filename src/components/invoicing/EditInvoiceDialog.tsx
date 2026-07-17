@@ -470,7 +470,20 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-6 pb-3 border-b shrink-0">
-          <DialogTitle>Edit Invoice {invoice.invoice_number}</DialogTitle>
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle>Edit Invoice {invoice.invoice_number}</DialogTitle>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={sendingAddressLink || !customerMobile.trim()}
+              onClick={sendAddressLink}
+              title="Send delivery address collection link via WhatsApp + Email"
+            >
+              {sendingAddressLink ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Get Address
+            </Button>
+          </div>
         </DialogHeader>
 
         {loading ? (
