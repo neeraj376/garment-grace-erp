@@ -57,6 +57,7 @@ export default function Dashboard() {
         .from("invoices")
         .select("total_amount, pending_amount, payment_method, customer_id, source, delivery_cost, invoice_number")
         .eq("store_id", storeId)
+        .neq("status", "pending_address")
         .gte("created_at", startOfDay);
 
       // Today's online orders (paid only) — these aren't in invoices table
