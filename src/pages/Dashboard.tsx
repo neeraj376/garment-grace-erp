@@ -34,9 +34,13 @@ export default function Dashboard() {
     pendingCount: 0,
     todayDeliveryCost: 0,
     monthlyDeliveryCost: 0,
+    totalRetailPending: 0,
+    retailPendingCount: 0,
   });
   const [pendingList, setPendingList] = useState<any[]>([]);
   const [pendingOpen, setPendingOpen] = useState(false);
+  const [retailPendingList, setRetailPendingList] = useState<any[]>([]);
+  const [retailPendingOpen, setRetailPendingOpen] = useState(false);
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
 
