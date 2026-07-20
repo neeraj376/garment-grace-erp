@@ -236,13 +236,75 @@ export default function Dashboard() {
       </div>
 
       {stats.totalPending > 0 && (
-        <Card className="p-4 border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={() => setPendingOpen(true)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setPendingOpen(true); }}
+          className="p-4 border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors"
+        >
           <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">
             <AlertTriangle className="h-4 w-4" /> Total Wholesale Pending
           </div>
-          <p className="text-2xl font-bold font-display text-amber-800 dark:text-amber-200">{formatCurrency(stats.totalPending)}</p>
+          <div className="flex items-baseline justify-between gap-4 flex-wrap">
+            <p className="text-2xl font-bold font-display text-amber-800 dark:text-amber-200">{formatCurrency(stats.totalPending)}</p>
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+              {stats.pendingCount} {stats.pendingCount === 1 ? "invoice" : "invoices"} · Click to view
+            </p>
+          </div>
         </Card>
       )}
+
+      <Dialog open={pendingOpen} onOpenChange={setPendingOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pending Wholesale Invoices ({stats.pendingCount})</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 border rounded-md overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr className="text-left">
+                  <th className="p-2 font-medium">Invoice</th>
+                  <th className="p-2 font-medium">Date</th>
+                  <th className="p-2 font-medium">Customer</th>
+                  <th className="p-2 font-medium text-right">Total</th>
+                  <th className="p-2 font-medium text-right">Pending</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingList.map((inv: any) => (
+                  <tr key={inv.id} className="border-t">
+                    <td className="p-2 font-mono text-xs">{inv.invoice_number}</td>
+                    <td className="p-2">{new Date(inv.created_at).toLocaleDateString("en-IN")}</td>
+                    <td className="p-2">
+                      <div>{inv.customers?.name ?? "—"}</div>
+                      {inv.customers?.mobile && (
+                        <div className="text-xs text-muted-foreground">{inv.customers.mobile}</div>
+                      )}
+                    </td>
+                    <td className="p-2 text-right">{formatCurrency(Number(inv.total_amount))}</td>
+                    <td className="p-2 text-right font-semibold text-amber-700 dark:text-amber-300">
+                      {formatCurrency(Number(inv.pending_amount))}
+                    </td>
+                  </tr>
+                ))}
+                {pendingList.length === 0 && (
+                  <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No pending invoices</td></tr>
+                )}
+              </tbody>
+              {pendingList.length > 0 && (
+                <tfoot className="bg-muted/50 font-semibold">
+                  <tr className="border-t">
+                    <td colSpan={4} className="p-2 text-right">Total</td>
+                    <td className="p-2 text-right text-amber-700 dark:text-amber-300">{formatCurrency(stats.totalPending)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Today's Sales" value={formatCurrency(stats.todaySales)} icon={IndianRupee} changeType="positive" change="Live" />
