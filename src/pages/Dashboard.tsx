@@ -135,12 +135,14 @@ export default function Dashboard() {
       // Total pending amount (all wholesale invoices with pending > 0)
       const { data: pendingInvoices } = await supabase
         .from("invoices")
-        .select("pending_amount")
+        .select("id, invoice_number, created_at, total_amount, pending_amount, customer_id, customers(name, mobile)")
         .eq("store_id", storeId)
         .eq("source", "wholesale")
-        .gt("pending_amount", 0);
+        .gt("pending_amount", 0)
+        .order("created_at", { ascending: false });
 
       const totalPending = pendingInvoices?.reduce((sum, inv) => sum + Number(inv.pending_amount), 0) ?? 0;
+      setPendingList(pendingInvoices ?? []);
 
       setStats({
         todaySales,
@@ -155,7 +157,9 @@ export default function Dashboard() {
         monthlyWholesale,
         dailyAverage,
         totalPending,
+        pendingCount: pendingInvoices?.length ?? 0,
         todayDeliveryCost: (todayInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
+
           + (todayOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
         monthlyDeliveryCost: (monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
           + (monthOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
