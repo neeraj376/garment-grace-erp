@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import InventoryAgingReport from "@/components/reports/InventoryAgingReport";
 import CategorySizeReport from "@/components/reports/CategorySizeReport";
 import ShopVisitorsReport from "@/components/reports/ShopVisitorsReport";
+import BrandWiseJeansReport from "@/components/reports/BrandWiseJeansReport";
+
 
 
 type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
