@@ -1,10 +1,12 @@
 import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package, AlertTriangle, Truck } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
 
 const PAYMENT_COLORS = [
   "hsl(221, 83%, 53%)",
@@ -29,11 +31,15 @@ export default function Dashboard() {
     monthlyWholesale: 0,
     dailyAverage: 0,
     totalPending: 0,
+    pendingCount: 0,
     todayDeliveryCost: 0,
     monthlyDeliveryCost: 0,
   });
+  const [pendingList, setPendingList] = useState<any[]>([]);
+  const [pendingOpen, setPendingOpen] = useState(false);
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
+
 
   useEffect(() => {
     if (!storeId) return;
@@ -129,12 +135,14 @@ export default function Dashboard() {
       // Total pending amount (all wholesale invoices with pending > 0)
       const { data: pendingInvoices } = await supabase
         .from("invoices")
-        .select("pending_amount")
+        .select("id, invoice_number, created_at, total_amount, pending_amount, customer_id, customers(name, mobile)")
         .eq("store_id", storeId)
         .eq("source", "wholesale")
-        .gt("pending_amount", 0);
+        .gt("pending_amount", 0)
+        .order("created_at", { ascending: false });
 
       const totalPending = pendingInvoices?.reduce((sum, inv) => sum + Number(inv.pending_amount), 0) ?? 0;
+      setPendingList(pendingInvoices ?? []);
 
       setStats({
         todaySales,
@@ -149,7 +157,9 @@ export default function Dashboard() {
         monthlyWholesale,
         dailyAverage,
         totalPending,
+        pendingCount: pendingInvoices?.length ?? 0,
         todayDeliveryCost: (todayInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
+
           + (todayOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
         monthlyDeliveryCost: (monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
           + (monthOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
@@ -226,13 +236,75 @@ export default function Dashboard() {
       </div>
 
       {stats.totalPending > 0 && (
-        <Card className="p-4 border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={() => setPendingOpen(true)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setPendingOpen(true); }}
+          className="p-4 border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors"
+        >
           <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">
             <AlertTriangle className="h-4 w-4" /> Total Wholesale Pending
           </div>
-          <p className="text-2xl font-bold font-display text-amber-800 dark:text-amber-200">{formatCurrency(stats.totalPending)}</p>
+          <div className="flex items-baseline justify-between gap-4 flex-wrap">
+            <p className="text-2xl font-bold font-display text-amber-800 dark:text-amber-200">{formatCurrency(stats.totalPending)}</p>
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+              {stats.pendingCount} {stats.pendingCount === 1 ? "invoice" : "invoices"} · Click to view
+            </p>
+          </div>
         </Card>
       )}
+
+      <Dialog open={pendingOpen} onOpenChange={setPendingOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pending Wholesale Invoices ({stats.pendingCount})</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 border rounded-md overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr className="text-left">
+                  <th className="p-2 font-medium">Invoice</th>
+                  <th className="p-2 font-medium">Date</th>
+                  <th className="p-2 font-medium">Customer</th>
+                  <th className="p-2 font-medium text-right">Total</th>
+                  <th className="p-2 font-medium text-right">Pending</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingList.map((inv: any) => (
+                  <tr key={inv.id} className="border-t">
+                    <td className="p-2 font-mono text-xs">{inv.invoice_number}</td>
+                    <td className="p-2">{new Date(inv.created_at).toLocaleDateString("en-IN")}</td>
+                    <td className="p-2">
+                      <div>{inv.customers?.name ?? "—"}</div>
+                      {inv.customers?.mobile && (
+                        <div className="text-xs text-muted-foreground">{inv.customers.mobile}</div>
+                      )}
+                    </td>
+                    <td className="p-2 text-right">{formatCurrency(Number(inv.total_amount))}</td>
+                    <td className="p-2 text-right font-semibold text-amber-700 dark:text-amber-300">
+                      {formatCurrency(Number(inv.pending_amount))}
+                    </td>
+                  </tr>
+                ))}
+                {pendingList.length === 0 && (
+                  <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No pending invoices</td></tr>
+                )}
+              </tbody>
+              {pendingList.length > 0 && (
+                <tfoot className="bg-muted/50 font-semibold">
+                  <tr className="border-t">
+                    <td colSpan={4} className="p-2 text-right">Total</td>
+                    <td className="p-2 text-right text-amber-700 dark:text-amber-300">{formatCurrency(stats.totalPending)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Today's Sales" value={formatCurrency(stats.todaySales)} icon={IndianRupee} changeType="positive" change="Live" />
