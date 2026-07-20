@@ -31,11 +31,15 @@ export default function Dashboard() {
     monthlyWholesale: 0,
     dailyAverage: 0,
     totalPending: 0,
+    pendingCount: 0,
     todayDeliveryCost: 0,
     monthlyDeliveryCost: 0,
   });
+  const [pendingList, setPendingList] = useState<any[]>([]);
+  const [pendingOpen, setPendingOpen] = useState(false);
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
+
 
   useEffect(() => {
     if (!storeId) return;
