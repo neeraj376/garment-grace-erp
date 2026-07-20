@@ -1,10 +1,12 @@
 import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package, AlertTriangle, Truck } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
 
 const PAYMENT_COLORS = [
   "hsl(221, 83%, 53%)",
