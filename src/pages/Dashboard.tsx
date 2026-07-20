@@ -148,6 +148,19 @@ export default function Dashboard() {
       const totalPending = pendingInvoices?.reduce((sum, inv) => sum + Number(inv.pending_amount), 0) ?? 0;
       setPendingList(pendingInvoices ?? []);
 
+      // Total pending amount (all retail = non-wholesale invoices with pending > 0)
+      const { data: retailPendingInvoices } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, created_at, total_amount, pending_amount, source, customer_id, customers(name, mobile)")
+        .eq("store_id", storeId)
+        .neq("source", "wholesale")
+        .neq("status", "pending_address")
+        .gt("pending_amount", 0)
+        .order("created_at", { ascending: false });
+
+      const totalRetailPending = retailPendingInvoices?.reduce((sum, inv) => sum + Number(inv.pending_amount), 0) ?? 0;
+      setRetailPendingList(retailPendingInvoices ?? []);
+
       setStats({
         todaySales,
         monthlySales,
@@ -167,6 +180,8 @@ export default function Dashboard() {
           + (todayOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
         monthlyDeliveryCost: (monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
           + (monthOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
+        totalRetailPending,
+        retailPendingCount: retailPendingInvoices?.length ?? 0,
       });
 
       // Payment breakdown (use collected amount, not gross)
