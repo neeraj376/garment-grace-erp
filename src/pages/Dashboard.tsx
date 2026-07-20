@@ -34,9 +34,13 @@ export default function Dashboard() {
     pendingCount: 0,
     todayDeliveryCost: 0,
     monthlyDeliveryCost: 0,
+    totalRetailPending: 0,
+    retailPendingCount: 0,
   });
   const [pendingList, setPendingList] = useState<any[]>([]);
   const [pendingOpen, setPendingOpen] = useState(false);
+  const [retailPendingList, setRetailPendingList] = useState<any[]>([]);
+  const [retailPendingOpen, setRetailPendingOpen] = useState(false);
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
 
@@ -144,6 +148,19 @@ export default function Dashboard() {
       const totalPending = pendingInvoices?.reduce((sum, inv) => sum + Number(inv.pending_amount), 0) ?? 0;
       setPendingList(pendingInvoices ?? []);
 
+      // Total pending amount (all retail = non-wholesale invoices with pending > 0)
+      const { data: retailPendingInvoices } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, created_at, total_amount, pending_amount, source, customer_id, customers(name, mobile)")
+        .eq("store_id", storeId)
+        .neq("source", "wholesale")
+        .neq("status", "pending_address")
+        .gt("pending_amount", 0)
+        .order("created_at", { ascending: false });
+
+      const totalRetailPending = retailPendingInvoices?.reduce((sum, inv) => sum + Number(inv.pending_amount), 0) ?? 0;
+      setRetailPendingList(retailPendingInvoices ?? []);
+
       setStats({
         todaySales,
         monthlySales,
@@ -163,6 +180,8 @@ export default function Dashboard() {
           + (todayOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
         monthlyDeliveryCost: (monthInvoices?.reduce((s, i: any) => s + Number(i.delivery_cost || 0), 0) ?? 0)
           + (monthOrders?.reduce((s, o: any) => s + Number(o.shipping_amount || 0), 0) ?? 0),
+        totalRetailPending,
+        retailPendingCount: retailPendingInvoices?.length ?? 0,
       });
 
       // Payment breakdown (use collected amount, not gross)
@@ -254,6 +273,79 @@ export default function Dashboard() {
           </div>
         </Card>
       )}
+
+      {stats.totalRetailPending > 0 && (
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={() => setRetailPendingOpen(true)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setRetailPendingOpen(true); }}
+          className="p-4 border-orange-300 bg-orange-50/50 dark:bg-orange-950/20 cursor-pointer hover:bg-orange-100/60 dark:hover:bg-orange-950/30 transition-colors"
+        >
+          <div className="flex items-center gap-2 text-sm font-medium text-orange-700 dark:text-orange-300 mb-1">
+            <AlertTriangle className="h-4 w-4" /> Total Retail Pending
+          </div>
+          <div className="flex items-baseline justify-between gap-4 flex-wrap">
+            <p className="text-2xl font-bold font-display text-orange-800 dark:text-orange-200">{formatCurrency(stats.totalRetailPending)}</p>
+            <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+              {stats.retailPendingCount} {stats.retailPendingCount === 1 ? "invoice" : "invoices"} · Click to view
+            </p>
+          </div>
+        </Card>
+      )}
+
+      <Dialog open={retailPendingOpen} onOpenChange={setRetailPendingOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pending Retail Invoices ({stats.retailPendingCount})</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 border rounded-md overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr className="text-left">
+                  <th className="p-2 font-medium">Invoice</th>
+                  <th className="p-2 font-medium">Date</th>
+                  <th className="p-2 font-medium">Source</th>
+                  <th className="p-2 font-medium">Customer</th>
+                  <th className="p-2 font-medium text-right">Total</th>
+                  <th className="p-2 font-medium text-right">Pending</th>
+                </tr>
+              </thead>
+              <tbody>
+                {retailPendingList.map((inv: any) => (
+                  <tr key={inv.id} className="border-t">
+                    <td className="p-2 font-mono text-xs">{inv.invoice_number}</td>
+                    <td className="p-2">{new Date(inv.created_at).toLocaleDateString("en-IN")}</td>
+                    <td className="p-2 capitalize">{inv.source ?? "—"}</td>
+                    <td className="p-2">
+                      <div>{inv.customers?.name ?? "—"}</div>
+                      {inv.customers?.mobile && (
+                        <div className="text-xs text-muted-foreground">{inv.customers.mobile}</div>
+                      )}
+                    </td>
+                    <td className="p-2 text-right">{formatCurrency(Number(inv.total_amount))}</td>
+                    <td className="p-2 text-right font-semibold text-orange-700 dark:text-orange-300">
+                      {formatCurrency(Number(inv.pending_amount))}
+                    </td>
+                  </tr>
+                ))}
+                {retailPendingList.length === 0 && (
+                  <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No pending invoices</td></tr>
+                )}
+              </tbody>
+              {retailPendingList.length > 0 && (
+                <tfoot className="bg-muted/50 font-semibold">
+                  <tr className="border-t">
+                    <td colSpan={5} className="p-2 text-right">Total</td>
+                    <td className="p-2 text-right text-orange-700 dark:text-orange-300">{formatCurrency(stats.totalRetailPending)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={pendingOpen} onOpenChange={setPendingOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
