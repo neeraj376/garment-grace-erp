@@ -478,8 +478,10 @@ export default function Reports() {
           <TabsTrigger value="sales">Sales & P&L</TabsTrigger>
           <TabsTrigger value="category">Category & Size</TabsTrigger>
           <TabsTrigger value="aging">Inventory Aging</TabsTrigger>
+          <TabsTrigger value="jeans">Brand-wise Jeans</TabsTrigger>
           <TabsTrigger value="visitors">Shop Visitors</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="sales" className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -719,9 +721,14 @@ export default function Reports() {
           <InventoryAgingReport />
         </TabsContent>
 
+        <TabsContent value="jeans">
+          <BrandWiseJeansReport />
+        </TabsContent>
+
         <TabsContent value="visitors">
           <ShopVisitorsReport />
         </TabsContent>
+
       </Tabs>
     </div>
   );
