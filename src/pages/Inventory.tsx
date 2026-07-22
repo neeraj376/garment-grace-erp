@@ -77,7 +77,7 @@ export default function Inventory() {
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
   const [soldDialogOpen, setSoldDialogOpen] = useState(false);
   const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
-  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
+  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; source: "offline" | "online"; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
   const [loading, setLoading] = useState(true);
   const [thumbProgress, setThumbProgress] = useState<{ current: number; total: number } | null>(null);
   const [visibleCount, setVisibleCount] = useState(300);
