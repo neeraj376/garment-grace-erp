@@ -722,7 +722,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell className="text-right font-medium">₹{Number(inv.total_amount).toLocaleString("en-IN")}</TableCell>
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">{inv.source}</Badge>
+                    <Badge variant="outline" className="capitalize">{inv.source === "whatsapp" ? "WhatsApp" : inv.source}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">
                     {inv.courier_name || inv.awb_no ? (
