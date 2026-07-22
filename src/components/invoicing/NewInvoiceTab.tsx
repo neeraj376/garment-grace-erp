@@ -1084,7 +1084,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       await sendAddressLinkForInvoice(invoice.id, mobileClean, customerEmail);
 
       toast({ title: "Draft invoice created", description: `${invoiceNumber} — address link sent. Invoice will be finalized once the customer submits their address.` });
-      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile: mobileClean, customerName, source: "online" });
+      setLastInvoice({ id: invoice.id, invoice_number: invoiceNumber, total, customerMobile: mobileClean, customerName, source: "whatsapp" });
       setGroupInviteSent(false);
       setCart([]);
       setDiscount(0);
