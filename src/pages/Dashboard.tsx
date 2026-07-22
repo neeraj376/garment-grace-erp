@@ -82,7 +82,7 @@ export default function Dashboard() {
       const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const todayOrdersTotal = todayOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const todaySales = todayInvSales + todayOrdersTotal;
-      const todayOnlineFromInv = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOnlineFromInv = todayInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const todayOnline = todayOnlineFromInv + todayOrdersTotal;
       const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const todayOffline = todayInvSales - todayOnlineFromInv - todayWholesale;
@@ -107,7 +107,7 @@ export default function Dashboard() {
       const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const monthOrdersTotal = monthOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const monthlySales = monthInvSales + monthOrdersTotal;
-      const monthlyOnlineFromInv = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyOnlineFromInv = monthInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const monthlyOnline = monthlyOnlineFromInv + monthOrdersTotal;
       const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const monthlyOffline = monthInvSales - monthlyOnlineFromInv - monthlyWholesale;

@@ -642,7 +642,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a source", variant: "destructive" });
       return;
     }
-    if (source === "online") {
+    if (source === "whatsapp") {
       if (!addressLine1.trim()) {
         toast({ title: "Error", description: "Shipping address line 1 is required", variant: "destructive" });
         return;
@@ -697,7 +697,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       // If source=online and this customer's phone matches a paid website order in the
       // last 14 days containing any of the same products, warn before creating an invoice
       // — razorpay-verify / payu-verify already deducted stock for that order.
-      if (source === "online" && customerMobile && cart.length > 0) {
+      if (source === "whatsapp" && customerMobile && cart.length > 0) {
         const last10 = customerMobile.replace(/\D/g, "").slice(-10);
         if (last10.length === 10) {
           const cartProductIds = cart.map(i => i.product_id).filter(Boolean);
@@ -774,16 +774,16 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           customer_id: customerId,
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
-          courier_name: source === "online" && courierName.trim() ? courierName.trim() : null,
-          awb_no: source === "online" && awbNo.trim() ? awbNo.trim() : null,
-          delivery_cost: source === "online" ? (Number(deliveryCost) || 0) : 0,
-          shipping_name: source === "online" ? (customerName.trim() || null) : null,
-          shipping_phone: source === "online" ? (customerMobile.trim() || null) : null,
-          shipping_address_line1: source === "online" ? (addressLine1.trim() || null) : null,
-          shipping_address_line2: source === "online" ? (addressLine2.trim() || null) : null,
-          shipping_city: source === "online" ? (shipCity.trim() || null) : null,
-          shipping_state: source === "online" ? (shipState.trim() || null) : null,
-          shipping_pincode: source === "online" ? (shipPincode.trim() || null) : null,
+          courier_name: source === "whatsapp" && courierName.trim() ? courierName.trim() : null,
+          awb_no: source === "whatsapp" && awbNo.trim() ? awbNo.trim() : null,
+          delivery_cost: source === "whatsapp" ? (Number(deliveryCost) || 0) : 0,
+          shipping_name: source === "whatsapp" ? (customerName.trim() || null) : null,
+          shipping_phone: source === "whatsapp" ? (customerMobile.trim() || null) : null,
+          shipping_address_line1: source === "whatsapp" ? (addressLine1.trim() || null) : null,
+          shipping_address_line2: source === "whatsapp" ? (addressLine2.trim() || null) : null,
+          shipping_city: source === "whatsapp" ? (shipCity.trim() || null) : null,
+          shipping_state: source === "whatsapp" ? (shipState.trim() || null) : null,
+          shipping_pincode: source === "whatsapp" ? (shipPincode.trim() || null) : null,
           payment_method: paymentMethods.join("+"),
           notes: breakdownNote || null,
           subtotal,
@@ -837,7 +837,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
       setLastInvoice({
         id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName, source,
-        shipping: source === "online" ? {
+        shipping: source === "whatsapp" ? {
           name: customerName.trim(), phone: customerMobile.trim(),
           line1: addressLine1.trim(), line2: addressLine2.trim(),
           city: shipCity.trim(), state: shipState.trim(), pincode: shipPincode.trim(),
@@ -845,7 +845,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       });
 
       // Auto-send tracking email when online + courier + AWB + customer email are present
-      if (source === "online" && courierName.trim() && awbNo.trim() && customerEmail.trim()) {
+      if (source === "whatsapp" && courierName.trim() && awbNo.trim() && customerEmail.trim()) {
         const c = courierName.trim().toLowerCase();
         const a = awbNo.trim();
         const trackingUrl =
@@ -1608,7 +1608,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            {source === "online" && (
+            {source === "whatsapp" && (
               <div className="space-y-3 rounded-md border p-3 bg-muted/20">
                 <div className="text-xs font-medium flex items-center gap-1.5">
                   <Truck className="h-3.5 w-3.5" /> Shipping Address
@@ -1681,7 +1681,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label className="text-xs">Delivery Cost (₹) {source === "online" && <span className="text-destructive">*</span>}</Label>
+                    <Label className="text-xs">Delivery Cost (₹) {source === "whatsapp" && <span className="text-destructive">*</span>}</Label>
                     <Input
                       type="number"
                       inputMode="decimal"
@@ -1869,7 +1869,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     {groupInviteSent ? "Group invite sent ✓" : "Send WhatsApp group invite"}
                   </Button>
                 )}
-                {lastInvoice.source === "online" && lastInvoice.shipping && (
+                {lastInvoice.source === "whatsapp" && lastInvoice.shipping && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -1879,7 +1879,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <Printer className="h-4 w-4 mr-1" /> Print Shipping Label
                   </Button>
                 )}
-                {lastInvoice.source === "online" && (
+                {lastInvoice.source === "whatsapp" && (
                   <Button
                     variant="outline"
                     size="sm"
