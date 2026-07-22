@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink, Film, HelpCircle } from "lucide-react";
+import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink, Film } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
