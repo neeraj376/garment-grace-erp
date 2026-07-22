@@ -345,7 +345,7 @@ export default function Reports() {
     (employees ?? []).forEach((e: any) => {
       empMap[e.id] = {
         id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0,
-        bySource: { offline: { count: 0, sales: 0 }, online: { count: 0, sales: 0 }, wholesale: { count: 0, sales: 0 } },
+        bySource: { offline: { count: 0, sales: 0 }, whatsapp: { count: 0, sales: 0 }, online: { count: 0, sales: 0 }, wholesale: { count: 0, sales: 0 } },
       };
     });
     invData.forEach((inv: any) => {
