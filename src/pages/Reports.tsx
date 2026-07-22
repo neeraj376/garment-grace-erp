@@ -654,7 +654,8 @@ export default function Reports() {
                   <SelectContent>
                     <SelectItem value="all">All Sources</SelectItem>
                     <SelectItem value="offline">Offline</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="online">Online Orders</SelectItem>
                     <SelectItem value="wholesale">Wholesale</SelectItem>
                   </SelectContent>
                 </Select>
