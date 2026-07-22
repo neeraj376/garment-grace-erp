@@ -310,7 +310,7 @@ export default function Reports() {
     const sourceMap: Record<string, number> = {};
     invData.forEach(inv => {
       const src = (inv.source || "offline").toLowerCase();
-      const label = src === "online" ? "Online" : src === "wholesale" ? "Wholesale" : "Offline";
+      const label = src === "whatsapp" ? "WhatsApp" : src === "wholesale" ? "Wholesale" : "Offline";
       sourceMap[label] = (sourceMap[label] || 0) + collected(inv);
     });
     orderData.forEach((o: any) => {
