@@ -1004,7 +1004,7 @@ export default function Inventory() {
                     <TableCell className="text-right tabular-nums">₹{r.sold_value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">₹{r.total_amount.toLocaleString("en-IN")}</TableCell>
                     <TableCell>
-                      {r.source === "offline" ? (
+                      {r.source !== "online" ? (
                         <Link to={`/invoice/${r.invoice_id}`} target="_blank" className="text-primary hover:opacity-70">
                           <ExternalLink className="h-4 w-4" />
                         </Link>
