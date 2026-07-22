@@ -409,7 +409,7 @@ export default function Dashboard() {
         <StatCard title="Active Products" value={stats.totalProducts.toString()} icon={ShoppingBag} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <Store className="h-4 w-4" /> Today Offline
@@ -418,15 +418,21 @@ export default function Dashboard() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-            <Globe className="h-4 w-4" /> Today Online
+            <MessageCircle className="h-4 w-4" /> Today WhatsApp
           </div>
-          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOnline)}</p>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayWhatsapp)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <Package className="h-4 w-4" /> Today Wholesale
           </div>
           <p className="text-lg font-bold font-display">{formatCurrency(stats.todayWholesale)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Today Online Orders
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOnline)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
@@ -445,15 +451,21 @@ export default function Dashboard() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-            <Globe className="h-4 w-4" /> Monthly Online
+            <MessageCircle className="h-4 w-4" /> Monthly WhatsApp
           </div>
-          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOnline)}</p>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyWhatsapp)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <Package className="h-4 w-4" /> Monthly Wholesale
           </div>
           <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyWholesale)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Monthly Online Orders
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOnline)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
@@ -470,6 +482,7 @@ export default function Dashboard() {
           <p className="text-[10px] text-muted-foreground mt-0.5">Excluded from revenue</p>
         </Card>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
