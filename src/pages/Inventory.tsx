@@ -875,37 +875,73 @@ export default function Inventory() {
         const soldPieces = filtered.reduce((sum, p) => sum + (p.sold_quantity ?? 0), 0);
         const totalPieces = inStockPieces + soldPieces;
         return (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Total Products</p>
-              <p className="text-2xl font-bold">{totalProducts.toLocaleString("en-IN")}</p>
+          <TooltipProvider delayDuration={100}>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="rounded-lg border bg-card p-4 text-center cursor-help">
+                    <p className="text-sm text-muted-foreground">Total Products</p>
+                    <p className="text-2xl font-bold">{totalProducts.toLocaleString("en-IN")}</p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-center">
+                  <p>Total number of products matching the current filters and search.</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="rounded-lg border bg-card p-4 text-center cursor-help">
+                    <p className="text-sm text-muted-foreground">Total Inventory (pcs)</p>
+                    <p className="text-2xl font-bold">{totalPieces.toLocaleString("en-IN")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">in-stock + sold</p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-center">
+                  <p>Sum of all pieces ever received: current stock plus pieces already sold.</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="rounded-lg border bg-card p-4 text-center cursor-help">
+                    <p className="text-sm text-muted-foreground">In-Stock (pcs)</p>
+                    <p className="text-2xl font-bold text-success">{inStockPieces.toLocaleString("en-IN")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{inStockProducts} products</p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-center">
+                  <p>Total pieces currently available across all matching products.</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={openSoldInvoices}
+                    className="rounded-lg border bg-card p-4 text-center hover:bg-accent hover:border-primary/50 transition-colors cursor-pointer"
+                  >
+                    <p className="text-sm text-muted-foreground">Sold (pcs)</p>
+                    <p className="text-2xl font-bold text-primary">{soldPieces.toLocaleString("en-IN")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">net of returns · click to view</p>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-center">
+                  <p>Total pieces sold across matching products, net of returns. Click to view invoice details.</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="rounded-lg border bg-card p-4 text-center cursor-help">
+                    <p className="text-sm text-muted-foreground">Out of Stock</p>
+                    <p className="text-2xl font-bold text-destructive">{outOfStockProducts.toLocaleString("en-IN")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">products</p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-center">
+                  <p>Number of matching products with zero available stock.</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Total Inventory (pcs)</p>
-              <p className="text-2xl font-bold">{totalPieces.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">in-stock + sold</p>
-            </div>
-            <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">In-Stock (pcs)</p>
-              <p className="text-2xl font-bold text-success">{inStockPieces.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{inStockProducts} products</p>
-            </div>
-            <button
-              type="button"
-              onClick={openSoldInvoices}
-              className="rounded-lg border bg-card p-4 text-center hover:bg-accent hover:border-primary/50 transition-colors cursor-pointer"
-              title="Click to view invoices"
-            >
-              <p className="text-sm text-muted-foreground">Sold (pcs)</p>
-              <p className="text-2xl font-bold text-primary">{soldPieces.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">net of returns · click to view</p>
-            </button>
-            <div className="rounded-lg border bg-card p-4 text-center">
-              <p className="text-sm text-muted-foreground">Out of Stock</p>
-              <p className="text-2xl font-bold text-destructive">{outOfStockProducts.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">products</p>
-            </div>
-          </div>
+          </TooltipProvider>
         );
       })()}
 
