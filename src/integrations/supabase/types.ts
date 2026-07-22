@@ -1749,6 +1749,20 @@ export type Database = {
           tax_rate: number
         }[]
       }
+      get_online_orders_for_products: {
+        Args: { p_product_ids: string[]; p_store_id: string }
+        Returns: {
+          created_at: string
+          customer_id: string
+          customer_mobile: string
+          customer_name: string
+          order_id: string
+          order_number: string
+          sold_qty: number
+          sold_value: number
+          total_amount: number
+        }[]
+      }
       get_product_stock: { Args: { p_product_id: string }; Returns: number }
       get_public_invoice: { Args: { p_invoice_id: string }; Returns: Json }
       get_sold_invoices_for_products: {
@@ -1762,6 +1776,7 @@ export type Database = {
           invoice_number: string
           sold_qty: number
           sold_value: number
+          source: string
           total_amount: number
         }[]
       }
