@@ -1603,7 +1603,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="offline">Offline (Walk-in)</SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
                   <SelectItem value="wholesale">Wholesale</SelectItem>
                 </SelectContent>
               </Select>
