@@ -992,8 +992,8 @@ export default function Inventory() {
                   <TableRow key={r.invoice_id}>
                     <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
                     <TableCell>
-                      <Badge variant={r.source === "online" ? "secondary" : "default"}>
-                        {r.source === "online" ? "Online" : "Offline"}
+                      <Badge variant={r.source === "online" ? "secondary" : r.source === "whatsapp" ? "outline" : "default"} className="capitalize">
+                        {r.source === "whatsapp" ? "WhatsApp" : r.source}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs whitespace-nowrap">
