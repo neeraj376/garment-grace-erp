@@ -167,8 +167,8 @@ export default function InvoicePublic() {
 
         {/* Footer */}
         <div className="px-6 py-4 text-center text-xs text-gray-400">
-          <p>Payment: {invoice.payment_method.toUpperCase()} • {invoice.source === "online" ? "Online" : "In-Store"}</p>
-          {invoice.source === "online" && (invoice.courier_name || invoice.awb_no) && (
+          <p>Payment: {invoice.payment_method.toUpperCase()} • {invoice.source === "whatsapp" ? "WhatsApp" : invoice.source === "wholesale" ? "Wholesale" : "In-Store"}</p>
+          {invoice.source === "whatsapp" && (invoice.courier_name || invoice.awb_no) && (
             <p className="mt-1">Courier: {invoice.courier_name || "—"} • AWB: {invoice.awb_no || "—"}</p>
           )}
           <p className="mt-1">Thank you for your purchase!</p>
