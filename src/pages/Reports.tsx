@@ -354,7 +354,7 @@ export default function Reports() {
         empMap[inv.employee_id].invoiceCount += 1;
         empMap[inv.employee_id].totalSales += amt;
         const src = (inv.source || "offline").toLowerCase();
-        const key: "offline" | "online" | "wholesale" = src === "online" ? "online" : src === "wholesale" ? "wholesale" : "offline";
+        const key: "offline" | "whatsapp" | "wholesale" = src === "whatsapp" ? "whatsapp" : src === "wholesale" ? "wholesale" : "offline";
         empMap[inv.employee_id].bySource[key].count += 1;
         empMap[inv.employee_id].bySource[key].sales += amt;
       }
