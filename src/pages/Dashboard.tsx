@@ -84,10 +84,10 @@ export default function Dashboard() {
       const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const todayOrdersTotal = todayOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const todaySales = todayInvSales + todayOrdersTotal;
-      const todayOnlineFromInv = todayInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOnline = todayOnlineFromInv + todayOrdersTotal;
+      const todayWhatsapp = todayInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOnline = todayOrdersTotal;
       const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOffline = todayInvSales - todayOnlineFromInv - todayWholesale;
+      const todayOffline = todayInvSales - todayWhatsapp - todayWholesale;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
