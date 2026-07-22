@@ -597,7 +597,7 @@ export default function Reports() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-              <CardHeader><CardTitle className="section-title">Online vs Offline Sales</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="section-title">Sales by Source</CardTitle></CardHeader>
               <CardContent>
                 {sourceCompareData.length > 0 ? (
                   <div className="h-72">
