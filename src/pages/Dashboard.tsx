@@ -109,10 +109,10 @@ export default function Dashboard() {
       const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const monthOrdersTotal = monthOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const monthlySales = monthInvSales + monthOrdersTotal;
-      const monthlyOnlineFromInv = monthInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOnline = monthlyOnlineFromInv + monthOrdersTotal;
+      const monthlyWhatsapp = monthInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyOnline = monthOrdersTotal;
       const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOffline = monthInvSales - monthlyOnlineFromInv - monthlyWholesale;
+      const monthlyOffline = monthInvSales - monthlyWhatsapp - monthlyWholesale;
 
       // Daily average this month
       const dayOfMonth = today.getDate();
