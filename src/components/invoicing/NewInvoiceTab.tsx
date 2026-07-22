@@ -1038,7 +1038,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           invoice_number: invoiceNumber,
           customer_id: customerId,
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
-          source: "online",
+          source: "whatsapp",
           status: "pending_address",
           courier_name: null,
           awb_no: null,
