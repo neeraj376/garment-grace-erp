@@ -578,7 +578,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="offline">Offline (Walk-in)</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     <SelectItem value="wholesale">Wholesale</SelectItem>
                   </SelectContent>
                 </Select>
