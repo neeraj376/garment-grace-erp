@@ -40,7 +40,7 @@ interface EmployeeSales {
   role: string;
   invoiceCount: number;
   totalSales: number;
-  bySource: { offline: { count: number; sales: number }; online: { count: number; sales: number }; wholesale: { count: number; sales: number } };
+  bySource: { offline: { count: number; sales: number }; whatsapp: { count: number; sales: number }; online: { count: number; sales: number }; wholesale: { count: number; sales: number } };
 }
 
 interface ReportBundle {
