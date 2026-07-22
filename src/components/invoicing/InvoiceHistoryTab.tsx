@@ -633,7 +633,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <SelectContent>
                   <SelectItem value="all">All Sources</SelectItem>
                   <SelectItem value="offline">Offline</SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
                   <SelectItem value="wholesale">Wholesale</SelectItem>
                 </SelectContent>
               </Select>
