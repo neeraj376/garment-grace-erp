@@ -373,7 +373,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         && normalizedCourierName
         && normalizedAwbNo
         && (
-          invoice.source !== "online" ||
+          invoice.source !== "whatsapp" ||
           (invoice.courier_name || "") !== normalizedCourierName ||
           (invoice.awb_no || "") !== normalizedAwbNo
         );
