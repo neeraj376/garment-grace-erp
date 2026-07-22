@@ -77,7 +77,7 @@ export default function Inventory() {
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
   const [soldDialogOpen, setSoldDialogOpen] = useState(false);
   const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
-  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
+  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; source: "offline" | "online"; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
   const [loading, setLoading] = useState(true);
   const [thumbProgress, setThumbProgress] = useState<{ current: number; total: number } | null>(null);
   const [visibleCount, setVisibleCount] = useState(300);
@@ -440,8 +440,7 @@ export default function Inventory() {
       const productIds = filtered.map((p) => p.id);
       if (productIds.length === 0) { setSoldInvoicesLoading(false); return; }
 
-      // Single server-side aggregation replaces the previous chunked client loop
-      // that was firing tens of thousands of invoice_items queries.
+      // Single server-side aggregation returns both offline invoices and online orders.
       const { data, error } = await (supabase as any).rpc(
         "get_sold_invoices_for_products",
         { p_store_id: storeId, p_product_ids: productIds }
@@ -451,6 +450,7 @@ export default function Inventory() {
       const rows = ((data ?? []) as any[]).map((r) => ({
         invoice_id: r.invoice_id,
         invoice_number: r.invoice_number || "—",
+        source: r.source || "offline",
         created_at: r.created_at || "",
         customer_name: r.customer_name || r.customer_mobile || null,
         total_amount: Number(r.total_amount || 0),
@@ -925,7 +925,7 @@ export default function Inventory() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs text-center">
-                  <p>Total pieces sold across matching products, net of returns. Click to view invoice details.</p>
+                  <p>Total pieces sold across matching products, net of returns. Includes both offline invoices and paid online orders. Click to view details.</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -959,30 +959,31 @@ export default function Inventory() {
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Invoices with sold items
+              Sales records
               {!soldInvoicesLoading && soldInvoices.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  ({soldInvoices.length} invoice{soldInvoices.length === 1 ? "" : "s"})
+                  ({soldInvoices.length} record{soldInvoices.length === 1 ? "" : "s"})
                 </span>
               )}
             </DialogTitle>
           </DialogHeader>
           {soldInvoicesLoading ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Loading invoices…
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Loading sales records…
             </div>
           ) : soldInvoices.length === 0 ? (
-            <p className="text-center text-muted-foreground py-12">No invoices found for the current filter.</p>
+            <p className="text-center text-muted-foreground py-12">No sales records found for the current filter.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Number</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead className="text-right">Qty Sold</TableHead>
                   <TableHead className="text-right">Item Value</TableHead>
-                  <TableHead className="text-right">Invoice Total</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -990,6 +991,11 @@ export default function Inventory() {
                 {soldInvoices.map(r => (
                   <TableRow key={r.invoice_id}>
                     <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.source === "online" ? "secondary" : "default"}>
+                        {r.source === "online" ? "Online" : "Offline"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-xs whitespace-nowrap">
                       {r.created_at ? new Date(r.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                     </TableCell>
@@ -998,9 +1004,13 @@ export default function Inventory() {
                     <TableCell className="text-right tabular-nums">₹{r.sold_value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">₹{r.total_amount.toLocaleString("en-IN")}</TableCell>
                     <TableCell>
-                      <Link to={`/invoice/${r.invoice_id}`} target="_blank" className="text-primary hover:opacity-70">
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
+                      {r.source === "offline" ? (
+                        <Link to={`/invoice/${r.invoice_id}`} target="_blank" className="text-primary hover:opacity-70">
+                          <ExternalLink className="h-4 w-4" />
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

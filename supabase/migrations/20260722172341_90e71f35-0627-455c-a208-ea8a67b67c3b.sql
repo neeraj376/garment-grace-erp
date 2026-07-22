@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.get_sold_invoices_for_products(uuid, uuid[]);
