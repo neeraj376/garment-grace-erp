@@ -77,7 +77,7 @@ export default function Inventory() {
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
   const [soldDialogOpen, setSoldDialogOpen] = useState(false);
   const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
-  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; source: "offline" | "online"; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
+  const [soldInvoices, setSoldInvoices] = useState<Array<{ invoice_id: string; invoice_number: string; source: "offline" | "whatsapp" | "wholesale" | "online"; created_at: string; customer_name: string | null; total_amount: number; sold_qty: number; sold_value: number; }>>([]);
   const [loading, setLoading] = useState(true);
   const [thumbProgress, setThumbProgress] = useState<{ current: number; total: number } | null>(null);
   const [visibleCount, setVisibleCount] = useState(300);
@@ -992,8 +992,8 @@ export default function Inventory() {
                   <TableRow key={r.invoice_id}>
                     <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
                     <TableCell>
-                      <Badge variant={r.source === "online" ? "secondary" : "default"}>
-                        {r.source === "online" ? "Online" : "Offline"}
+                      <Badge variant={r.source === "online" ? "secondary" : r.source === "whatsapp" ? "outline" : "default"} className="capitalize">
+                        {r.source === "whatsapp" ? "WhatsApp" : r.source}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs whitespace-nowrap">
@@ -1004,7 +1004,7 @@ export default function Inventory() {
                     <TableCell className="text-right tabular-nums">₹{r.sold_value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">₹{r.total_amount.toLocaleString("en-IN")}</TableCell>
                     <TableCell>
-                      {r.source === "offline" ? (
+                      {r.source !== "online" ? (
                         <Link to={`/invoice/${r.invoice_id}`} target="_blank" className="text-primary hover:opacity-70">
                           <ExternalLink className="h-4 w-4" />
                         </Link>

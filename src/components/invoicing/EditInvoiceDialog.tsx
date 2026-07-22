@@ -356,11 +356,11 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       toast({ title: "Error", description: "Customer name is required", variant: "destructive" });
       return;
     }
-    if (source === "online" && !courierName.trim()) {
+    if (source === "whatsapp" && !courierName.trim()) {
       toast({ title: "Error", description: "Courier Name is required for online invoices", variant: "destructive" });
       return;
     }
-    if (source === "online" && !awbNo.trim()) {
+    if (source === "whatsapp" && !awbNo.trim()) {
       toast({ title: "Error", description: "AWB No. is required for online invoices", variant: "destructive" });
       return;
     }
@@ -369,11 +369,11 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
     try {
       const normalizedCourierName = courierName.trim();
       const normalizedAwbNo = awbNo.trim();
-      const shouldSendTrackingMessage = source === "online"
+      const shouldSendTrackingMessage = source === "whatsapp"
         && normalizedCourierName
         && normalizedAwbNo
         && (
-          invoice.source !== "online" ||
+          invoice.source !== "whatsapp" ||
           (invoice.courier_name || "") !== normalizedCourierName ||
           (invoice.awb_no || "") !== normalizedAwbNo
         );
@@ -394,16 +394,16 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
             ? paymentMethods.map(m => `${m}:${Number(paymentAmounts[m]) || 0}`).join("+")
             : paymentMethods.join(","),
           source,
-          courier_name: source === "online" ? normalizedCourierName : null,
-          awb_no: source === "online" ? normalizedAwbNo : null,
-          delivery_cost: source === "online" ? (Number(deliveryCost) || 0) : 0,
-          shipping_name: source === "online" ? (shipName.trim() || customerName.trim() || null) : null,
-          shipping_phone: source === "online" ? (shipPhone.trim() || customerMobile.trim() || null) : null,
-          shipping_address_line1: source === "online" ? (addressLine1.trim() || null) : null,
-          shipping_address_line2: source === "online" ? (addressLine2.trim() || null) : null,
-          shipping_city: source === "online" ? (shipCity.trim() || null) : null,
-          shipping_state: source === "online" ? (shipState.trim() || null) : null,
-          shipping_pincode: source === "online" ? (shipPincode.trim() || null) : null,
+          courier_name: source === "whatsapp" ? normalizedCourierName : null,
+          awb_no: source === "whatsapp" ? normalizedAwbNo : null,
+          delivery_cost: source === "whatsapp" ? (Number(deliveryCost) || 0) : 0,
+          shipping_name: source === "whatsapp" ? (shipName.trim() || customerName.trim() || null) : null,
+          shipping_phone: source === "whatsapp" ? (shipPhone.trim() || customerMobile.trim() || null) : null,
+          shipping_address_line1: source === "whatsapp" ? (addressLine1.trim() || null) : null,
+          shipping_address_line2: source === "whatsapp" ? (addressLine2.trim() || null) : null,
+          shipping_city: source === "whatsapp" ? (shipCity.trim() || null) : null,
+          shipping_state: source === "whatsapp" ? (shipState.trim() || null) : null,
+          shipping_pincode: source === "whatsapp" ? (shipPincode.trim() || null) : null,
           status,
           notes: notes || null,
           discount_amount: Number(discountAmount) || 0,
@@ -578,12 +578,12 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="offline">Offline (Walk-in)</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     <SelectItem value="wholesale">Wholesale</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {source === "online" && (
+              {source === "whatsapp" && (
                 <>
                   <div className="space-y-1">
                     <Label>Courier Name <span className="text-destructive">*</span></Label>

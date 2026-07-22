@@ -1,4 +1,4 @@
-import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package, AlertTriangle, Truck } from "lucide-react";
+import { IndianRupee, Users, ShoppingBag, TrendingUp, CreditCard, Wallet, Smartphone, Globe, Store, Calculator, Package, AlertTriangle, Truck, MessageCircle } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,9 +24,11 @@ export default function Dashboard() {
     uniqueCustomers: 0,
     totalProducts: 0,
     todayOnline: 0,
+    todayWhatsapp: 0,
     todayOffline: 0,
     todayWholesale: 0,
     monthlyOnline: 0,
+    monthlyWhatsapp: 0,
     monthlyOffline: 0,
     monthlyWholesale: 0,
     dailyAverage: 0,
@@ -82,10 +84,10 @@ export default function Dashboard() {
       const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const todayOrdersTotal = todayOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const todaySales = todayInvSales + todayOrdersTotal;
-      const todayOnlineFromInv = todayInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOnline = todayOnlineFromInv + todayOrdersTotal;
+      const todayWhatsapp = todayInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayOnline = todayOrdersTotal;
       const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const todayOffline = todayInvSales - todayOnlineFromInv - todayWholesale;
+      const todayOffline = todayInvSales - todayWhatsapp - todayWholesale;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
@@ -107,10 +109,10 @@ export default function Dashboard() {
       const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
       const monthOrdersTotal = monthOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const monthlySales = monthInvSales + monthOrdersTotal;
-      const monthlyOnlineFromInv = monthInvoices?.filter(i => i.source === "online").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOnline = monthlyOnlineFromInv + monthOrdersTotal;
+      const monthlyWhatsapp = monthInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyOnline = monthOrdersTotal;
       const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
-      const monthlyOffline = monthInvSales - monthlyOnlineFromInv - monthlyWholesale;
+      const monthlyOffline = monthInvSales - monthlyWhatsapp - monthlyWholesale;
 
       // Daily average this month
       const dayOfMonth = today.getDate();
@@ -167,9 +169,11 @@ export default function Dashboard() {
         uniqueCustomers: uniqueCustomerIds.size,
         totalProducts: productCount ?? 0,
         todayOnline,
+        todayWhatsapp,
         todayOffline,
         todayWholesale,
         monthlyOnline,
+        monthlyWhatsapp,
         monthlyOffline,
         monthlyWholesale,
         dailyAverage,
@@ -405,7 +409,7 @@ export default function Dashboard() {
         <StatCard title="Active Products" value={stats.totalProducts.toString()} icon={ShoppingBag} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <Store className="h-4 w-4" /> Today Offline
@@ -414,15 +418,21 @@ export default function Dashboard() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-            <Globe className="h-4 w-4" /> Today Online
+            <MessageCircle className="h-4 w-4" /> Today WhatsApp
           </div>
-          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOnline)}</p>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayWhatsapp)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <Package className="h-4 w-4" /> Today Wholesale
           </div>
           <p className="text-lg font-bold font-display">{formatCurrency(stats.todayWholesale)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Today Online Orders
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.todayOnline)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
@@ -441,15 +451,21 @@ export default function Dashboard() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-            <Globe className="h-4 w-4" /> Monthly Online
+            <MessageCircle className="h-4 w-4" /> Monthly WhatsApp
           </div>
-          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOnline)}</p>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyWhatsapp)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <Package className="h-4 w-4" /> Monthly Wholesale
           </div>
           <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyWholesale)}</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+            <Globe className="h-4 w-4" /> Monthly Online Orders
+          </div>
+          <p className="text-lg font-bold font-display">{formatCurrency(stats.monthlyOnline)}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
@@ -466,6 +482,7 @@ export default function Dashboard() {
           <p className="text-[10px] text-muted-foreground mt-0.5">Excluded from revenue</p>
         </Card>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">

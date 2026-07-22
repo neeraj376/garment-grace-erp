@@ -40,7 +40,7 @@ interface EmployeeSales {
   role: string;
   invoiceCount: number;
   totalSales: number;
-  bySource: { offline: { count: number; sales: number }; online: { count: number; sales: number }; wholesale: { count: number; sales: number } };
+  bySource: { offline: { count: number; sales: number }; whatsapp: { count: number; sales: number }; online: { count: number; sales: number }; wholesale: { count: number; sales: number } };
 }
 
 interface ReportBundle {
@@ -53,7 +53,7 @@ interface ReportBundle {
   rangeEnd: string;
 }
 
-type SourceFilter = "all" | "offline" | "online" | "wholesale";
+type SourceFilter = "all" | "offline" | "whatsapp" | "online" | "wholesale";
 
 const EMPTY_BUNDLE: ReportBundle = {
   summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0, operatingCost: 0, operatingProfit: 0 },
@@ -310,7 +310,7 @@ export default function Reports() {
     const sourceMap: Record<string, number> = {};
     invData.forEach(inv => {
       const src = (inv.source || "offline").toLowerCase();
-      const label = src === "online" ? "Online" : src === "wholesale" ? "Wholesale" : "Offline";
+      const label = src === "whatsapp" ? "WhatsApp" : src === "wholesale" ? "Wholesale" : "Offline";
       sourceMap[label] = (sourceMap[label] || 0) + collected(inv);
     });
     orderData.forEach((o: any) => {
@@ -345,7 +345,7 @@ export default function Reports() {
     (employees ?? []).forEach((e: any) => {
       empMap[e.id] = {
         id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0,
-        bySource: { offline: { count: 0, sales: 0 }, online: { count: 0, sales: 0 }, wholesale: { count: 0, sales: 0 } },
+        bySource: { offline: { count: 0, sales: 0 }, whatsapp: { count: 0, sales: 0 }, online: { count: 0, sales: 0 }, wholesale: { count: 0, sales: 0 } },
       };
     });
     invData.forEach((inv: any) => {
@@ -354,7 +354,7 @@ export default function Reports() {
         empMap[inv.employee_id].invoiceCount += 1;
         empMap[inv.employee_id].totalSales += amt;
         const src = (inv.source || "offline").toLowerCase();
-        const key: "offline" | "online" | "wholesale" = src === "online" ? "online" : src === "wholesale" ? "wholesale" : "offline";
+        const key: "offline" | "whatsapp" | "wholesale" = src === "whatsapp" ? "whatsapp" : src === "wholesale" ? "wholesale" : "offline";
         empMap[inv.employee_id].bySource[key].count += 1;
         empMap[inv.employee_id].bySource[key].sales += amt;
       }
@@ -597,7 +597,7 @@ export default function Reports() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-              <CardHeader><CardTitle className="section-title">Online vs Offline Sales</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="section-title">Sales by Source</CardTitle></CardHeader>
               <CardContent>
                 {sourceCompareData.length > 0 ? (
                   <div className="h-72">
@@ -654,7 +654,8 @@ export default function Reports() {
                   <SelectContent>
                     <SelectItem value="all">All Sources</SelectItem>
                     <SelectItem value="offline">Offline</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="online">Online Orders</SelectItem>
                     <SelectItem value="wholesale">Wholesale</SelectItem>
                   </SelectContent>
                 </Select>
