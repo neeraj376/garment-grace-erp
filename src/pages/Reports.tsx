@@ -727,7 +727,16 @@ export default function Reports() {
                         <TableRow key={emp.id}>
                           <TableCell className="font-medium">{emp.name}</TableCell>
                           <TableCell className="text-muted-foreground capitalize">{emp.role}</TableCell>
-                          <TableCell className="text-center">{emp.cur.c}</TableCell>
+                          <TableCell className="text-center">
+                            {emp.cur.c > 0 && emp.invoices.length > 0 ? (
+                              <button
+                                className="text-primary hover:underline font-medium"
+                                onClick={() => setDrillEmp({ name: emp.name, invoices: emp.invoices })}
+                              >
+                                {emp.cur.c}
+                              </button>
+                            ) : emp.cur.c}
+                          </TableCell>
                           <TableCell className="text-right font-medium">{formatCurrency(emp.cur.s)}</TableCell>
                           {previous && <TableCell className="text-right text-muted-foreground">{formatCurrency(emp.prev.s)}</TableCell>}
                           {previous && <TableCell className="text-right">{renderDelta(emp.cur.s, emp.prev.s)}</TableCell>}
