@@ -160,7 +160,7 @@ export default function Reports() {
     while (true) {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
+        .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id), customers(name, mobile)")
         .eq("store_id", storeId!)
         // include pending_address (drafts) in totals per user request
         .gte("created_at", start)
