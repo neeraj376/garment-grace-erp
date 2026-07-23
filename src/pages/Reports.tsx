@@ -34,6 +34,17 @@ interface PaymentSplit {
   value: number;
 }
 
+interface EmpInvoice {
+  id: string;
+  invoice_number: string;
+  created_at: string;
+  customer_name: string;
+  customer_mobile: string;
+  source: "offline" | "whatsapp" | "wholesale";
+  amount: number;
+  status: string;
+}
+
 interface EmployeeSales {
   id: string;
   name: string;
@@ -41,6 +52,7 @@ interface EmployeeSales {
   invoiceCount: number;
   totalSales: number;
   bySource: { offline: { count: number; sales: number }; whatsapp: { count: number; sales: number }; online: { count: number; sales: number }; wholesale: { count: number; sales: number } };
+  invoices: EmpInvoice[];
 }
 
 interface ReportBundle {
