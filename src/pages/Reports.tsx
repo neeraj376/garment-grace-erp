@@ -228,11 +228,15 @@ export default function Reports() {
       }
     }
 
-    const collected = (inv: any) => Number(inv.total_amount) - Number(inv.pending_amount ?? 0);
+    // Pending-address invoices are valid sales awaiting delivery details. Their
+    // full value must remain visible in every report total and breakdown.
+    const saleAmount = (inv: any) => inv.status === "pending_address"
+      ? Number(inv.total_amount ?? 0)
+      : Number(inv.total_amount ?? 0) - Number(inv.pending_amount ?? 0);
 
     let revenue = 0, cost = 0, tax = 0;
     invData.forEach(inv => {
-      revenue += collected(inv);
+      revenue += saleAmount(inv);
       tax += Number(inv.tax_amount);
       (inv.invoice_items as any[])?.forEach(item => {
         const unitCost = useCurrentPrice
@@ -298,7 +302,7 @@ export default function Reports() {
     const paymentMap: Record<string, number> = {};
     invData.forEach(inv => {
       const method = (inv.payment_method || "other").toLowerCase();
-      paymentMap[method] = (paymentMap[method] || 0) + collected(inv);
+      paymentMap[method] = (paymentMap[method] || 0) + saleAmount(inv);
     });
     orderData.forEach((o: any) => {
       const method = (o.payment_method || "online").toLowerCase();
@@ -311,7 +315,7 @@ export default function Reports() {
     invData.forEach(inv => {
       const src = (inv.source || "offline").toLowerCase();
       const label = src === "whatsapp" ? "WhatsApp" : src === "wholesale" ? "Wholesale" : "Offline";
-      sourceMap[label] = (sourceMap[label] || 0) + collected(inv);
+      sourceMap[label] = (sourceMap[label] || 0) + saleAmount(inv);
     });
     orderData.forEach((o: any) => {
       sourceMap["Online"] = (sourceMap["Online"] || 0) + Number(o.total_amount || 0);
@@ -329,7 +333,7 @@ export default function Reports() {
       const offset = Math.floor((new Date(new Date(ts).toDateString()).getTime() - new Date(new Date(startMs).toDateString()).getTime()) / 86400000);
       trendMap[offset] = (trendMap[offset] || 0) + amt;
     };
-    invData.forEach(inv => bumpDay(new Date(inv.created_at).getTime(), collected(inv)));
+    invData.forEach(inv => bumpDay(new Date(inv.created_at).getTime(), saleAmount(inv)));
     orderData.forEach((o: any) => bumpDay(new Date(o.created_at).getTime(), Number(o.total_amount || 0)));
 
     const trend = Object.entries(trendMap)
@@ -350,7 +354,7 @@ export default function Reports() {
     });
     invData.forEach((inv: any) => {
       if (inv.employee_id && empMap[inv.employee_id]) {
-        const amt = collected(inv);
+        const amt = saleAmount(inv);
         empMap[inv.employee_id].invoiceCount += 1;
         empMap[inv.employee_id].totalSales += amt;
         const src = (inv.source || "offline").toLowerCase();
