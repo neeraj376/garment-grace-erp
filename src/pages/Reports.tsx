@@ -81,7 +81,7 @@ const EMPTY_BUNDLE: ReportBundle = {
 
 export default function Reports() {
   const { storeId } = useStore();
-  const [period, setPeriod] = useState<Period>("monthly");
+  const [period, setPeriod] = useState<Period>("daily");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [compareMode, setCompareMode] = useState<CompareMode>("none");
