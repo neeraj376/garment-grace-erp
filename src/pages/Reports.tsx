@@ -91,6 +91,7 @@ export default function Reports() {
   const [previous, setPrevious] = useState<ReportBundle | null>(null);
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
   const [empSourceFilter, setEmpSourceFilter] = useState<SourceFilter>("all");
+  const [drillEmp, setDrillEmp] = useState<{ name: string; invoices: EmpInvoice[] } | null>(null);
 
   useEffect(() => {
     if (!storeId) return;
