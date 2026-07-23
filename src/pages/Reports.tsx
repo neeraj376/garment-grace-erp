@@ -466,21 +466,25 @@ export default function Reports() {
 
   // Merged employee table with comparison
   const employeeCompareRows = (() => {
-    const map = new Map<string, { id: string; name: string; role: string; cur: { c: number; s: number }; prev: { c: number; s: number } }>();
+    const map = new Map<string, { id: string; name: string; role: string; cur: { c: number; s: number }; prev: { c: number; s: number }; invoices: EmpInvoice[] }>();
     const pick = (e: EmployeeSales) => {
       if (empSourceFilter === "all") return { c: e.invoiceCount, s: e.totalSales };
       const b = e.bySource[empSourceFilter];
       return { c: b.count, s: b.sales };
     };
+    const filterInv = (invs: EmpInvoice[]) =>
+      empSourceFilter === "all" || empSourceFilter === "online"
+        ? (empSourceFilter === "online" ? [] : invs)
+        : invs.filter(i => i.source === empSourceFilter);
     current.employeeSales.forEach(e => {
       const v = pick(e);
-      map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: v, prev: { c: 0, s: 0 } });
+      map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: v, prev: { c: 0, s: 0 }, invoices: filterInv(e.invoices) });
     });
     previous?.employeeSales.forEach(e => {
       const v = pick(e);
       const existing = map.get(e.id);
       if (existing) existing.prev = v;
-      else map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: { c: 0, s: 0 }, prev: v });
+      else map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: { c: 0, s: 0 }, prev: v, invoices: [] });
     });
     return Array.from(map.values())
       .filter(r => r.cur.c > 0 || r.prev.c > 0)
