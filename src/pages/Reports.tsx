@@ -362,6 +362,7 @@ export default function Reports() {
       empMap[e.id] = {
         id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0,
         bySource: { offline: { count: 0, sales: 0 }, whatsapp: { count: 0, sales: 0 }, online: { count: 0, sales: 0 }, wholesale: { count: 0, sales: 0 } },
+        invoices: [],
       };
     });
     invData.forEach((inv: any) => {
@@ -373,6 +374,16 @@ export default function Reports() {
         const key: "offline" | "whatsapp" | "wholesale" = src === "whatsapp" ? "whatsapp" : src === "wholesale" ? "wholesale" : "offline";
         empMap[inv.employee_id].bySource[key].count += 1;
         empMap[inv.employee_id].bySource[key].sales += amt;
+        empMap[inv.employee_id].invoices.push({
+          id: inv.id,
+          invoice_number: inv.invoice_number,
+          created_at: inv.created_at,
+          customer_name: inv.customers?.name || "Walk-in",
+          customer_mobile: inv.customers?.mobile || "",
+          source: key,
+          amount: amt,
+          status: inv.status,
+        });
       }
     });
     const employeeSales = Object.values(empMap)
