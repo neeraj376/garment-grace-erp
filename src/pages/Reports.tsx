@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { CalendarDays, Users, Download, CreditCard, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,17 @@ interface PaymentSplit {
   value: number;
 }
 
+interface EmpInvoice {
+  id: string;
+  invoice_number: string;
+  created_at: string;
+  customer_name: string;
+  customer_mobile: string;
+  source: "offline" | "whatsapp" | "wholesale";
+  amount: number;
+  status: string;
+}
+
 interface EmployeeSales {
   id: string;
   name: string;
@@ -41,6 +53,7 @@ interface EmployeeSales {
   invoiceCount: number;
   totalSales: number;
   bySource: { offline: { count: number; sales: number }; whatsapp: { count: number; sales: number }; online: { count: number; sales: number }; wholesale: { count: number; sales: number } };
+  invoices: EmpInvoice[];
 }
 
 interface ReportBundle {
@@ -78,6 +91,7 @@ export default function Reports() {
   const [previous, setPrevious] = useState<ReportBundle | null>(null);
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
   const [empSourceFilter, setEmpSourceFilter] = useState<SourceFilter>("all");
+  const [drillEmp, setDrillEmp] = useState<{ name: string; invoices: EmpInvoice[] } | null>(null);
 
   useEffect(() => {
     if (!storeId) return;
@@ -148,7 +162,7 @@ export default function Reports() {
     while (true) {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id)")
+        .select("*, invoice_items(quantity, unit_price, tax_amount, total, product_id, batch_id), customers(name, mobile)")
         .eq("store_id", storeId!)
         // include pending_address (drafts) in totals per user request
         .gte("created_at", start)
@@ -350,6 +364,7 @@ export default function Reports() {
       empMap[e.id] = {
         id: e.id, name: e.name, role: e.role, invoiceCount: 0, totalSales: 0,
         bySource: { offline: { count: 0, sales: 0 }, whatsapp: { count: 0, sales: 0 }, online: { count: 0, sales: 0 }, wholesale: { count: 0, sales: 0 } },
+        invoices: [],
       };
     });
     invData.forEach((inv: any) => {
@@ -361,6 +376,16 @@ export default function Reports() {
         const key: "offline" | "whatsapp" | "wholesale" = src === "whatsapp" ? "whatsapp" : src === "wholesale" ? "wholesale" : "offline";
         empMap[inv.employee_id].bySource[key].count += 1;
         empMap[inv.employee_id].bySource[key].sales += amt;
+        empMap[inv.employee_id].invoices.push({
+          id: inv.id,
+          invoice_number: inv.invoice_number,
+          created_at: inv.created_at,
+          customer_name: inv.customers?.name || "Walk-in",
+          customer_mobile: inv.customers?.mobile || "",
+          source: key,
+          amount: amt,
+          status: inv.status,
+        });
       }
     });
     const employeeSales = Object.values(empMap)
@@ -441,21 +466,25 @@ export default function Reports() {
 
   // Merged employee table with comparison
   const employeeCompareRows = (() => {
-    const map = new Map<string, { id: string; name: string; role: string; cur: { c: number; s: number }; prev: { c: number; s: number } }>();
+    const map = new Map<string, { id: string; name: string; role: string; cur: { c: number; s: number }; prev: { c: number; s: number }; invoices: EmpInvoice[] }>();
     const pick = (e: EmployeeSales) => {
       if (empSourceFilter === "all") return { c: e.invoiceCount, s: e.totalSales };
       const b = e.bySource[empSourceFilter];
       return { c: b.count, s: b.sales };
     };
+    const filterInv = (invs: EmpInvoice[]) =>
+      empSourceFilter === "all" || empSourceFilter === "online"
+        ? (empSourceFilter === "online" ? [] : invs)
+        : invs.filter(i => i.source === empSourceFilter);
     current.employeeSales.forEach(e => {
       const v = pick(e);
-      map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: v, prev: { c: 0, s: 0 } });
+      map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: v, prev: { c: 0, s: 0 }, invoices: filterInv(e.invoices) });
     });
     previous?.employeeSales.forEach(e => {
       const v = pick(e);
       const existing = map.get(e.id);
       if (existing) existing.prev = v;
-      else map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: { c: 0, s: 0 }, prev: v });
+      else map.set(e.id, { id: e.id, name: e.name, role: e.role, cur: { c: 0, s: 0 }, prev: v, invoices: [] });
     });
     return Array.from(map.values())
       .filter(r => r.cur.c > 0 || r.prev.c > 0)
@@ -698,7 +727,16 @@ export default function Reports() {
                         <TableRow key={emp.id}>
                           <TableCell className="font-medium">{emp.name}</TableCell>
                           <TableCell className="text-muted-foreground capitalize">{emp.role}</TableCell>
-                          <TableCell className="text-center">{emp.cur.c}</TableCell>
+                          <TableCell className="text-center">
+                            {emp.cur.c > 0 && emp.invoices.length > 0 ? (
+                              <button
+                                className="text-primary hover:underline font-medium"
+                                onClick={() => setDrillEmp({ name: emp.name, invoices: emp.invoices })}
+                              >
+                                {emp.cur.c}
+                              </button>
+                            ) : emp.cur.c}
+                          </TableCell>
                           <TableCell className="text-right font-medium">{formatCurrency(emp.cur.s)}</TableCell>
                           {previous && <TableCell className="text-right text-muted-foreground">{formatCurrency(emp.prev.s)}</TableCell>}
                           {previous && <TableCell className="text-right">{renderDelta(emp.cur.s, emp.prev.s)}</TableCell>}
@@ -735,6 +773,46 @@ export default function Reports() {
         </TabsContent>
 
       </Tabs>
+
+      <Dialog open={!!drillEmp} onOpenChange={(o) => !o && setDrillEmp(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {drillEmp?.name} — {drillEmp?.invoices.length} invoice{drillEmp && drillEmp.invoices.length !== 1 ? "s" : ""}
+              {drillEmp && ` · ${formatCurrency(drillEmp.invoices.reduce((s, i) => s + i.amount, 0))}`}
+            </DialogTitle>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {drillEmp?.invoices
+                .slice()
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map(inv => (
+                  <TableRow key={inv.id}>
+                    <TableCell className="font-medium">{inv.invoice_number}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(inv.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </TableCell>
+                    <TableCell>{inv.customer_name}</TableCell>
+                    <TableCell className="capitalize">{inv.source}</TableCell>
+                    <TableCell className="capitalize text-muted-foreground">{inv.status.replace(/_/g, " ")}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(inv.amount)}</TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
