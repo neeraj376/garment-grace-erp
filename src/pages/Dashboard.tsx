@@ -55,8 +55,11 @@ export default function Dashboard() {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
-      // Collected = total_amount - pending_amount (excludes uncollected wholesale dues)
-      const collected = (inv: any) => Number(inv.total_amount) - Number(inv.pending_amount ?? 0);
+      // Pending-address invoices are valid sales awaiting delivery details, so
+      // always include their full invoice amount in dashboard totals.
+      const saleAmount = (inv: any) => inv.status === "pending_address"
+        ? Number(inv.total_amount ?? 0)
+        : Number(inv.total_amount ?? 0) - Number(inv.pending_amount ?? 0);
       // ORD-XXXX ↔ INV-XXXX share the same suffix. When an online order has been
       // converted into an invoice (e.g. to credit an employee), skip the order-side
       // total so the sale isn't counted twice.
@@ -67,9 +70,8 @@ export default function Dashboard() {
       // Today's sales
       const { data: todayInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, payment_method, customer_id, source, delivery_cost, invoice_number")
+        .select("total_amount, pending_amount, payment_method, customer_id, source, status, delivery_cost, invoice_number")
         .eq("store_id", storeId)
-        .neq("status", "pending_address")
         .gte("created_at", startOfDay);
 
       // Today's online orders (paid only) — these aren't in invoices table
@@ -81,20 +83,19 @@ export default function Dashboard() {
         .gte("created_at", startOfDay);
       const todayOrders = (todayOrdersRaw ?? []).filter(o => !hasMatchingInvoice(todayInvoices ?? [], o.order_number));
 
-      const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayInvSales = todayInvoices?.reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const todayOrdersTotal = todayOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const todaySales = todayInvSales + todayOrdersTotal;
-      const todayWhatsapp = todayInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayWhatsapp = todayInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const todayOnline = todayOrdersTotal;
-      const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const todayOffline = todayInvSales - todayWhatsapp - todayWholesale;
 
       // Monthly sales
       const { data: monthInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, source, delivery_cost, invoice_number")
+        .select("total_amount, pending_amount, source, status, delivery_cost, invoice_number")
         .eq("store_id", storeId)
-        .neq("status", "pending_address")
         .gte("created_at", startOfMonth);
 
       // Monthly online orders (paid)
@@ -106,12 +107,12 @@ export default function Dashboard() {
         .gte("created_at", startOfMonth);
       const monthOrders = (monthOrdersRaw ?? []).filter(o => !hasMatchingInvoice(monthInvoices ?? [], o.order_number));
 
-      const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const monthOrdersTotal = monthOrders?.reduce((s, o) => s + Number(o.total_amount || 0), 0) ?? 0;
       const monthlySales = monthInvSales + monthOrdersTotal;
-      const monthlyWhatsapp = monthInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyWhatsapp = monthInvoices?.filter(i => i.source === "whatsapp").reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const monthlyOnline = monthOrdersTotal;
-      const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+      const monthlyWholesale = monthInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const monthlyOffline = monthInvSales - monthlyWhatsapp - monthlyWholesale;
 
       // Daily average this month
@@ -123,7 +124,6 @@ export default function Dashboard() {
         .from("invoices")
         .select("customer_id")
         .eq("store_id", storeId)
-        .neq("status", "pending_address")
         .gte("created_at", startOfMonth)
         .not("customer_id", "is", null);
 
@@ -156,7 +156,6 @@ export default function Dashboard() {
         .select("id, invoice_number, created_at, total_amount, pending_amount, source, customer_id, customers(name, mobile)")
         .eq("store_id", storeId)
         .neq("source", "wholesale")
-        .neq("status", "pending_address")
         .gt("pending_amount", 0)
         .order("created_at", { ascending: false });
 
@@ -188,11 +187,11 @@ export default function Dashboard() {
         retailPendingCount: retailPendingInvoices?.length ?? 0,
       });
 
-      // Payment breakdown (use collected amount, not gross)
+      // Payment breakdown follows the same pending-address inclusion as totals.
       const paymentMap: Record<string, number> = {};
       todayInvoices?.forEach((inv) => {
         const method = inv.payment_method || "cash";
-        paymentMap[method] = (paymentMap[method] || 0) + collected(inv);
+        paymentMap[method] = (paymentMap[method] || 0) + saleAmount(inv);
       });
       setPaymentBreakdown(
         Object.entries(paymentMap).map(([name, value]) => ({
@@ -212,9 +211,8 @@ export default function Dashboard() {
       const weekStart = days[0].toISOString();
       const { data: weekInvoices } = await supabase
         .from("invoices")
-        .select("total_amount, pending_amount, created_at, invoice_number")
+        .select("total_amount, pending_amount, status, created_at, invoice_number")
         .eq("store_id", storeId)
-        .neq("status", "pending_address")
         .gte("created_at", weekStart);
 
       const { data: weekOrdersRaw } = await supabase
@@ -234,7 +232,7 @@ export default function Dashboard() {
             const t = new Date(inv.created_at);
             return t >= dayStart && t < dayEnd;
           })
-          .reduce((sum, inv) => sum + collected(inv), 0) ?? 0;
+          .reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
         const ordSales = weekOrders
           ?.filter((o) => {
             const t = new Date(o.created_at);
