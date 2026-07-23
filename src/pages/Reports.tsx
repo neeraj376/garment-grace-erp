@@ -773,6 +773,46 @@ export default function Reports() {
         </TabsContent>
 
       </Tabs>
+
+      <Dialog open={!!drillEmp} onOpenChange={(o) => !o && setDrillEmp(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {drillEmp?.name} — {drillEmp?.invoices.length} invoice{drillEmp && drillEmp.invoices.length !== 1 ? "s" : ""}
+              {drillEmp && ` · ${formatCurrency(drillEmp.invoices.reduce((s, i) => s + i.amount, 0))}`}
+            </DialogTitle>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {drillEmp?.invoices
+                .slice()
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map(inv => (
+                  <TableRow key={inv.id}>
+                    <TableCell className="font-medium">{inv.invoice_number}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(inv.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </TableCell>
+                    <TableCell>{inv.customer_name}</TableCell>
+                    <TableCell className="capitalize">{inv.source}</TableCell>
+                    <TableCell className="capitalize text-muted-foreground">{inv.status.replace(/_/g, " ")}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(inv.amount)}</TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
