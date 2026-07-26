@@ -317,9 +317,10 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         <head>
           <title>Shipping Label — ${order.order_number}</title>
           <style>
+            @page { size: 4in 6in; margin: 0; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; }
-            @media print { body { padding: 12px; } }
+            @media print { body { padding: 0; } }
           </style>
         </head>
         <body>${content.innerHTML}</body>
