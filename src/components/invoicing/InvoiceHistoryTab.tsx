@@ -863,6 +863,26 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      {inv.source === "whatsapp" && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={printingLabelId === inv.id}
+                                onClick={() => handlePrintSingleLabel(inv)}
+                              >
+                                {printingLabelId === inv.id
+                                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                                  : <Printer className="h-4 w-4" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Print shipping label</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
