@@ -488,7 +488,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       : "Address not available";
     const date = new Date(inv.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
     return `
-      <div style="width:400px;border:2px solid #000;padding:20px;font-family:Arial, sans-serif">
+      <div style="width:4in;height:6in;border:2px solid #000;padding:20px;font-family:Arial, sans-serif;box-sizing:border-box;overflow:hidden">
         <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px">
           <h2 style="font-size:18px;font-weight:bold;margin:0">SHIPPING LABEL</h2>
           <p style="font-size:12px;color:#666;margin-top:4px">Invoice: ${inv.invoice_number}</p>
@@ -509,10 +509,6 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           <p style="font-size:16px;font-weight:bold;font-family:monospace;letter-spacing:1px">${inv.awb_no}</p>
         </div>` : ""}
         ${inv.courier_name ? `<div style="margin-top:8px"><p style="font-size:11px;color:#666">Courier: <strong>${inv.courier_name}</strong></p></div>` : ""}
-        <div style="border-top:1px dashed #ccc;padding-top:10px;margin-top:12px;display:flex;justify-content:space-between;font-size:12px">
-          <span>Payment: <strong>${inv.payment_method || "—"}</strong></span>
-          <span>Total: <strong>₹${Number(inv.total_amount).toLocaleString("en-IN")}</strong></span>
-        </div>
         <div style="border-top:2px solid #000;margin-top:14px;padding-top:10px">
           <p style="font-size:11px;font-weight:bold;color:#666;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0">From / Return Address:</p>
           <p style="font-size:14px;font-weight:bold;margin:0 0 2px 0">Originee</p>
