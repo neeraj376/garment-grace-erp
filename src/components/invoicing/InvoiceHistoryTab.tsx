@@ -64,6 +64,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [printingLabels, setPrintingLabels] = useState(false);
+  const [printingLabelId, setPrintingLabelId] = useState<string | null>(null);
+
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "bulk" } | { type: "single"; invoice: Invoice } | null>(null);
   const [restoreStock, setRestoreStock] = useState(true);
   const [noteDialog, setNoteDialog] = useState<Invoice | null>(null);
