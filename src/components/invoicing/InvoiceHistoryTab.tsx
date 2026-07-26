@@ -64,6 +64,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [printingLabels, setPrintingLabels] = useState(false);
+  const [printingLabelId, setPrintingLabelId] = useState<string | null>(null);
+
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "bulk" } | { type: "single"; invoice: Invoice } | null>(null);
   const [restoreStock, setRestoreStock] = useState(true);
   const [noteDialog, setNoteDialog] = useState<Invoice | null>(null);
@@ -375,12 +377,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const handlePrintShippingLabels = async () => {
-    const selected = invoices.filter(i => selectedIds.has(i.id));
-    if (selected.length === 0) return;
-    setPrintingLabels(true);
-    try {
+  const resolveAddresses = async (selected: Invoice[]) => {
       const addrByInvoiceId: Record<string, any> = {};
+
 
       // Prefer address saved directly on the invoice (new online invoices).
       selected.forEach(inv => {
@@ -477,8 +476,85 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         });
       }
 
+    return addrByInvoiceId;
+  };
+
+  const buildLabelHtml = (inv: Invoice, addr: any) => {
+    const name = addr?.name || inv.customers?.name || "Walk-in Customer";
+    const phone = addr?.phone || inv.customers?.mobile || "—";
+    const line2 = addr?.address_line2 ? `<p style="font-size:13px;margin:0 0 2px 0">${addr.address_line2}</p>` : "";
+    const cityLine = addr
+      ? `${addr.city || ""}, ${addr.state || ""} — ${addr.pincode || ""}`
+      : "Address not available";
+    const date = new Date(inv.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    return `
+      <div style="width:400px;border:2px solid #000;padding:20px;font-family:Arial, sans-serif">
+        <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px">
+          <h2 style="font-size:18px;font-weight:bold;margin:0">SHIPPING LABEL</h2>
+          <p style="font-size:12px;color:#666;margin-top:4px">Invoice: ${inv.invoice_number}</p>
+          <p style="font-size:11px;color:#666">${date}</p>
+        </div>
+        <div style="margin-bottom:16px">
+          <p style="font-size:11px;font-weight:bold;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Deliver To:</p>
+          <p style="font-size:16px;font-weight:bold;margin:0 0 4px 0">${name}</p>
+          <p style="font-size:14px;margin:0 0 2px 0">📞 ${phone}</p>
+        </div>
+        <div style="margin-bottom:16px;padding:10px;background:#f5f5f5;border-radius:4px">
+          <p style="font-size:13px;margin:0 0 2px 0">${addr?.address_line1 || ""}</p>
+          ${line2}
+          <p style="font-size:13px;font-weight:bold;margin:4px 0 0 0">${cityLine}</p>
+        </div>
+        ${inv.awb_no ? `<div style="border-top:1px dashed #ccc;padding-top:12px;margin-top:12px">
+          <p style="font-size:11px;color:#666;margin-bottom:4px">AWB / Tracking Number:</p>
+          <p style="font-size:16px;font-weight:bold;font-family:monospace;letter-spacing:1px">${inv.awb_no}</p>
+        </div>` : ""}
+        ${inv.courier_name ? `<div style="margin-top:8px"><p style="font-size:11px;color:#666">Courier: <strong>${inv.courier_name}</strong></p></div>` : ""}
+        <div style="border-top:1px dashed #ccc;padding-top:10px;margin-top:12px;display:flex;justify-content:space-between;font-size:12px">
+          <span>Payment: <strong>${inv.payment_method || "—"}</strong></span>
+          <span>Total: <strong>₹${Number(inv.total_amount).toLocaleString("en-IN")}</strong></span>
+        </div>
+        <div style="border-top:2px solid #000;margin-top:14px;padding-top:10px">
+          <p style="font-size:11px;font-weight:bold;color:#666;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0">From / Return Address:</p>
+          <p style="font-size:14px;font-weight:bold;margin:0 0 2px 0">Originee</p>
+          <p style="font-size:12px;margin:0 0 2px 0">I-132, Sector 50, South City 2</p>
+          <p style="font-size:12px;margin:0 0 2px 0">Gurugram, Haryana — 122018</p>
+          <p style="font-size:12px;margin:2px 0 0 0">📞 +91 93109 04557, +91 88828 66833</p>
+        </div>
+      </div>`;
+  };
+
+  const handlePrintSingleLabel = async (inv: Invoice) => {
+    setPrintingLabelId(inv.id);
+    try {
+      const addrMap = await resolveAddresses([inv]);
+      const html = buildLabelHtml(inv, addrMap[inv.id] || null);
+      const printWindow = window.open("", "_blank", "width=500,height=700");
+      if (!printWindow) {
+        toast({ title: "Popup blocked", description: "Please allow popups to print labels", variant: "destructive" });
+        return;
+      }
+      printWindow.document.write(`<!DOCTYPE html><html><head><title>Shipping Label — ${inv.invoice_number}</title>
+        <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial, sans-serif;padding:24px}@media print{body{padding:12px}}</style>
+        </head><body>${html}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); }, 200);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setPrintingLabelId(null);
+    }
+  };
+
+  const handlePrintShippingLabels = async () => {
+    const selected = invoices.filter(i => selectedIds.has(i.id));
+    if (selected.length === 0) return;
+    setPrintingLabels(true);
+    try {
+      const addrByInvoiceId = await resolveAddresses(selected);
 
       const labelChildren: Paragraph[] = [];
+
       selected.forEach((inv, idx) => {
         const addr = addrByInvoiceId[inv.id] || null;
         const name = addr?.name || inv.customers?.name || "Walk-in Customer";
@@ -787,6 +863,26 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      {inv.source === "whatsapp" && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={printingLabelId === inv.id}
+                                onClick={() => handlePrintSingleLabel(inv)}
+                              >
+                                {printingLabelId === inv.id
+                                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                                  : <Printer className="h-4 w-4" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Print shipping label</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
