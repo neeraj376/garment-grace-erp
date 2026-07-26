@@ -757,15 +757,30 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                     <Badge variant="outline" className="capitalize">{inv.source === "whatsapp" ? "WhatsApp" : inv.source}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {inv.courier_name || inv.awb_no ? (
-                      <div>
-                        <div className="font-medium">{inv.courier_name || "—"}</div>
-                        {inv.awb_no && <div className="text-xs text-muted-foreground">AWB: {inv.awb_no}</div>}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {inv.courier_name || inv.awb_no ? (
+                        <div>
+                          <div className="font-medium">{inv.courier_name || "—"}</div>
+                          {inv.awb_no && <div className="text-xs text-muted-foreground">AWB: {inv.awb_no}</div>}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                      {inv.source === "whatsapp" && canEdit && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenCourierDialog(inv)}>
+                                <Truck className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{inv.courier_name || inv.awb_no ? "Update courier / AWB" : "Add courier / AWB"}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </TableCell>
+
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
                   </TableCell>
