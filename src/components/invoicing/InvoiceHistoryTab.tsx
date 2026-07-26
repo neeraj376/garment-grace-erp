@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X, Printer } from "lucide-react";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X, Printer, Truck } from "lucide-react";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
 import { saveAs } from "file-saver";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +69,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [noteDialog, setNoteDialog] = useState<Invoice | null>(null);
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [courierDialog, setCourierDialog] = useState<Invoice | null>(null);
+  const [courierName, setCourierName] = useState("");
+  const [awbNo, setAwbNo] = useState("");
+  const [savingCourier, setSavingCourier] = useState(false);
+
 
   const getInvoiceImageUrl = (invoiceId: string) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
@@ -210,10 +215,37 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     setNoteDialog(inv);
     setNoteText(inv.notes || "");
   };
+  const handleOpenCourierDialog = (inv: Invoice) => {
+    setCourierDialog(inv);
+    setCourierName(inv.courier_name || "");
+    setAwbNo(inv.awb_no || "");
+  };
+
+  const handleSaveCourier = async () => {
+    if (!courierDialog) return;
+    setSavingCourier(true);
+    try {
+      const courier = courierName.trim();
+      const awb = awbNo.trim();
+      const { error } = await supabase
+        .from("invoices")
+        .update({ courier_name: courier || null, awb_no: awb || null })
+        .eq("id", courierDialog.id);
+      if (error) throw error;
+      setInvoices(prev => prev.map(inv => inv.id === courierDialog.id ? { ...inv, courier_name: courier || null, awb_no: awb || null } : inv));
+      toast({ title: "Courier details updated" });
+      setCourierDialog(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingCourier(false);
+    }
+  };
 
   const handleSaveNote = async () => {
     if (!noteDialog) return;
     setSavingNote(true);
+
     try {
       const trimmed = noteText.trim();
       const { error } = await supabase
@@ -725,15 +757,30 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                     <Badge variant="outline" className="capitalize">{inv.source === "whatsapp" ? "WhatsApp" : inv.source}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {inv.courier_name || inv.awb_no ? (
-                      <div>
-                        <div className="font-medium">{inv.courier_name || "—"}</div>
-                        {inv.awb_no && <div className="text-xs text-muted-foreground">AWB: {inv.awb_no}</div>}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {inv.courier_name || inv.awb_no ? (
+                        <div>
+                          <div className="font-medium">{inv.courier_name || "—"}</div>
+                          {inv.awb_no && <div className="text-xs text-muted-foreground">AWB: {inv.awb_no}</div>}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                      {inv.source === "whatsapp" && canEdit && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenCourierDialog(inv)}>
+                                <Truck className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{inv.courier_name || inv.awb_no ? "Update courier / AWB" : "Add courier / AWB"}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </TableCell>
+
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
                   </TableCell>
@@ -847,7 +894,33 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         />
       )}
 
+      {/* Courier / AWB Dialog */}
+      <Dialog open={!!courierDialog} onOpenChange={open => { if (!open) setCourierDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Courier Details — {courierDialog?.invoice_number}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Courier Name</label>
+              <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">AWB Number</label>
+              <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveCourier} disabled={savingCourier}>
+              {savingCourier ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Note Dialog */}
+
       <Dialog open={!!noteDialog} onOpenChange={open => { if (!open) setNoteDialog(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
