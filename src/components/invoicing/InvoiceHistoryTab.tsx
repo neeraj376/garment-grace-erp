@@ -69,6 +69,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [noteDialog, setNoteDialog] = useState<Invoice | null>(null);
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [courierDialog, setCourierDialog] = useState<Invoice | null>(null);
+  const [courierName, setCourierName] = useState("");
+  const [awbNo, setAwbNo] = useState("");
+  const [savingCourier, setSavingCourier] = useState(false);
+
 
   const getInvoiceImageUrl = (invoiceId: string) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-og/${invoiceId}?format=image`;
