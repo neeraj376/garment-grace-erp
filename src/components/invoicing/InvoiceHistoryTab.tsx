@@ -375,12 +375,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const handlePrintShippingLabels = async () => {
-    const selected = invoices.filter(i => selectedIds.has(i.id));
-    if (selected.length === 0) return;
-    setPrintingLabels(true);
-    try {
+  const resolveAddresses = async (selected: Invoice[]) => {
       const addrByInvoiceId: Record<string, any> = {};
+
 
       // Prefer address saved directly on the invoice (new online invoices).
       selected.forEach(inv => {
