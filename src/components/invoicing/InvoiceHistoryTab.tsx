@@ -894,7 +894,33 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         />
       )}
 
+      {/* Courier / AWB Dialog */}
+      <Dialog open={!!courierDialog} onOpenChange={open => { if (!open) setCourierDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Courier Details — {courierDialog?.invoice_number}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Courier Name</label>
+              <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">AWB Number</label>
+              <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveCourier} disabled={savingCourier}>
+              {savingCourier ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Note Dialog */}
+
       <Dialog open={!!noteDialog} onOpenChange={open => { if (!open) setNoteDialog(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
