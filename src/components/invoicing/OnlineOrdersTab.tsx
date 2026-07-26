@@ -354,11 +354,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         <head>
           <title>Shipping Labels — ${selected.length} orders</title>
           <style>
+            @page { size: 4in 6in; margin: 0; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; }
             .label-page { page-break-after: always; page-break-inside: avoid; break-inside: avoid; margin-bottom: 24px; }
             .label-page:last-child { page-break-after: auto; margin-bottom: 0; }
-            @media print { body { padding: 12px; } }
+            @media print { body { padding: 0; } .label-page { margin-bottom: 0; } }
           </style>
         </head>
         <body>${content.innerHTML}</body>
