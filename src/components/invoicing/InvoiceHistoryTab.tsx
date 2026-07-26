@@ -215,10 +215,37 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     setNoteDialog(inv);
     setNoteText(inv.notes || "");
   };
+  const handleOpenCourierDialog = (inv: Invoice) => {
+    setCourierDialog(inv);
+    setCourierName(inv.courier_name || "");
+    setAwbNo(inv.awb_no || "");
+  };
+
+  const handleSaveCourier = async () => {
+    if (!courierDialog) return;
+    setSavingCourier(true);
+    try {
+      const courier = courierName.trim();
+      const awb = awbNo.trim();
+      const { error } = await supabase
+        .from("invoices")
+        .update({ courier_name: courier || null, awb_no: awb || null })
+        .eq("id", courierDialog.id);
+      if (error) throw error;
+      setInvoices(prev => prev.map(inv => inv.id === courierDialog.id ? { ...inv, courier_name: courier || null, awb_no: awb || null } : inv));
+      toast({ title: "Courier details updated" });
+      setCourierDialog(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingCourier(false);
+    }
+  };
 
   const handleSaveNote = async () => {
     if (!noteDialog) return;
     setSavingNote(true);
+
     try {
       const trimmed = noteText.trim();
       const { error } = await supabase
