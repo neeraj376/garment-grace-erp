@@ -134,6 +134,7 @@ serve(async (req) => {
     };
 
     // Attempt to send, retry once on failure
+    let firstError: string | null = null;
     let lastError: string | null = null;
     for (let attempt = 0; attempt < 2; attempt++) {
       const response = await fetch(WHATSAPP_API_URL, {
@@ -146,7 +147,8 @@ serve(async (req) => {
       });
 
       const data = await response.json();
-      console.log(`WhatsApp API attempt ${attempt + 1} response:`, JSON.stringify(data));
+      const rawBody = JSON.stringify(data);
+      console.log(`WhatsApp API attempt ${attempt + 1} response:`, rawBody);
 
       if (response.ok && data.result !== false) {
         return new Response(JSON.stringify({ success: true, data }), {
@@ -155,17 +157,30 @@ serve(async (req) => {
         });
       }
 
-      lastError = `WhatsApp API error [${response.status}]: ${JSON.stringify(data)}`;
+      lastError = `WhatsApp API error [${response.status}]: ${rawBody}`;
+      if (attempt === 0) firstError = lastError;
       console.warn(`Attempt ${attempt + 1} failed: ${lastError}`);
 
-      // On first failure, try without image header (plain template)
+      // Account-level failures (wallet balance, auth, plan) will never be fixed
+      // by retrying — surface them immediately with a clear message.
+      if (/wallet|balance|recharge|insufficient/i.test(rawBody)) {
+        throw new Error(
+          "WhatsApp not sent: your Interakt wallet is out of balance. Please recharge the Interakt wallet, then resend the invoice."
+        );
+      }
+
+      // On first failure, retry with the plain invoice link as the header media
+      // instead of dropping the header (templates with a media header reject an
+      // empty headerValues with \"Media Url is missing\").
       if (attempt === 0 && !isTrackingTemplate) {
-        console.log("Retrying without image header...");
-        (payload.template as Record<string, unknown>).headerValues = [];
+        console.log("Retrying with original invoice media URL as header...");
+        (payload.template as Record<string, unknown>).headerValues = [
+          invoiceImageUrl || invoiceUrl,
+        ];
       }
     }
 
-    throw new Error(lastError || "Failed to send WhatsApp message after retries");
+    throw new Error(firstError || lastError || "Failed to send WhatsApp message after retries");
   } catch (error: unknown) {
     console.error("WhatsApp send error:", error);
     const errorMessage =
