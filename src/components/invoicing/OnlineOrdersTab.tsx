@@ -963,7 +963,7 @@ function ShippingLabel({ order }: { order: any }) {
   const name = addr?.name || cust?.name || "—";
   const phone = addr?.phone || cust?.phone || "—";
   return (
-    <div style={{ width: "400px", border: "2px solid #000", padding: "20px", fontFamily: "Arial, sans-serif" }}>
+    <div style={{ width: "4in", height: "6in", border: "2px solid #000", padding: "20px", fontFamily: "Arial, sans-serif", boxSizing: "border-box", overflow: "hidden" }}>
       <div style={{ textAlign: "center", borderBottom: "2px solid #000", paddingBottom: "12px", marginBottom: "16px" }}>
         <h2 style={{ fontSize: "18px", fontWeight: "bold", margin: 0 }}>SHIPPING LABEL</h2>
         <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>Order: {order.order_number}</p>
@@ -1000,11 +1000,6 @@ function ShippingLabel({ order }: { order: any }) {
           <p style={{ fontSize: "11px", color: "#666" }}>Courier: <strong>{order.courier_name}</strong></p>
         </div>
       )}
-
-      <div style={{ borderTop: "1px dashed #ccc", paddingTop: "10px", marginTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-        <span>Payment: <strong>{order.payment_status}</strong></span>
-        <span>Total: <strong>₹{Number(order.total_amount).toLocaleString("en-IN")}</strong></span>
-      </div>
 
       <div style={{ borderTop: "2px solid #000", marginTop: "14px", paddingTop: "10px" }}>
         <p style={{ fontSize: "11px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 6px 0" }}>
