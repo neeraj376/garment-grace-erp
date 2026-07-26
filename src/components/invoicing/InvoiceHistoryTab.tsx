@@ -482,39 +482,38 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const buildLabelHtml = (inv: Invoice, addr: any) => {
     const name = addr?.name || inv.customers?.name || "Walk-in Customer";
     const phone = addr?.phone || inv.customers?.mobile || "—";
-    const line2 = addr?.address_line2 ? `<p style="font-size:13px;margin:0 0 2px 0">${addr.address_line2}</p>` : "";
+    const line2 = addr?.address_line2 ? `<p style="font-size:11px;margin:0">${addr.address_line2}</p>` : "";
     const cityLine = addr
       ? `${addr.city || ""}, ${addr.state || ""} — ${addr.pincode || ""}`
       : "Address not available";
     const date = new Date(inv.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
     return `
-      <div style="width:4in;height:6in;border:2px solid #000;padding:20px;font-family:Arial, sans-serif;box-sizing:border-box;overflow:hidden">
-        <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px">
-          <h2 style="font-size:18px;font-weight:bold;margin:0">SHIPPING LABEL</h2>
-          <p style="font-size:12px;color:#666;margin-top:4px">Invoice: ${inv.invoice_number}</p>
-          <p style="font-size:11px;color:#666">${date}</p>
+      <div style="width:4in;height:6in;border:1.5px solid #000;padding:10px;font-family:Arial, sans-serif;box-sizing:border-box;overflow:hidden;line-height:1.25">
+        <div style="text-align:center;border-bottom:1.5px solid #000;padding-bottom:5px;margin-bottom:8px">
+          <h2 style="font-size:14px;font-weight:bold;margin:0">SHIPPING LABEL</h2>
+          <p style="font-size:10px;color:#666;margin:2px 0 0 0">Invoice: ${inv.invoice_number} · ${date}</p>
         </div>
-        <div style="margin-bottom:16px">
-          <p style="font-size:11px;font-weight:bold;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Deliver To:</p>
-          <p style="font-size:16px;font-weight:bold;margin:0 0 4px 0">${name}</p>
-          <p style="font-size:14px;margin:0 0 2px 0">📞 ${phone}</p>
+        <div style="margin-bottom:6px">
+          <p style="font-size:9px;font-weight:bold;color:#666;text-transform:uppercase;letter-spacing:.5px;margin:0 0 2px 0">Deliver To:</p>
+          <p style="font-size:13px;font-weight:bold;margin:0">${name}</p>
+          <p style="font-size:11px;margin:0">📞 ${phone}</p>
         </div>
-        <div style="margin-bottom:16px;padding:10px;background:#f5f5f5;border-radius:4px">
-          <p style="font-size:13px;margin:0 0 2px 0">${addr?.address_line1 || ""}</p>
+        <div style="margin-bottom:6px;padding:6px;background:#f5f5f5;border-radius:3px">
+          <p style="font-size:11px;margin:0">${addr?.address_line1 || ""}</p>
           ${line2}
-          <p style="font-size:13px;font-weight:bold;margin:4px 0 0 0">${cityLine}</p>
+          <p style="font-size:11px;font-weight:bold;margin:2px 0 0 0">${cityLine}</p>
         </div>
-        ${inv.awb_no ? `<div style="border-top:1px dashed #ccc;padding-top:12px;margin-top:12px">
-          <p style="font-size:11px;color:#666;margin-bottom:4px">AWB / Tracking Number:</p>
-          <p style="font-size:16px;font-weight:bold;font-family:monospace;letter-spacing:1px">${inv.awb_no}</p>
+        ${inv.awb_no ? `<div style="border-top:1px dashed #ccc;padding-top:5px;margin-top:5px">
+          <p style="font-size:9px;color:#666;margin:0">AWB / Tracking Number:</p>
+          <p style="font-size:13px;font-weight:bold;font-family:monospace;letter-spacing:.5px;margin:0">${inv.awb_no}</p>
         </div>` : ""}
-        ${inv.courier_name ? `<div style="margin-top:8px"><p style="font-size:11px;color:#666">Courier: <strong>${inv.courier_name}</strong></p></div>` : ""}
-        <div style="border-top:2px solid #000;margin-top:14px;padding-top:10px">
-          <p style="font-size:11px;font-weight:bold;color:#666;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0">From / Return Address:</p>
-          <p style="font-size:14px;font-weight:bold;margin:0 0 2px 0">Originee</p>
-          <p style="font-size:12px;margin:0 0 2px 0">I-132, Sector 50, South City 2</p>
-          <p style="font-size:12px;margin:0 0 2px 0">Gurugram, Haryana — 122018</p>
-          <p style="font-size:12px;margin:2px 0 0 0">📞 +91 93109 04557, +91 88828 66833</p>
+        ${inv.courier_name ? `<div style="margin-top:4px"><p style="font-size:9px;color:#666;margin:0">Courier: <strong>${inv.courier_name}</strong></p></div>` : ""}
+        <div style="border-top:1.5px solid #000;margin-top:8px;padding-top:5px">
+          <p style="font-size:9px;font-weight:bold;color:#666;text-transform:uppercase;letter-spacing:.5px;margin:0 0 2px 0">From / Return Address:</p>
+          <p style="font-size:11px;font-weight:bold;margin:0">Originee</p>
+          <p style="font-size:10px;margin:0">I-132, Sector 50, South City 2</p>
+          <p style="font-size:10px;margin:0">Gurugram, Haryana — 122018</p>
+          <p style="font-size:10px;margin:0">📞 +91 93109 04557, +91 88828 66833</p>
         </div>
       </div>`;
   };
