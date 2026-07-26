@@ -963,52 +963,53 @@ function ShippingLabel({ order }: { order: any }) {
   const name = addr?.name || cust?.name || "—";
   const phone = addr?.phone || cust?.phone || "—";
   return (
-    <div style={{ width: "4in", height: "6in", border: "2px solid #000", padding: "20px", fontFamily: "Arial, sans-serif", boxSizing: "border-box", overflow: "hidden" }}>
-      <div style={{ textAlign: "center", borderBottom: "2px solid #000", paddingBottom: "12px", marginBottom: "16px" }}>
-        <h2 style={{ fontSize: "18px", fontWeight: "bold", margin: 0 }}>SHIPPING LABEL</h2>
-        <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>Order: {order.order_number}</p>
-        <p style={{ fontSize: "11px", color: "#666" }}>{format(new Date(order.created_at), "dd MMM yyyy")}</p>
+    <div style={{ width: "4in", height: "6in", border: "1.5px solid #000", padding: "10px", fontFamily: "Arial, sans-serif", boxSizing: "border-box", overflow: "hidden", lineHeight: 1.25 }}>
+      <div style={{ textAlign: "center", borderBottom: "1.5px solid #000", paddingBottom: "5px", marginBottom: "8px" }}>
+        <h2 style={{ fontSize: "14px", fontWeight: "bold", margin: 0 }}>SHIPPING LABEL</h2>
+        <p style={{ fontSize: "10px", color: "#666", margin: "2px 0 0 0" }}>
+          Order: {order.order_number} · {format(new Date(order.created_at), "dd MMM yyyy")}
+        </p>
       </div>
 
-      <div style={{ marginBottom: "16px" }}>
-        <p style={{ fontSize: "11px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>
+      <div style={{ marginBottom: "6px" }}>
+        <p style={{ fontSize: "9px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 2px 0" }}>
           Deliver To:
         </p>
-        <p style={{ fontSize: "16px", fontWeight: "bold", margin: "0 0 4px 0" }}>{name}</p>
-        <p style={{ fontSize: "14px", margin: "0 0 2px 0" }}>📞 {phone}</p>
+        <p style={{ fontSize: "13px", fontWeight: "bold", margin: 0 }}>{name}</p>
+        <p style={{ fontSize: "11px", margin: 0 }}>📞 {phone}</p>
       </div>
 
-      <div style={{ marginBottom: "16px", padding: "10px", background: "#f5f5f5", borderRadius: "4px" }}>
-        <p style={{ fontSize: "13px", margin: "0 0 2px 0" }}>{addr?.address_line1 || ""}</p>
-        {addr?.address_line2 && <p style={{ fontSize: "13px", margin: "0 0 2px 0" }}>{addr.address_line2}</p>}
-        <p style={{ fontSize: "13px", fontWeight: "bold", margin: "4px 0 0 0" }}>
+      <div style={{ marginBottom: "6px", padding: "6px", background: "#f5f5f5", borderRadius: "3px" }}>
+        <p style={{ fontSize: "11px", margin: 0 }}>{addr?.address_line1 || ""}</p>
+        {addr?.address_line2 && <p style={{ fontSize: "11px", margin: 0 }}>{addr.address_line2}</p>}
+        <p style={{ fontSize: "11px", fontWeight: "bold", margin: "2px 0 0 0" }}>
           {addr?.city}, {addr?.state} — {addr?.pincode}
         </p>
       </div>
 
       {order.tracking_number && (
-        <div style={{ borderTop: "1px dashed #ccc", paddingTop: "12px", marginTop: "12px" }}>
-          <p style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>AWB / Tracking Number:</p>
-          <p style={{ fontSize: "16px", fontWeight: "bold", fontFamily: "monospace", letterSpacing: "1px" }}>
+        <div style={{ borderTop: "1px dashed #ccc", paddingTop: "5px", marginTop: "5px" }}>
+          <p style={{ fontSize: "9px", color: "#666", margin: 0 }}>AWB / Tracking Number:</p>
+          <p style={{ fontSize: "13px", fontWeight: "bold", fontFamily: "monospace", letterSpacing: "0.5px", margin: 0 }}>
             {order.tracking_number}
           </p>
         </div>
       )}
 
       {order.courier_name && (
-        <div style={{ marginTop: "8px" }}>
-          <p style={{ fontSize: "11px", color: "#666" }}>Courier: <strong>{order.courier_name}</strong></p>
+        <div style={{ marginTop: "4px" }}>
+          <p style={{ fontSize: "9px", color: "#666", margin: 0 }}>Courier: <strong>{order.courier_name}</strong></p>
         </div>
       )}
 
-      <div style={{ borderTop: "2px solid #000", marginTop: "14px", paddingTop: "10px" }}>
-        <p style={{ fontSize: "11px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 6px 0" }}>
+      <div style={{ borderTop: "1.5px solid #000", marginTop: "8px", paddingTop: "5px" }}>
+        <p style={{ fontSize: "9px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 2px 0" }}>
           From / Return Address:
         </p>
-        <p style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 2px 0" }}>Originee</p>
-        <p style={{ fontSize: "12px", margin: "0 0 2px 0" }}>I-132, Sector 50, South City 2</p>
-        <p style={{ fontSize: "12px", margin: "0 0 2px 0" }}>Gurugram, Haryana — 122018</p>
-        <p style={{ fontSize: "12px", margin: "2px 0 0 0" }}>📞 +91 93109 04557, +91 88828 66833</p>
+        <p style={{ fontSize: "11px", fontWeight: "bold", margin: 0 }}>Originee</p>
+        <p style={{ fontSize: "10px", margin: 0 }}>I-132, Sector 50, South City 2</p>
+        <p style={{ fontSize: "10px", margin: 0 }}>Gurugram, Haryana — 122018</p>
+        <p style={{ fontSize: "10px", margin: 0 }}>📞 +91 93109 04557, +91 88828 66833</p>
       </div>
     </div>
   );
