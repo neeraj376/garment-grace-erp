@@ -33,10 +33,12 @@ async function getRateToken(): Promise<string> {
   return token;
 }
 
-// Softdata token (api-key header value) — obtain by authenticating with username/password.
-// DTDC issues a per-session JWT that must be passed in the `api-key` header.
+// Softdata auth: DTDC issues merchants a static `api-key` header value.
+// Prefer that. Only fall back to username/password authenticate if no key is set.
 let softdataToken: { token: string; exp: number } | null = null;
 async function getSoftdataToken(): Promise<string> {
+  const envKey = Deno.env.get("DTDC_API_KEY");
+  if (envKey) return envKey;
   if (softdataToken && softdataToken.exp > Date.now()) return softdataToken.token;
   const username = need("DTDC_USERNAME");
   const password = need("DTDC_PASSWORD");
@@ -51,13 +53,12 @@ async function getSoftdataToken(): Promise<string> {
     } catch { /* keep raw */ }
   }
   if (!token || /not authorized|unauthorized/i.test(token)) {
-    const fallback = Deno.env.get("DTDC_API_KEY");
-    if (fallback) return fallback;
     throw new Error(`DTDC softdata authenticate failed: ${text}`);
   }
   softdataToken = { token, exp: Date.now() + 1000 * 60 * 60 * 6 };
   return token;
 }
+
 
 async function checkServiceability(pincode: string) {
   const apiKey = await getSoftdataToken();

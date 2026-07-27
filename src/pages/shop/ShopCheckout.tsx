@@ -86,7 +86,7 @@ export default function ShopCheckout() {
   // Delivery method: ship to address, or store pickup
   const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">("ship");
 
-  // Shipping state (DTDC Non-Dox per-kg local calculator)
+  // Shipping state — live DTDC rate when the API is configured, local calculator otherwise
   const [serviceable, setServiceable] = useState<boolean | null>(null);
   const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
@@ -114,11 +114,41 @@ export default function ShopCheckout() {
       0
     );
 
-    const { cost } = calculateDtdcShipping(form.state, weightKg, invoiceValue);
+    // Show the local estimate immediately so the total is never blank
+    const { cost: fallbackCost } = calculateDtdcShipping(form.state, weightKg, invoiceValue);
     setServiceable(true);
-    setShippingCost(cost);
-    setSelectedCourier({ courier_name: "DTDC", rate: cost });
+    setShippingCost(fallbackCost);
+    setSelectedCourier({ courier_name: "DTDC", rate: fallbackCost });
+
+    // Then try DTDC's live rate API; silently keep the estimate if it isn't available
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("dtdc", {
+          body: {
+            action: "rate",
+            destination_pincode: form.pincode,
+            weight_kg: weightKg,
+            invoice_value: invoiceValue,
+            payment_type: "prepaid",
+          },
+        });
+        if (cancelled || error) return;
+        if (data?.serviceable && Number(data.cost) > 0) {
+          setShippingCost(Number(data.cost));
+          setSelectedCourier({ courier_name: "DTDC", rate: Number(data.cost) });
+        }
+      } catch {
+        /* keep the local estimate */
+      }
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [form.pincode, form.state, items, deliveryMethod]);
+
 
 
 
