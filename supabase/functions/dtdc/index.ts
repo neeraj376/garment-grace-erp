@@ -9,7 +9,7 @@ const corsHeaders = {
 // DTDC official API base URLs (Plug-N-Play / softdata)
 const SOFTDATA_BASE = "https://dtdcapi.shipsy.io/api/customer/integration";
 const TRACK_BASE = "https://blktracksvc.dtdc.com/dtdc-api";
-const SERVICE_TYPE = Deno.env.get("DTDC_SERVICE_TYPE_ID") || "GROUND EXPRESS";
+const SERVICE_TYPE = Deno.env.get("DTDC_SERVICE_TYPE_ID") || "B2C SMART EXPRESS";
 const RATE_BASE = "https://apidashboardservices.dtdc.com";
 
 function need(name: string): string {
