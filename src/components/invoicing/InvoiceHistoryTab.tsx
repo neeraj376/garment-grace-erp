@@ -1000,7 +1000,31 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               <label className="text-sm font-medium">AWB Number</label>
               <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
             </div>
+            <div className="space-y-1 border-t pt-3">
+              <label className="text-sm font-medium">DTDC Service Option</label>
+              <Select value={dtdcService} onValueChange={setDtdcService}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DTDC_SERVICE_OPTIONS.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.label} — {s.eta}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="secondary"
+                className="w-full mt-2 gap-1.5"
+                disabled={dtdcBusy}
+                onClick={handleCreateDtdcShipment}
+              >
+                {dtdcBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                Create DTDC Shipment & Assign AWB
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Uses the shipping address saved on this invoice.
+              </p>
+            </div>
           </div>
+
           <DialogFooter>
             <Button onClick={handleSaveCourier} disabled={savingCourier}>
               {savingCourier ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
