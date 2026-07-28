@@ -735,6 +735,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                                   <p className="text-sm font-mono">{order.payment_id}</p>
                                 </div>
                               )}
+                              {order.notes && (
+                                <div className="mt-2">
+                                  <p className="text-xs text-muted-foreground">Notes</p>
+                                  <p className="text-sm whitespace-pre-wrap">{order.notes}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </TableCell>
