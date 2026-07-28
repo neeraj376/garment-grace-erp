@@ -749,6 +749,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 onChange={(e) => setEditAwb(e.target.value)}
                 placeholder="Enter AWB or tracking number"
               />
+              <p className="text-xs text-muted-foreground">
+                If DTDC can't allot an AWB automatically, type the AWB from the DTDC portal here and click Save.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>DTDC Service Option</Label>
