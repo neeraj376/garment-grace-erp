@@ -233,7 +233,7 @@ function adminClient() {
   );
 }
 
-async function createConsignment(orderId: string, serviceTypeInput?: string) {
+async function createConsignment(orderId: string, serviceTypeInput?: string, awbNo?: string) {
   const supabase = adminClient();
   const { data: order, error } = await supabase
     .from("orders")
@@ -254,6 +254,7 @@ async function createConsignment(orderId: string, serviceTypeInput?: string) {
     reference: `ORD${String(order.order_number || order.id).replace(/[^A-Z0-9]/gi, "").slice(0, 20)}`,
     serviceType,
     weightKg,
+    awbNo: awbNo?.trim() || undefined,
     declaredValue: Number(order.total_amount || 0),
     cod: order.payment_method === "cod",
     destination: {
@@ -275,7 +276,7 @@ async function createConsignment(orderId: string, serviceTypeInput?: string) {
   return { awb_no: awb, courier_name: "DTDC", service_type_id: serviceType };
 }
 
-async function createConsignmentForInvoice(invoiceId: string, serviceTypeInput?: string) {
+async function createConsignmentForInvoice(invoiceId: string, serviceTypeInput?: string, awbNo?: string) {
   const supabase = adminClient();
   const { data: invoice, error } = await supabase
     .from("invoices")
@@ -299,6 +300,7 @@ async function createConsignmentForInvoice(invoiceId: string, serviceTypeInput?:
     reference: `INV${String(inv.invoice_number || inv.id).replace(/[^A-Z0-9]/gi, "").slice(0, 20)}`,
     serviceType,
     weightKg,
+    awbNo: awbNo?.trim() || undefined,
     declaredValue: Number(inv.total_amount || 0),
     cod: false,
     destination: {
@@ -367,10 +369,10 @@ serve(async (req) => {
         result = { service_types: SERVICE_TYPES };
         break;
       case "create_consignment":
-        result = await createConsignment(body.order_id, body.service_type_id);
+        result = await createConsignment(body.order_id, body.service_type_id, body.awb_no);
         break;
       case "create_consignment_invoice":
-        result = await createConsignmentForInvoice(body.invoice_id, body.service_type_id);
+        result = await createConsignmentForInvoice(body.invoice_id, body.service_type_id, body.awb_no);
         break;
 
       case "track":

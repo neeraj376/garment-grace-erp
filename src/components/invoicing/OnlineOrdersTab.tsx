@@ -749,6 +749,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 onChange={(e) => setEditAwb(e.target.value)}
                 placeholder="Enter AWB or tracking number"
               />
+              <p className="text-xs text-muted-foreground">
+                If DTDC can't allot an AWB automatically, type the AWB from the DTDC portal here and click Save.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>DTDC Service Option</Label>
@@ -775,8 +778,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                   if (!editingOrder?.id) return;
                   setDtdcBusy("create");
                   try {
+                    const manualAwb = editAwb.trim();
                     const { data, error } = await supabase.functions.invoke("dtdc", {
-                      body: { action: "create_consignment", order_id: editingOrder.id, service_type_id: dtdcService },
+                      body: { action: "create_consignment", order_id: editingOrder.id, service_type_id: dtdcService, awb_no: manualAwb || undefined },
                     });
                     if (error || data?.error) throw new Error(data?.error || error?.message);
                     setEditCourier("DTDC");
@@ -784,7 +788,10 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                     toast.success(`DTDC AWB created: ${data.awb_no}`);
                     queryClient.invalidateQueries({ queryKey: ["online-orders"] });
                   } catch (e: any) {
-                    toast.error(`DTDC: ${e.message || "Failed to create shipment"}`);
+                    if (!editCourier.trim()) setEditCourier("DTDC");
+                    toast.error("DTDC could not assign an AWB", {
+                      description: `${e.message || "Failed to create shipment"} — enter the AWB manually above and click Save.`,
+                    });
                   } finally {
                     setDtdcBusy(null);
                   }
