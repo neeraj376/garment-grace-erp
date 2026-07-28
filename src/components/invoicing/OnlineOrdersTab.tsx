@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText, MessageCircle, Mail } from "lucide-react";
+import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText, MessageCircle, Mail, StickyNote } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
