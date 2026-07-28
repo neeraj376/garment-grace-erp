@@ -378,6 +378,15 @@ serve(async (req) => {
       case "track":
         result = await trackShipment(body.awb_no);
         break;
+      case "debug_origin": {
+        result = {
+          pincode: Deno.env.get("DTDC_ORIGIN_PINCODE"),
+          city: Deno.env.get("DTDC_ORIGIN_CITY"),
+          state: Deno.env.get("DTDC_ORIGIN_STATE"),
+          customer_code: Deno.env.get("DTDC_CUSTOMER_CODE"),
+        };
+        break;
+      }
       case "debug_auth": {
         const username = need("DTDC_USERNAME");
         const password = need("DTDC_PASSWORD");
