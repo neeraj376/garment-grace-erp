@@ -161,6 +161,7 @@ async function pushConsignment(opts: {
   declaredValue: number;
   cod: boolean;
   destination: Destination;
+  awbNo?: string;
 }) {
   const apiKey = await getSoftdataToken();
   const customerCode = need("DTDC_CUSTOMER_CODE");
