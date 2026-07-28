@@ -131,13 +131,12 @@ async function getRate(params: {
   };
 }
 
-// DTDC service options offered at shipment creation
+// DTDC service options offered at shipment creation (live account)
 const SERVICE_TYPES = [
-  { id: "GROUND EXPRESS", label: "Ground Express (Surface)", eta: "3-6 days" },
-  { id: "EXPRESS", label: "Express (Air)", eta: "2-4 days" },
-  { id: "PREMIUM", label: "Premium (Priority Air)", eta: "1-3 days" },
-  { id: "B2C PRIORITY", label: "B2C Priority", eta: "2-5 days" },
+  { id: "B2C SMART EXPRESS", label: "B2C Smart Express (Surface)", eta: "3-6 days" },
+  { id: "B2C PRIORITY", label: "B2C Priority (Air)", eta: "2-4 days" },
 ];
+
 
 function resolveServiceType(input?: string) {
   const wanted = (input || "").trim().toUpperCase();
