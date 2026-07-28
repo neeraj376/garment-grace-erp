@@ -1001,6 +1001,36 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Order notes dialog */}
+      <Dialog open={!!notesOrder} onOpenChange={(o) => !o && setNotesOrder(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Order Notes</DialogTitle>
+            <DialogDescription>
+              {notesOrder?.order_number ? `Internal notes for ${notesOrder.order_number}` : "Internal notes for this order"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea
+              value={notesText}
+              onChange={(e) => setNotesText(e.target.value.slice(0, 1000))}
+              placeholder="Add a note about this order..."
+              rows={5}
+              maxLength={1000}
+            />
+            <p className="text-xs text-muted-foreground text-right">{notesText.length}/1000</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNotesOrder(null)}>Cancel</Button>
+            <Button onClick={handleSaveNotes} disabled={savingNotes}>
+              {savingNotes ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Save className="h-4 w-4 mr-1.5" />}
+              Save Notes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Cancel order confirmation */}
       <AlertDialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
         <AlertDialogContent>
