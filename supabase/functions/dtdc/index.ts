@@ -9,7 +9,7 @@ const corsHeaders = {
 // DTDC official API base URLs (Plug-N-Play / softdata)
 const SOFTDATA_BASE = "https://dtdcapi.shipsy.io/api/customer/integration";
 const TRACK_BASE = "https://blktracksvc.dtdc.com/dtdc-api";
-const SERVICE_TYPE = Deno.env.get("DTDC_SERVICE_TYPE_ID") || "GROUND EXPRESS";
+const SERVICE_TYPE = Deno.env.get("DTDC_SERVICE_TYPE_ID") || "B2C SMART EXPRESS";
 const RATE_BASE = "https://apidashboardservices.dtdc.com";
 
 function need(name: string): string {
@@ -63,10 +63,10 @@ async function getSoftdataToken(): Promise<string> {
 
 
 async function checkServiceability(pincode: string) {
-  const apiKey = await getSoftdataToken();
+  const token = need("DTDC_ACCESS_TOKEN");
   const res = await fetch(`${TRACK_BASE}/rest/JSONCnTrk/pinCodeServiceable`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "api-key": apiKey },
+    headers: { "Content-Type": "application/json", "X-Access-Token": token },
     body: JSON.stringify({ pincode }),
   });
   const data = await res.json().catch(() => ({}));
@@ -131,13 +131,12 @@ async function getRate(params: {
   };
 }
 
-// DTDC service options offered at shipment creation
+// DTDC service options offered at shipment creation (live account)
 const SERVICE_TYPES = [
-  { id: "GROUND EXPRESS", label: "Ground Express (Surface)", eta: "3-6 days" },
-  { id: "EXPRESS", label: "Express (Air)", eta: "2-4 days" },
-  { id: "PREMIUM", label: "Premium (Priority Air)", eta: "1-3 days" },
-  { id: "B2C PRIORITY", label: "B2C Priority", eta: "2-5 days" },
+  { id: "B2C SMART EXPRESS", label: "B2C Smart Express (Surface)", eta: "3-6 days" },
+  { id: "B2C PRIORITY", label: "B2C Priority (Air)", eta: "2-4 days" },
 ];
+
 
 function resolveServiceType(input?: string) {
   const wanted = (input || "").trim().toUpperCase();
@@ -162,11 +161,12 @@ async function pushConsignment(opts: {
   declaredValue: number;
   cod: boolean;
   destination: Destination;
+  awbNo?: string;
 }) {
   const apiKey = await getSoftdataToken();
   const customerCode = need("DTDC_CUSTOMER_CODE");
 
-  const consignment = {
+  const consignment: Record<string, unknown> = {
     customer_code: customerCode,
     service_type_id: opts.serviceType,
     load_type: "NON-DOCUMENT",
@@ -181,7 +181,7 @@ async function pushConsignment(opts: {
     num_pieces: "1",
     cod_collection_mode: opts.cod ? "cash" : "",
     cod_amount: opts.cod ? String(opts.declaredValue || 0) : "0",
-    reference_number: opts.reference,
+    customer_reference_number: opts.reference,
     commodity_id: "99",
     origin_details: {
       name: need("DTDC_ORIGIN_NAME"),
@@ -207,18 +207,22 @@ async function pushConsignment(opts: {
     ],
   };
 
+  // If DTDC has allotted a pre-assigned AWB, pass it through; otherwise DTDC
+  // allocates one from the customer's number series.
+  if (opts.awbNo) consignment.reference_number = opts.awbNo;
+
   const res = await fetch(`${SOFTDATA_BASE}/consignment/softdata`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "api-key": apiKey },
     body: JSON.stringify({ consignments: [consignment] }),
   });
   const data = await res.json().catch(() => ({}));
-  const awb =
-    data?.data?.[0]?.reference_number ??
-    data?.data?.[0]?.cnNumber ??
-    data?.consignments?.[0]?.reference_number ??
-    null;
-  if (!awb) throw new Error(`DTDC consignment create failed: ${JSON.stringify(data)}`);
+  const row = data?.data?.[0] ?? data?.consignments?.[0] ?? {};
+  const awb = row?.reference_number || row?.cnNumber || null;
+  if (!awb || row?.success === false) {
+    const msg = row?.message || row?.reason || JSON.stringify(data);
+    throw new Error(`DTDC consignment create failed: ${msg}`);
+  }
   return String(awb);
 }
 
