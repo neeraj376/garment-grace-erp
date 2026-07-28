@@ -252,8 +252,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     if (!courierDialog) return;
     setDtdcBusy(true);
     try {
+      const manualAwb = awbNo.trim();
       const { data, error } = await supabase.functions.invoke("dtdc", {
-        body: { action: "create_consignment_invoice", invoice_id: courierDialog.id, service_type_id: dtdcService },
+        body: { action: "create_consignment_invoice", invoice_id: courierDialog.id, service_type_id: dtdcService, awb_no: manualAwb || undefined },
       });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
       const awb = (data as any).awb_no as string;
@@ -262,7 +263,12 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       setInvoices(prev => prev.map(inv => inv.id === courierDialog.id ? { ...inv, courier_name: "DTDC", awb_no: awb } : inv));
       toast({ title: `DTDC AWB assigned: ${awb}` });
     } catch (err: any) {
-      toast({ title: "DTDC", description: err.message || "Failed to create shipment", variant: "destructive" });
+      if (!courierName.trim()) setCourierName("DTDC");
+      toast({
+        title: "DTDC could not assign an AWB",
+        description: `${err.message || "Failed to create shipment"} — enter the AWB manually below and click Save.`,
+        variant: "destructive",
+      });
     } finally {
       setDtdcBusy(false);
     }
@@ -1024,6 +1030,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <div className="space-y-1">
               <label className="text-sm font-medium">AWB Number</label>
               <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
+              <p className="text-xs text-muted-foreground">
+                If DTDC can't allot an AWB automatically, type the AWB from the DTDC portal here and click Save.
+              </p>
             </div>
             <div className="space-y-1 border-t pt-3">
               <label className="text-sm font-medium">DTDC Service Option</label>
