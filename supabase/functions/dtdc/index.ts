@@ -9,7 +9,7 @@ const corsHeaders = {
 // DTDC official API base URLs (Plug-N-Play / softdata)
 const SOFTDATA_BASE = "https://dtdcapi.shipsy.io/api/customer/integration";
 const TRACK_BASE = "https://blktracksvc.dtdc.com/dtdc-api";
-const SERVICE_TYPE = Deno.env.get("DTDC_SERVICE_TYPE_ID") || "B2C SMART EXPRESS";
+const SERVICE_TYPE = Deno.env.get("DTDC_SERVICE_TYPE_ID") || "B2C PRIORITY";
 const RATE_BASE = "https://apidashboardservices.dtdc.com";
 
 function need(name: string): string {
@@ -133,8 +133,8 @@ async function getRate(params: {
 
 // DTDC service options offered at shipment creation (live account)
 const SERVICE_TYPES = [
-  { id: "B2C SMART EXPRESS", label: "B2C Smart Express (Surface)", eta: "3-6 days" },
   { id: "B2C PRIORITY", label: "B2C Priority (Air)", eta: "2-4 days" },
+  { id: "B2C SMART EXPRESS", label: "B2C Smart Express (Surface)", eta: "3-6 days" },
 ];
 
 
@@ -378,6 +378,15 @@ serve(async (req) => {
       case "track":
         result = await trackShipment(body.awb_no);
         break;
+      case "debug_origin": {
+        result = {
+          pincode: Deno.env.get("DTDC_ORIGIN_PINCODE"),
+          city: Deno.env.get("DTDC_ORIGIN_CITY"),
+          state: Deno.env.get("DTDC_ORIGIN_STATE"),
+          customer_code: Deno.env.get("DTDC_CUSTOMER_CODE"),
+        };
+        break;
+      }
       case "debug_auth": {
         const username = need("DTDC_USERNAME");
         const password = need("DTDC_PASSWORD");
