@@ -359,9 +359,16 @@ serve(async (req) => {
       case "rate":
         result = await getRate(body);
         break;
-      case "create_consignment":
-        result = await createConsignment(body.order_id);
+      case "service_types":
+        result = { service_types: SERVICE_TYPES };
         break;
+      case "create_consignment":
+        result = await createConsignment(body.order_id, body.service_type_id);
+        break;
+      case "create_consignment_invoice":
+        result = await createConsignmentForInvoice(body.invoice_id, body.service_type_id);
+        break;
+
       case "track":
         result = await trackShipment(body.awb_no);
         break;
