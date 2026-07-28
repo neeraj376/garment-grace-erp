@@ -71,6 +71,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [editStatus, setEditStatus] = useState("");
   const [editAwb, setEditAwb] = useState("");
   const [dtdcBusy, setDtdcBusy] = useState<"create" | "track" | null>(null);
+  const [dtdcService, setDtdcService] = useState(DEFAULT_DTDC_SERVICE);
+
   const [editCourier, setEditCourier] = useState("");
   const [saving, setSaving] = useState(false);
   const [resending, setResending] = useState<"wa" | "email" | null>(null);
