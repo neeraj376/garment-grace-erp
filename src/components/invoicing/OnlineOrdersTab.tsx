@@ -667,6 +667,18 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title={order.notes ? "Edit Note" : "Add Note"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNotesOrder(order);
+                              setNotesText(order.notes || "");
+                            }}
+                          >
+                            <StickyNote className={`h-4 w-4 ${order.notes ? "text-primary" : ""}`} />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
