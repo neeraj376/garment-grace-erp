@@ -63,10 +63,10 @@ async function getSoftdataToken(): Promise<string> {
 
 
 async function checkServiceability(pincode: string) {
-  const apiKey = await getSoftdataToken();
+  const token = need("DTDC_ACCESS_TOKEN");
   const res = await fetch(`${TRACK_BASE}/rest/JSONCnTrk/pinCodeServiceable`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "api-key": apiKey },
+    headers: { "Content-Type": "application/json", "X-Access-Token": token },
     body: JSON.stringify({ pincode }),
   });
   const data = await res.json().catch(() => ({}));
