@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText, MessageCircle, Mail } from "lucide-react";
+import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText, MessageCircle, Mail, StickyNote } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -85,6 +86,29 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [deleting, setDeleting] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<any>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [notesOrder, setNotesOrder] = useState<any>(null);
+  const [notesText, setNotesText] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  const handleSaveNotes = async () => {
+    if (!notesOrder) return;
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ notes: notesText.trim() || null })
+        .eq("id", notesOrder.id);
+      if (error) throw error;
+      toast.success("Notes saved");
+      setNotesOrder(null);
+      queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save notes");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   const labelRef = useRef<HTMLDivElement>(null);
   const bulkLabelRef = useRef<HTMLDivElement>(null);
 
@@ -643,6 +667,18 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title={order.notes ? "Edit Note" : "Add Note"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNotesOrder(order);
+                              setNotesText(order.notes || "");
+                            }}
+                          >
+                            <StickyNote className={`h-4 w-4 ${order.notes ? "text-primary" : ""}`} />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -697,6 +733,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                                 <div className="mt-2">
                                   <p className="text-xs text-muted-foreground">Payment ID</p>
                                   <p className="text-sm font-mono">{order.payment_id}</p>
+                                </div>
+                              )}
+                              {order.notes && (
+                                <div className="mt-2">
+                                  <p className="text-xs text-muted-foreground">Notes</p>
+                                  <p className="text-sm whitespace-pre-wrap">{order.notes}</p>
                                 </div>
                               )}
                             </div>
@@ -958,6 +1000,36 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Order notes dialog */}
+      <Dialog open={!!notesOrder} onOpenChange={(o) => !o && setNotesOrder(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Order Notes</DialogTitle>
+            <DialogDescription>
+              {notesOrder?.order_number ? `Internal notes for ${notesOrder.order_number}` : "Internal notes for this order"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea
+              value={notesText}
+              onChange={(e) => setNotesText(e.target.value.slice(0, 1000))}
+              placeholder="Add a note about this order..."
+              rows={5}
+              maxLength={1000}
+            />
+            <p className="text-xs text-muted-foreground text-right">{notesText.length}/1000</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNotesOrder(null)}>Cancel</Button>
+            <Button onClick={handleSaveNotes} disabled={savingNotes}>
+              {savingNotes ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Save className="h-4 w-4 mr-1.5" />}
+              Save Notes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Cancel order confirmation */}
       <AlertDialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
