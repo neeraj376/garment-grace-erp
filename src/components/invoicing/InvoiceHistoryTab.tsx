@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePermissions } from "@/hooks/usePermissions";
 import ReturnDialog from "./ReturnDialog";
 import EditInvoiceDialog from "./EditInvoiceDialog";
+import { DTDC_SERVICE_OPTIONS, DEFAULT_DTDC_SERVICE } from "@/lib/dtdcServices";
+
 
 interface Invoice {
   id: string;
@@ -75,6 +77,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [courierName, setCourierName] = useState("");
   const [awbNo, setAwbNo] = useState("");
   const [savingCourier, setSavingCourier] = useState(false);
+  const [dtdcService, setDtdcService] = useState(DEFAULT_DTDC_SERVICE);
+  const [dtdcBusy, setDtdcBusy] = useState(false);
+
 
 
   const getInvoiceImageUrl = (invoiceId: string) => {
@@ -243,6 +248,26 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       setSavingCourier(false);
     }
   };
+  const handleCreateDtdcShipment = async () => {
+    if (!courierDialog) return;
+    setDtdcBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dtdc", {
+        body: { action: "create_consignment_invoice", invoice_id: courierDialog.id, service_type_id: dtdcService },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      const awb = (data as any).awb_no as string;
+      setCourierName("DTDC");
+      setAwbNo(awb);
+      setInvoices(prev => prev.map(inv => inv.id === courierDialog.id ? { ...inv, courier_name: "DTDC", awb_no: awb } : inv));
+      toast({ title: `DTDC AWB assigned: ${awb}` });
+    } catch (err: any) {
+      toast({ title: "DTDC", description: err.message || "Failed to create shipment", variant: "destructive" });
+    } finally {
+      setDtdcBusy(false);
+    }
+  };
+
 
   const handleSaveNote = async () => {
     if (!noteDialog) return;
@@ -1000,7 +1025,31 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               <label className="text-sm font-medium">AWB Number</label>
               <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
             </div>
+            <div className="space-y-1 border-t pt-3">
+              <label className="text-sm font-medium">DTDC Service Option</label>
+              <Select value={dtdcService} onValueChange={setDtdcService}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DTDC_SERVICE_OPTIONS.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.label} — {s.eta}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="secondary"
+                className="w-full mt-2 gap-1.5"
+                disabled={dtdcBusy}
+                onClick={handleCreateDtdcShipment}
+              >
+                {dtdcBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                Create DTDC Shipment & Assign AWB
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Uses the shipping address saved on this invoice.
+              </p>
+            </div>
           </div>
+
           <DialogFooter>
             <Button onClick={handleSaveCourier} disabled={savingCourier}>
               {savingCourier ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
