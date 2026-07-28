@@ -86,6 +86,29 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
   const [deleting, setDeleting] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<any>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [notesOrder, setNotesOrder] = useState<any>(null);
+  const [notesText, setNotesText] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  const handleSaveNotes = async () => {
+    if (!notesOrder) return;
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ notes: notesText.trim() || null })
+        .eq("id", notesOrder.id);
+      if (error) throw error;
+      toast.success("Notes saved");
+      setNotesOrder(null);
+      queryClient.invalidateQueries({ queryKey: ["online-orders"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save notes");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   const labelRef = useRef<HTMLDivElement>(null);
   const bulkLabelRef = useRef<HTMLDivElement>(null);
 
