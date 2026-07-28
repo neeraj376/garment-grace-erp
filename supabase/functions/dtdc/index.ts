@@ -378,6 +378,26 @@ serve(async (req) => {
       case "track":
         result = await trackShipment(body.awb_no);
         break;
+      case "test_softdata": {
+        const awb = await pushConsignment({
+          reference: `TEST${Date.now()}`,
+          serviceType: resolveServiceType(body.service_type_id),
+          weightKg: 0.5,
+          declaredValue: 100,
+          cod: false,
+          awbNo: body.awb_no,
+          destination: {
+            name: "Test User",
+            phone: "9999999999",
+            address_line_1: "MG Road",
+            pincode: "682001",
+            city: "Kochi",
+            state: "Kerala",
+          },
+        });
+        result = { awb };
+        break;
+      }
       case "debug_origin": {
         result = {
           pincode: Deno.env.get("DTDC_ORIGIN_PINCODE"),
