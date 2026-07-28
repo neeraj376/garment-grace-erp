@@ -248,6 +248,26 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       setSavingCourier(false);
     }
   };
+  const handleCreateDtdcShipment = async () => {
+    if (!courierDialog) return;
+    setDtdcBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dtdc", {
+        body: { action: "create_consignment_invoice", invoice_id: courierDialog.id, service_type_id: dtdcService },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      const awb = (data as any).awb_no as string;
+      setCourierName("DTDC");
+      setAwbNo(awb);
+      setInvoices(prev => prev.map(inv => inv.id === courierDialog.id ? { ...inv, courier_name: "DTDC", awb_no: awb } : inv));
+      toast({ title: `DTDC AWB assigned: ${awb}` });
+    } catch (err: any) {
+      toast({ title: "DTDC", description: err.message || "Failed to create shipment", variant: "destructive" });
+    } finally {
+      setDtdcBusy(false);
+    }
+  };
+
 
   const handleSaveNote = async () => {
     if (!noteDialog) return;
