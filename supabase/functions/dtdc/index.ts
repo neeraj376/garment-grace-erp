@@ -7,7 +7,9 @@ const corsHeaders = {
 };
 
 // DTDC official API base URLs (Plug-N-Play / softdata)
-const SOFTDATA_BASE = "https://blktracksvc.dtdc.com/dtdc-api";
+const SOFTDATA_BASE = "https://dtdcapi.shipsy.io/api/customer/integration";
+const TRACK_BASE = "https://blktracksvc.dtdc.com/dtdc-api";
+const SERVICE_TYPE = Deno.env.get("DTDC_SERVICE_TYPE_ID") || "GROUND EXPRESS";
 const RATE_BASE = "https://apidashboardservices.dtdc.com";
 
 function need(name: string): string {
@@ -62,7 +64,7 @@ async function getSoftdataToken(): Promise<string> {
 
 async function checkServiceability(pincode: string) {
   const apiKey = await getSoftdataToken();
-  const res = await fetch(`${SOFTDATA_BASE}/rest/JSONCnTrk/pinCodeServiceable`, {
+  const res = await fetch(`${TRACK_BASE}/rest/JSONCnTrk/pinCodeServiceable`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "api-key": apiKey },
     body: JSON.stringify({ pincode }),
@@ -86,7 +88,7 @@ async function getRate(params: {
     consignments: [
       {
         customer_code: customerCode,
-        service_type_id: "B2C SMART EXPRESS",
+        service_type_id: SERVICE_TYPE,
         load_type: "NON-DOCUMENT",
         description: "Apparel",
         dimension_unit: "cm",
@@ -124,7 +126,7 @@ async function getRate(params: {
   return {
     serviceable: true,
     cost: Math.round(Number(charges)),
-    service_type_id: "B2C SMART EXPRESS",
+    service_type_id: SERVICE_TYPE,
     raw: data,
   };
 }
@@ -154,7 +156,7 @@ async function createConsignment(orderId: string) {
 
   const consignment = {
     customer_code: customerCode,
-    service_type_id: "B2C SMART EXPRESS",
+    service_type_id: SERVICE_TYPE,
     load_type: "NON-DOCUMENT",
     description: "Apparel",
     dimension_unit: "cm",
@@ -198,7 +200,7 @@ async function createConsignment(orderId: string) {
     ],
   };
 
-  const res = await fetch(`${SOFTDATA_BASE}/rest/JSONCnROService/createConsignment`, {
+  const res = await fetch(`${SOFTDATA_BASE}/consignment/softdata`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "api-key": apiKey },
     body: JSON.stringify({ consignments: [consignment] }),
@@ -220,15 +222,32 @@ async function createConsignment(orderId: string) {
 }
 
 async function trackShipment(awbNo: string) {
-  const apiKey = await getSoftdataToken();
-  const res = await fetch(`${SOFTDATA_BASE}/rest/JSONCnTrk/getTrackDetails`, {
+  const token = need("DTDC_ACCESS_TOKEN");
+  const res = await fetch(`${TRACK_BASE}/rest/JSONCnTrk/getTrackDetails`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "api-key": apiKey },
+    headers: { "Content-Type": "application/json", "X-Access-Token": token },
     body: JSON.stringify({ trkType: "cnno", strcnno: awbNo, addtnlDtl: "Y" }),
   });
   const data = await res.json().catch(() => ({}));
-  const track = data?.trackDetails || data?.trackHeader || data;
-  return { status: track?.statusType || track?.strStatus || "Unknown", scans: data?.trackDetails || [], raw: data };
+  if (data?.statusFlag === false) {
+    const msg = data?.errorDetails?.find((e: any) => e.name === "strError")?.value || "Tracking failed";
+    return { status: "Not Found", message: msg, scans: [] };
+  }
+  const header = data?.trackHeader || {};
+  const scans = (data?.trackDetails || []).map((d: any) => ({
+    date: d.strActionDate,
+    time: d.strActionTime,
+    location: d.strOrigin || d.strDestination || "",
+    activity: d.strAction || d.strManifestNo || "",
+  }));
+  return {
+    status: header?.strStatus || header?.strStatusTransOn || "In Transit",
+    origin: header?.strOrigin,
+    destination: header?.strDestination,
+    expected_delivery: header?.strExpectedDeliveryDate,
+    scans,
+    raw: data,
+  };
 }
 
 serve(async (req) => {
@@ -253,7 +272,7 @@ serve(async (req) => {
       case "debug_auth": {
         const username = need("DTDC_USERNAME");
         const password = need("DTDC_PASSWORD");
-        const url = `${SOFTDATA_BASE}/api/dtdc/authenticate?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+        const url = `${TRACK_BASE}/api/dtdc/authenticate?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
         const r = await fetch(url, { method: "GET" });
         result = { status: r.status, body: await r.text(), envApiKeyLen: (Deno.env.get("DTDC_API_KEY") || "").length };
         break;
