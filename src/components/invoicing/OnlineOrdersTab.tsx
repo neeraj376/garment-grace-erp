@@ -746,6 +746,21 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 placeholder="Enter AWB or tracking number"
               />
             </div>
+            <div className="space-y-2">
+              <Label>DTDC Service Option</Label>
+              <Select value={dtdcService} onValueChange={setDtdcService}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DTDC_SERVICE_OPTIONS.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.label} — {s.eta}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex flex-wrap gap-2 pt-1">
               <Button
                 type="button"
@@ -757,7 +772,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                   setDtdcBusy("create");
                   try {
                     const { data, error } = await supabase.functions.invoke("dtdc", {
-                      body: { action: "create_consignment", order_id: editingOrder.id },
+                      body: { action: "create_consignment", order_id: editingOrder.id, service_type_id: dtdcService },
                     });
                     if (error || data?.error) throw new Error(data?.error || error?.message);
                     setEditCourier("DTDC");
@@ -775,6 +790,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 {dtdcBusy === "create" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
                 Create DTDC Shipment
               </Button>
+
               {(editAwb || editingOrder?.tracking_number) && (
                 <Button
                   type="button"
