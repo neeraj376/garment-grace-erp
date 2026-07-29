@@ -886,8 +886,10 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                     if (!editCourier.trim()) setEditCourier("DTDC");
                     toast.error("DTDC could not assign an AWB", {
                       description: `${e.message || "Failed to create shipment"} — enter the AWB manually above and click Save.`,
+                      duration: 10000,
                     });
                   } finally {
+
                     setDtdcBusy(null);
                   }
                 }}
