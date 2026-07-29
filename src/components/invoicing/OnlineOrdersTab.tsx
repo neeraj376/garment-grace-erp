@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText, MessageCircle, Mail, StickyNote } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { buildDtdcLabelHtml } from "@/lib/shippingLabel";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
