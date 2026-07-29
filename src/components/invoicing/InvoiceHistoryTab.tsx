@@ -540,8 +540,23 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const handlePrintSingleLabel = async (inv: Invoice) => {
     setPrintingLabelId(inv.id);
     try {
-      const addrMap = await resolveAddresses([inv]);
-      const html = buildLabelHtml(inv, addrMap[inv.id] || null);
+      // Always pull the latest courier / AWB straight from the DB so the label is never stale
+      let live = inv;
+      const { data: fresh } = await supabase
+        .from("invoices")
+        .select("courier_name, awb_no, dtdc_service_type")
+        .eq("id", inv.id)
+        .maybeSingle();
+      if (fresh) {
+        live = { ...inv, courier_name: fresh.courier_name, awb_no: fresh.awb_no, dtdc_service_type: (fresh as any).dtdc_service_type } as Invoice;
+        setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, courier_name: fresh.courier_name, awb_no: fresh.awb_no } : i));
+      }
+      if (!live.awb_no) {
+        toast({ title: "No AWB assigned", description: "Printing label without AWB — add courier / AWB to include it.", });
+      }
+      const addrMap = await resolveAddresses([live]);
+      const html = buildLabelHtml(live, addrMap[live.id] || null);
+
       const printWindow = window.open("", "_blank", "width=500,height=700");
       if (!printWindow) {
         toast({ title: "Popup blocked", description: "Please allow popups to print labels", variant: "destructive" });
