@@ -1711,14 +1711,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t">
-                  <div>
-                    <Label className="text-xs">Courier Name</Label>
-                    <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Auto-filled after booking" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">AWB No.</Label>
-                    <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
-                  </div>
                   <div className="sm:col-span-2">
                     <Label className="text-xs">DTDC Service</Label>
                     <Select value={dtdcService} onValueChange={setDtdcService}>
