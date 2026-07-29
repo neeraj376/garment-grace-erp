@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { buildDtdcLabelHtml } from "@/lib/shippingLabel";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { invokeErrorMessage } from "@/lib/invokeError";
 import { toast } from "sonner";
 import EditOnlineOrderDialog from "./EditOnlineOrderDialog";
 import OrderInvoiceDialog from "./OrderInvoiceDialog";
@@ -200,7 +201,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               service_type_id: serviceType,
             },
           });
-          if (dtdcErr || dtdcData?.error) throw new Error(dtdcErr?.message || dtdcData?.error);
+          if (dtdcErr || dtdcData?.error) throw new Error(await invokeErrorMessage(dtdcErr, dtdcData));
           newAwb = dtdcData.awb_no;
           newCourier = dtdcData.courier_name || "DTDC";
           setEditAwb(newAwb);
@@ -877,7 +878,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                     const { data, error } = await supabase.functions.invoke("dtdc", {
                       body: { action: "create_consignment", order_id: editingOrder.id, service_type_id: dtdcService, awb_no: manualAwb || undefined },
                     });
-                    if (error || data?.error) throw new Error(data?.error || error?.message);
+                    if (error || data?.error) throw new Error(await invokeErrorMessage(error, data));
                     setEditCourier("DTDC");
                     setEditAwb(data.awb_no);
                     toast.success(`DTDC AWB created: ${data.awb_no}`);
@@ -913,7 +914,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                       const { data, error } = await supabase.functions.invoke("dtdc", {
                         body: { action: "track", awb_no: awb },
                       });
-                      if (error || data?.error) throw new Error(data?.error || error?.message);
+                      if (error || data?.error) throw new Error(await invokeErrorMessage(error, data));
                       toast.success(`DTDC status: ${data.status}`, {
                         description: `${(data.scans || []).length} scan(s) recorded`,
                       });
