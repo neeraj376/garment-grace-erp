@@ -544,11 +544,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       let live = inv;
       const { data: fresh } = await supabase
         .from("invoices")
-        .select("courier_name, awb_no, dtdc_service_type")
+        .select("courier_name, awb_no")
         .eq("id", inv.id)
         .maybeSingle();
       if (fresh) {
-        live = { ...inv, courier_name: fresh.courier_name, awb_no: fresh.awb_no, dtdc_service_type: (fresh as any).dtdc_service_type } as Invoice;
+        live = { ...inv, courier_name: fresh.courier_name, awb_no: fresh.awb_no } as Invoice;
         setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, courier_name: fresh.courier_name, awb_no: fresh.awb_no } : i));
       }
       if (!live.awb_no) {
