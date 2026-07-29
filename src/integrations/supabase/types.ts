@@ -956,6 +956,7 @@ export type Database = {
           created_at: string
           customer_id: string
           discount_amount: number
+          dtdc_service_type: string | null
           id: string
           notes: string | null
           order_number: string
@@ -979,6 +980,7 @@ export type Database = {
           created_at?: string
           customer_id: string
           discount_amount?: number
+          dtdc_service_type?: string | null
           id?: string
           notes?: string | null
           order_number: string
@@ -1002,6 +1004,7 @@ export type Database = {
           created_at?: string
           customer_id?: string
           discount_amount?: number
+          dtdc_service_type?: string | null
           id?: string
           notes?: string | null
           order_number?: string
