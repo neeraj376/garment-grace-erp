@@ -189,6 +189,42 @@ type Destination = {
   state: string;
 };
 
+// DTDC rejects non-ASCII characters (emoji, curly quotes, accented letters,
+// Devanagari, etc.). Transliterate what we can, drop the rest.
+function toAscii(input: string | undefined | null): string {
+  return String(input ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")       // strip combining accents
+    .replace(/[\u2018\u2019\u201B]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2010-\u2015]/g, "-")
+    .replace(/[^\x20-\x7E]/g, " ")          // anything else -> space
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sanitizeDestination(d: Destination): Destination {
+  const line1 = toAscii(d.address_line_1);
+  const line2 = toAscii(d.address_line_2);
+  // If line 1 became empty/too short after cleaning, pull line 2 (or city) up.
+  let a1 = line1;
+  let a2 = line2;
+  if (a1.length < 3) {
+    a1 = a2 || toAscii(d.city);
+    a2 = a1 === line2 ? "" : a2;
+  }
+  if (a1.length < 3) a1 = `${toAscii(d.city)} ${d.pincode}`.trim();
+  return {
+    name: toAscii(d.name) || "Customer",
+    phone: String(d.phone || "").replace(/\D/g, "").slice(-10),
+    address_line_1: a1.slice(0, 90),
+    address_line_2: a2.slice(0, 90),
+    pincode: String(d.pincode || "").replace(/\D/g, ""),
+    city: toAscii(d.city),
+    state: toAscii(d.state),
+  };
+}
+
 async function pushConsignment(opts: {
   reference: string;
   serviceType: string;
@@ -200,6 +236,8 @@ async function pushConsignment(opts: {
 }) {
   const apiKey = await getSoftdataToken();
   const customerCode = need("DTDC_CUSTOMER_CODE");
+  const destination = sanitizeDestination(opts.destination);
+
 
   const consignment: Record<string, unknown> = {
     customer_code: customerCode,
