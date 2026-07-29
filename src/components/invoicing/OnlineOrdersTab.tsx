@@ -177,6 +177,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     setEditStatus(order.status);
     setEditAwb(order.tracking_number || "");
     setEditCourier(order.courier_name || "");
+    setDtdcService(order.dtdc_service_type || DEFAULT_DTDC_SERVICE);
   };
 
   const handleSaveOrder = async () => {
