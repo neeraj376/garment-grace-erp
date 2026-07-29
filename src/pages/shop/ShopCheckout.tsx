@@ -438,8 +438,36 @@ export default function ShopCheckout() {
                       </Select>
                     </div>
                   </div>
+                  {courierOptions.length > 0 && (
+                    <div className="pt-1">
+                      <Label className="mb-2 block">
+                        Courier Option * {ratesLoading && <span className="text-xs text-muted-foreground">(updating rates…)</span>}
+                      </Label>
+                      <RadioGroup
+                        value={selectedCourier?.service_type_id || ""}
+                        onValueChange={setSelectedService}
+                        className="space-y-2"
+                      >
+                        {courierOptions.map((o) => (
+                          <label
+                            key={o.service_type_id}
+                            className={`flex items-center gap-2 rounded-md border p-3 cursor-pointer ${selectedCourier?.service_type_id === o.service_type_id ? "border-primary bg-primary/5" : "border-input"}`}
+                          >
+                            <RadioGroupItem value={o.service_type_id} id={`svc-${o.service_type_id}`} />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium">DTDC {o.label}</div>
+                              {o.eta && <div className="text-xs text-muted-foreground">Estimated delivery: {o.eta}</div>}
+                            </div>
+                            <div className="text-sm font-semibold">₹{o.rate.toLocaleString("en-IN")}</div>
+                          </label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
                 </>
               )}
+
+
 
               {deliveryMethod === "pickup" && (
                 <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
