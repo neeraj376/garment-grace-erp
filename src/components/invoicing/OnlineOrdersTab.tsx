@@ -784,7 +784,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
       <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Update Order — {editingOrder?.order_number}</DialogTitle>
+            <DialogTitle>Assign Courier / AWB — {editingOrder?.order_number}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
