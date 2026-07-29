@@ -356,14 +356,6 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       toast({ title: "Error", description: "Customer name is required", variant: "destructive" });
       return;
     }
-    if (source === "whatsapp" && !courierName.trim()) {
-      toast({ title: "Error", description: "Courier Name is required for online invoices", variant: "destructive" });
-      return;
-    }
-    if (source === "whatsapp" && !awbNo.trim()) {
-      toast({ title: "Error", description: "AWB No. is required for online invoices", variant: "destructive" });
-      return;
-    }
 
     setSaving(true);
     try {
@@ -585,14 +577,6 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
               </div>
               {source === "whatsapp" && (
                 <>
-                  <div className="space-y-1">
-                    <Label>Courier Name <span className="text-destructive">*</span></Label>
-                    <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>AWB No. <span className="text-destructive">*</span></Label>
-                    <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Tracking / AWB number" />
-                  </div>
                   <div className="space-y-1 md:col-span-2">
                     <Label>Delivery Cost (₹)</Label>
                     <Input type="number" min={0} value={deliveryCost} onChange={e => setDeliveryCost(e.target.value)} placeholder="0" />
