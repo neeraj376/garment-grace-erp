@@ -15,6 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
 import { saveAs } from "file-saver";
+import { DTDC_SERVICE_OPTIONS, DEFAULT_DTDC_SERVICE } from "@/lib/dtdcServices";
+
 
 
 const PAYMENT_OPTIONS: { value: string; label: string }[] = [
