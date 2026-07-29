@@ -129,6 +129,7 @@ serve(async (req) => {
         payment_status: "pending",
         payment_method: "razorpay",
         courier_name: courier_name || null,
+        dtdc_service_type: dtdc_service_type || null,
       })
       .select("id")
       .single();
