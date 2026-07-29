@@ -386,8 +386,8 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
             ? paymentMethods.map(m => `${m}:${Number(paymentAmounts[m]) || 0}`).join("+")
             : paymentMethods.join(","),
           source,
-          courier_name: source === "whatsapp" ? normalizedCourierName : null,
-          awb_no: source === "whatsapp" ? normalizedAwbNo : null,
+          courier_name: source === "whatsapp" ? (normalizedCourierName || null) : null,
+          awb_no: source === "whatsapp" ? (normalizedAwbNo || null) : null,
           delivery_cost: source === "whatsapp" ? (Number(deliveryCost) || 0) : 0,
           shipping_name: source === "whatsapp" ? (shipName.trim() || customerName.trim() || null) : null,
           shipping_phone: source === "whatsapp" ? (shipPhone.trim() || customerMobile.trim() || null) : null,
