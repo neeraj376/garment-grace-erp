@@ -31,6 +31,7 @@ serve(async (req) => {
       items, // [{ product_id, quantity }]
       store_id,
       courier_name,
+      dtdc_service_type,
       shipping_cost,
     } = body;
 
