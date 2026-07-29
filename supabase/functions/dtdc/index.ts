@@ -400,6 +400,9 @@ serve(async (req) => {
       case "rate":
         result = await getRate(body);
         break;
+      case "rates":
+        result = await getRates(body);
+        break;
       case "service_types":
         result = { service_types: SERVICE_TYPES };
         break;
