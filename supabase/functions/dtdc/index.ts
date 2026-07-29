@@ -133,8 +133,8 @@ async function getRate(params: {
 
 // DTDC service options offered at shipment creation (live account)
 const SERVICE_TYPES = [
-  { id: "B2C PRIORITY", label: "B2C Priority (Air)", eta: "2-4 days" },
   { id: "B2C SMART EXPRESS", label: "B2C Smart Express (Surface)", eta: "3-6 days" },
+  { id: "B2C PRIORITY", label: "B2C Priority (Air)", eta: "2-4 days" },
 ];
 
 
