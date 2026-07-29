@@ -212,8 +212,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
       }
 
       const updates: any = { status: editStatus };
-      if (newAwb) updates.tracking_number = newAwb;
+      updates.tracking_number = newAwb || null;
       updates.courier_name = newCourier || null;
+
 
       const { error } = await supabase
         .from("orders")
