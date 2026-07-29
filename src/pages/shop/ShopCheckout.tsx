@@ -37,6 +37,9 @@ const INDIAN_STATES = [
 
 interface CourierOption {
   courier_name: string;
+  service_type_id: string;
+  label: string;
+  eta: string;
   rate: number;
 }
 
