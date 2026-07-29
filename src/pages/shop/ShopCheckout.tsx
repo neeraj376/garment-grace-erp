@@ -12,6 +12,7 @@ import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
 import { calculateDtdcShipping } from "@/lib/dtdcRates";
+import { DTDC_SERVICE_OPTIONS, DEFAULT_DTDC_SERVICE } from "@/lib/dtdcServices";
 
 const STORE_PICKUP_ADDRESS = {
   address_line1: "Originee Store - Pickup",
