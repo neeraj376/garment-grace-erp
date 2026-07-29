@@ -12,6 +12,7 @@ import { useCart } from "@/hooks/useCart";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
 import { calculateDtdcShipping } from "@/lib/dtdcRates";
+import { DTDC_SERVICE_OPTIONS, DEFAULT_DTDC_SERVICE } from "@/lib/dtdcServices";
 
 const STORE_PICKUP_ADDRESS = {
   address_line1: "Originee Store - Pickup",
@@ -37,6 +38,9 @@ const INDIAN_STATES = [
 
 interface CourierOption {
   courier_name: string;
+  service_type_id: string;
+  label: string;
+  eta: string;
   rate: number;
 }
 
@@ -86,24 +90,29 @@ export default function ShopCheckout() {
   // Delivery method: ship to address, or store pickup
   const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">("ship");
 
-  // Shipping state — live DTDC rate when the API is configured, local calculator otherwise
+  // Shipping state — live DTDC rates when the API responds, local calculator otherwise
   const [serviceable, setServiceable] = useState<boolean | null>(null);
-  const [selectedCourier, setSelectedCourier] = useState<CourierOption | null>(null);
-  const [shippingCost, setShippingCost] = useState(0);
+  const [courierOptions, setCourierOptions] = useState<CourierOption[]>([]);
+  const [selectedService, setSelectedService] = useState<string>(DEFAULT_DTDC_SERVICE);
+  const [ratesLoading, setRatesLoading] = useState(false);
+
+  const selectedCourier =
+    deliveryMethod === "pickup"
+      ? { courier_name: "Store Pickup", service_type_id: "", rate: 0, label: "Store Pickup", eta: "" }
+      : courierOptions.find((o) => o.service_type_id === selectedService) || courierOptions[0] || null;
+  const shippingCost = deliveryMethod === "pickup" ? 0 : selectedCourier?.rate ?? 0;
 
   useEffect(() => {
     if (deliveryMethod === "pickup") {
       setServiceable(true);
-      setShippingCost(0);
-      setSelectedCourier({ courier_name: "Store Pickup", rate: 0 });
+      setCourierOptions([]);
       return;
     }
 
     const pincodeValid = /^[1-9]\d{5}$/.test(form.pincode);
     if (!pincodeValid || !form.state) {
       setServiceable(null);
-      setSelectedCourier(null);
-      setShippingCost(0);
+      setCourierOptions([]);
       return;
     }
 
@@ -114,19 +123,29 @@ export default function ShopCheckout() {
       0
     );
 
-    // Show the local estimate immediately so the total is never blank
+    // Show local estimates immediately so the total is never blank
     const { cost: fallbackCost } = calculateDtdcShipping(form.state, weightKg, invoiceValue);
+    const fallbackOptions: CourierOption[] = DTDC_SERVICE_OPTIONS.map((s, idx) => ({
+      courier_name: "DTDC",
+      service_type_id: s.id,
+      label: s.label,
+      eta: s.eta,
+      rate: idx === 0 ? fallbackCost : Math.round(fallbackCost * 1.25),
+    }));
     setServiceable(true);
-    setShippingCost(fallbackCost);
-    setSelectedCourier({ courier_name: "DTDC", rate: fallbackCost });
+    setCourierOptions(fallbackOptions);
+    setSelectedService((prev) =>
+      fallbackOptions.some((o) => o.service_type_id === prev) ? prev : fallbackOptions[0].service_type_id
+    );
 
-    // Then try DTDC's live rate API; silently keep the estimate if it isn't available
+    // Then pull DTDC's live rates (already marked up 20% server-side)
     let cancelled = false;
+    setRatesLoading(true);
     const timer = setTimeout(async () => {
       try {
         const { data, error } = await supabase.functions.invoke("dtdc", {
           body: {
-            action: "rate",
+            action: "rates",
             destination_pincode: form.pincode,
             weight_kg: weightKg,
             invoice_value: invoiceValue,
@@ -134,18 +153,31 @@ export default function ShopCheckout() {
           },
         });
         if (cancelled || error) return;
-        if (data?.serviceable && Number(data.cost) > 0) {
-          setShippingCost(Number(data.cost));
-          setSelectedCourier({ courier_name: "DTDC", rate: Number(data.cost) });
+        const live = (data?.options || []) as any[];
+        if (live.length > 0) {
+          const opts: CourierOption[] = live.map((o) => ({
+            courier_name: "DTDC",
+            service_type_id: o.service_type_id,
+            label: o.label || o.service_type_id,
+            eta: o.eta || "",
+            rate: Number(o.cost),
+          }));
+          setCourierOptions(opts);
+          setSelectedService((prev) =>
+            opts.some((o) => o.service_type_id === prev) ? prev : opts[0].service_type_id
+          );
         }
       } catch {
-        /* keep the local estimate */
+        /* keep the local estimates */
+      } finally {
+        if (!cancelled) setRatesLoading(false);
       }
     }, 500);
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      setRatesLoading(false);
     };
   }, [form.pincode, form.state, items, deliveryMethod]);
 
@@ -223,6 +255,7 @@ export default function ShopCheckout() {
           items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
           store_id: STORE_ID,
           courier_name: deliveryMethod === "pickup" ? "Store Pickup" : selectedCourier!.courier_name,
+          dtdc_service_type: deliveryMethod === "pickup" ? null : selectedCourier!.service_type_id,
           shipping_cost: deliveryMethod === "pickup" ? 0 : shippingCost,
         },
       });
@@ -405,8 +438,36 @@ export default function ShopCheckout() {
                       </Select>
                     </div>
                   </div>
+                  {courierOptions.length > 0 && (
+                    <div className="pt-1">
+                      <Label className="mb-2 block">
+                        Courier Option * {ratesLoading && <span className="text-xs text-muted-foreground">(updating rates…)</span>}
+                      </Label>
+                      <RadioGroup
+                        value={selectedCourier?.service_type_id || ""}
+                        onValueChange={setSelectedService}
+                        className="space-y-2"
+                      >
+                        {courierOptions.map((o) => (
+                          <label
+                            key={o.service_type_id}
+                            className={`flex items-center gap-2 rounded-md border p-3 cursor-pointer ${selectedCourier?.service_type_id === o.service_type_id ? "border-primary bg-primary/5" : "border-input"}`}
+                          >
+                            <RadioGroupItem value={o.service_type_id} id={`svc-${o.service_type_id}`} />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium">DTDC {o.label}</div>
+                              {o.eta && <div className="text-xs text-muted-foreground">Estimated delivery: {o.eta}</div>}
+                            </div>
+                            <div className="text-sm font-semibold">₹{o.rate.toLocaleString("en-IN")}</div>
+                          </label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
                 </>
               )}
+
+
 
               {deliveryMethod === "pickup" && (
                 <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">

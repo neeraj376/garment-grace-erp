@@ -18,6 +18,8 @@ const MIN_BILLABLE_KG = 1;
 const FUEL_SURCHARGE = 0.35;
 const FOB_RATE = 0.002; // 0.20% on invoice value
 const GST = 0.18;
+// Retail markup applied on top of the DTDC price (matches the live API markup)
+export const RATE_MARKUP = 1.2;
 
 // State -> zone mapping (pickup = Delhi)
 const ZONE_BY_STATE: Record<string, DtdcZone> = {
@@ -73,6 +75,6 @@ export function calculateDtdcShipping(
   const base = perKg * billableKg;
   const withFuel = base * (1 + FUEL_SURCHARGE);
   const withFob = withFuel + invoiceValue * FOB_RATE;
-  const cost = Math.round(withFob * (1 + GST));
+  const cost = Math.round(withFob * (1 + GST) * RATE_MARKUP);
   return { cost, zone, base, billableKg };
 }

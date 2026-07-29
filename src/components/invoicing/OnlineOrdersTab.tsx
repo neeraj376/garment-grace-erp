@@ -177,16 +177,39 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     setEditStatus(order.status);
     setEditAwb(order.tracking_number || "");
     setEditCourier(order.courier_name || "");
+    setDtdcService(order.dtdc_service_type || DEFAULT_DTDC_SERVICE);
   };
 
   const handleSaveOrder = async () => {
     if (!editingOrder) return;
     setSaving(true);
     try {
-      const newAwb = editAwb.trim();
-      const newCourier = editCourier.trim();
+      let newAwb = editAwb.trim();
+      let newCourier = editCourier.trim();
       const prevAwb = editingOrder.tracking_number || "";
       const prevCourier = editingOrder.courier_name || "";
+
+      // Auto-book a DTDC consignment when the order is marked shipped and has no AWB yet
+      if (editStatus === "shipped" && !newAwb) {
+        const serviceType = editingOrder.dtdc_service_type || dtdcService || DEFAULT_DTDC_SERVICE;
+        try {
+          const { data: dtdcData, error: dtdcErr } = await supabase.functions.invoke("dtdc", {
+            body: {
+              action: "create_consignment",
+              order_id: editingOrder.id,
+              service_type_id: serviceType,
+            },
+          });
+          if (dtdcErr || dtdcData?.error) throw new Error(dtdcErr?.message || dtdcData?.error);
+          newAwb = dtdcData.awb_no;
+          newCourier = dtdcData.courier_name || "DTDC";
+          setEditAwb(newAwb);
+          setEditCourier(newCourier);
+          toast.success(`DTDC AWB assigned: ${newAwb}`);
+        } catch (bookErr: any) {
+          toast.error(`DTDC booking failed: ${bookErr.message || "Unknown error"} — enter the AWB manually.`);
+        }
+      }
 
       const updates: any = { status: editStatus };
       if (newAwb) updates.tracking_number = newAwb;

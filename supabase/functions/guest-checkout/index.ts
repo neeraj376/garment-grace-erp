@@ -31,6 +31,7 @@ serve(async (req) => {
       items, // [{ product_id, quantity }]
       store_id,
       courier_name,
+      dtdc_service_type,
       shipping_cost,
     } = body;
 
@@ -129,6 +130,7 @@ serve(async (req) => {
         payment_status: "pending",
         payment_method: "payu",
         courier_name: courier_name || null,
+        dtdc_service_type: dtdc_service_type || null,
       })
       .select("id")
       .single();
