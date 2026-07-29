@@ -19,6 +19,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import ReturnDialog from "./ReturnDialog";
 import EditInvoiceDialog from "./EditInvoiceDialog";
 import { DTDC_SERVICE_OPTIONS, DEFAULT_DTDC_SERVICE } from "@/lib/dtdcServices";
+import { buildDtdcLabelHtml } from "@/lib/shippingLabel";
+
 
 
 interface Invoice {
