@@ -19,7 +19,7 @@ const FUEL_SURCHARGE = 0.35;
 const FOB_RATE = 0.002; // 0.20% on invoice value
 const GST = 0.18;
 // Retail markup applied on top of the DTDC price (matches the live API markup)
-export const RATE_MARKUP = 1.2;
+export const RATE_MARKUP = 1.1;
 
 // State -> zone mapping (pickup = Delhi)
 const ZONE_BY_STATE: Record<string, DtdcZone> = {

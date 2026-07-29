@@ -117,7 +117,7 @@ export default function ShopCheckout() {
     }
 
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    const weightKg = Math.max(0.5, totalQuantity * 0.4);
+    const weightKg = Math.max(0.4, totalQuantity * 0.4);
     const invoiceValue = items.reduce(
       (sum, item) => sum + (item.product?.selling_price ?? 0) * item.quantity,
       0
