@@ -168,6 +168,16 @@ serve(async (req) => {
           "WhatsApp not sent: your Interakt wallet is out of balance. Please recharge the Interakt wallet, then resend the invoice."
         );
       }
+      if (response.status === 403 || /not supported on your interakt account|upgrading your subscription/i.test(rawBody)) {
+        throw new Error(
+          "WhatsApp not sent: your Interakt plan doesn't include API access. Enable the Public/Messaging API in Interakt (Settings → Developer Setup) or ask Interakt support to activate it on your new subscription, then try again."
+        );
+      }
+      if (response.status === 401) {
+        throw new Error(
+          "WhatsApp not sent: Interakt rejected the API key. Regenerate the Basic API key in Interakt and update it here."
+        );
+      }
 
       // On first failure, retry with the plain invoice link as the header media
       // instead of dropping the header (templates with a media header reject an
