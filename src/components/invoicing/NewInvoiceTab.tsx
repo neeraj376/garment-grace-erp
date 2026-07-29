@@ -15,6 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
 import { saveAs } from "file-saver";
+import { DTDC_SERVICE_OPTIONS, DEFAULT_DTDC_SERVICE } from "@/lib/dtdcServices";
+
 
 
 const PAYMENT_OPTIONS: { value: string; label: string }[] = [
@@ -185,6 +187,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [courierName, setCourierName] = useState(() => loadDraft()?.courierName ?? "");
   const [awbNo, setAwbNo] = useState(() => loadDraft()?.awbNo ?? "");
   const [deliveryCost, setDeliveryCost] = useState(() => loadDraft()?.deliveryCost ?? "");
+  const [dtdcService, setDtdcService] = useState<string>(DEFAULT_DTDC_SERVICE);
+  const [bookingDtdc, setBookingDtdc] = useState(false);
+
   const [source, setSource] = useState<string>("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
@@ -1163,6 +1168,40 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
   };
 
+  const handleBookDtdc = async () => {
+    if (!lastInvoice) return;
+    setBookingDtdc(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dtdc", {
+        body: { action: "create_consignment_invoice", invoice_id: lastInvoice.id, service_type_id: dtdcService },
+      });
+      const awb = (data as any)?.awb_no;
+      if (error || (data as any)?.error || !awb) {
+        const msg = (data as any)?.error || error?.message || "DTDC did not return an AWB";
+        const manual = window.prompt(`DTDC booking failed: ${msg}\n\nEnter AWB number manually (or cancel):`);
+        if (manual?.trim()) {
+          const { error: upErr } = await supabase
+            .from("invoices")
+            .update({ awb_no: manual.trim(), courier_name: "DTDC" })
+            .eq("id", lastInvoice.id);
+          if (upErr) throw upErr;
+          setCourierName("DTDC");
+          setAwbNo(manual.trim());
+          toast({ title: "AWB saved", description: `DTDC — ${manual.trim()}` });
+        }
+        return;
+      }
+      setCourierName("DTDC");
+      setAwbNo(awb);
+      toast({ title: "DTDC shipment booked", description: `AWB ${awb}` });
+    } catch (err: any) {
+      toast({ title: "DTDC error", description: err.message, variant: "destructive" });
+    } finally {
+      setBookingDtdc(false);
+    }
+  };
+
+
   const handleSendWhatsApp = async () => {
     if (!lastInvoice) return;
     const phone = lastInvoice.customerMobile;
@@ -1681,6 +1720,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
                   </div>
                   <div className="sm:col-span-2">
+                    <Label className="text-xs">DTDC Service</Label>
+                    <Select value={dtdcService} onValueChange={setDtdcService}>
+                      <SelectTrigger><SelectValue placeholder="Select DTDC service" /></SelectTrigger>
+                      <SelectContent>
+                        {DTDC_SERVICE_OPTIONS.map(o => (
+                          <SelectItem key={o.id} value={o.id}>{o.label} — {o.eta}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1">After creating the invoice, use "Book DTDC Shipment" to auto-assign the AWB.</p>
+                  </div>
+
+                  <div className="sm:col-span-2">
                     <Label className="text-xs">Delivery Cost (₹) {source === "whatsapp" && <span className="text-destructive">*</span>}</Label>
                     <Input
                       type="number"
@@ -1870,6 +1922,23 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   </Button>
                 )}
                 {lastInvoice.source === "whatsapp" && lastInvoice.shipping && (
+                  <div className="space-y-2">
+                    <Select value={dtdcService} onValueChange={setDtdcService}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="DTDC service" /></SelectTrigger>
+                      <SelectContent>
+                        {DTDC_SERVICE_OPTIONS.map(o => (
+                          <SelectItem key={o.id} value={o.id}>{o.label} — {o.eta}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" className="w-full" onClick={handleBookDtdc} disabled={bookingDtdc}>
+                      {bookingDtdc ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Truck className="h-4 w-4 mr-1" />}
+                      {awbNo ? `DTDC AWB ${awbNo}` : "Book DTDC Shipment"}
+                    </Button>
+                  </div>
+                )}
+                {lastInvoice.source === "whatsapp" && lastInvoice.shipping && (
+
                   <Button
                     variant="outline"
                     size="sm"
