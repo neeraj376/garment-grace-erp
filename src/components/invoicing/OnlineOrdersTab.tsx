@@ -679,11 +679,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                           <Button
                             size="icon"
                             variant="ghost"
-                            title="Quick Status / AWB"
+                            title="Assign Courier / AWB"
                             onClick={(e) => handleOpenEdit(order, e)}
                           >
                             <Truck className="h-4 w-4" />
                           </Button>
+
                           <Button
                             size="icon"
                             variant="ghost"
