@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeErrorMessage } from "@/lib/invokeError";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -258,7 +260,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       const { data, error } = await supabase.functions.invoke("dtdc", {
         body: { action: "create_consignment_invoice", invoice_id: courierDialog.id, service_type_id: dtdcService, awb_no: manualAwb || undefined },
       });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      if (error || (data as any)?.error) throw new Error(await invokeErrorMessage(error, data));
       const awb = (data as any).awb_no as string;
       setCourierName("DTDC");
       setAwbNo(awb);
