@@ -353,9 +353,21 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }
   };
 
-  const handlePrintLabel = (order: any, e: React.MouseEvent) => {
+  const handlePrintLabel = async (order: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    setLabelOrder(order);
+    let fresh = order;
+    try {
+      const { data } = await supabase
+        .from("orders")
+        .select("courier_name, tracking_number, dtdc_service_type, status")
+        .eq("id", order.id)
+        .maybeSingle();
+      if (data) fresh = { ...order, ...data };
+    } catch {
+      // fall back to cached row
+    }
+    setLabelOrder(fresh);
+
     setTimeout(() => {
       const content = labelRef.current;
       if (!content) return;
