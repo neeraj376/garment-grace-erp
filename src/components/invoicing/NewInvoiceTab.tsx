@@ -1922,6 +1922,23 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   </Button>
                 )}
                 {lastInvoice.source === "whatsapp" && lastInvoice.shipping && (
+                  <div className="space-y-2">
+                    <Select value={dtdcService} onValueChange={setDtdcService}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="DTDC service" /></SelectTrigger>
+                      <SelectContent>
+                        {DTDC_SERVICE_OPTIONS.map(o => (
+                          <SelectItem key={o.id} value={o.id}>{o.label} — {o.eta}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" className="w-full" onClick={handleBookDtdc} disabled={bookingDtdc}>
+                      {bookingDtdc ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Truck className="h-4 w-4 mr-1" />}
+                      {awbNo ? `DTDC AWB ${awbNo}` : "Book DTDC Shipment"}
+                    </Button>
+                  </div>
+                )}
+                {lastInvoice.source === "whatsapp" && lastInvoice.shipping && (
+
                   <Button
                     variant="outline"
                     size="sm"
