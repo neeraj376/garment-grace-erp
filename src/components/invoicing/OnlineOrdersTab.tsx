@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Loader2, Search, Package, ChevronDown, ChevronUp, Printer, Truck, Save, Trash2, Pencil, FileText, MessageCircle, Mail, StickyNote } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { buildDtdcLabelHtml } from "@/lib/shippingLabel";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -1063,55 +1064,25 @@ function ShippingLabel({ order }: { order: any }) {
   const cust = order.shop_customers;
   const name = addr?.name || cust?.name || "—";
   const phone = addr?.phone || cust?.phone || "—";
-  return (
-    <div style={{ width: "4in", height: "6in", border: "1.5px solid #000", padding: "10px", fontFamily: "Arial, sans-serif", boxSizing: "border-box", overflow: "hidden", lineHeight: 1.25 }}>
-      <div style={{ textAlign: "center", borderBottom: "1.5px solid #000", paddingBottom: "5px", marginBottom: "8px" }}>
-        <h2 style={{ fontSize: "14px", fontWeight: "bold", margin: 0 }}>SHIPPING LABEL</h2>
-        <p style={{ fontSize: "10px", color: "#666", margin: "2px 0 0 0" }}>
-          Order: {order.order_number} · {format(new Date(order.created_at), "dd MMM yyyy")}
-        </p>
-      </div>
-
-      <div style={{ marginBottom: "6px" }}>
-        <p style={{ fontSize: "9px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 2px 0" }}>
-          Deliver To:
-        </p>
-        <p style={{ fontSize: "13px", fontWeight: "bold", margin: 0 }}>{name}</p>
-        <p style={{ fontSize: "11px", margin: 0 }}>📞 {phone}</p>
-      </div>
-
-      <div style={{ marginBottom: "6px", padding: "6px", background: "#f5f5f5", borderRadius: "3px" }}>
-        <p style={{ fontSize: "11px", margin: 0 }}>{addr?.address_line1 || ""}</p>
-        {addr?.address_line2 && <p style={{ fontSize: "11px", margin: 0 }}>{addr.address_line2}</p>}
-        <p style={{ fontSize: "11px", fontWeight: "bold", margin: "2px 0 0 0" }}>
-          {addr?.city}, {addr?.state} — {addr?.pincode}
-        </p>
-      </div>
-
-      {order.tracking_number && (
-        <div style={{ borderTop: "1px dashed #ccc", paddingTop: "5px", marginTop: "5px" }}>
-          <p style={{ fontSize: "9px", color: "#666", margin: 0 }}>AWB / Tracking Number:</p>
-          <p style={{ fontSize: "13px", fontWeight: "bold", fontFamily: "monospace", letterSpacing: "0.5px", margin: 0 }}>
-            {order.tracking_number}
-          </p>
-        </div>
-      )}
-
-      {order.courier_name && (
-        <div style={{ marginTop: "4px" }}>
-          <p style={{ fontSize: "9px", color: "#666", margin: 0 }}>Courier: <strong>{order.courier_name}</strong></p>
-        </div>
-      )}
-
-      <div style={{ borderTop: "1.5px solid #000", marginTop: "8px", paddingTop: "5px" }}>
-        <p style={{ fontSize: "9px", fontWeight: "bold", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 2px 0" }}>
-          From / Return Address:
-        </p>
-        <p style={{ fontSize: "11px", fontWeight: "bold", margin: 0 }}>Originee</p>
-        <p style={{ fontSize: "10px", margin: 0 }}>I-132, Sector 50, South City 2</p>
-        <p style={{ fontSize: "10px", margin: 0 }}>Gurugram, Haryana — 122018</p>
-        <p style={{ fontSize: "10px", margin: 0 }}>📞 +91 93109 04557, +91 88828 66833</p>
-      </div>
-    </div>
-  );
+  const pieces = (order.order_items || []).reduce((s: number, i: any) => s + (i.quantity || 0), 0) || 1;
+  const html = buildDtdcLabelHtml({
+    awb: order.tracking_number,
+    courier: order.courier_name,
+    serviceType: order.dtdc_service_type || undefined,
+    referenceNo: order.order_number,
+    date: format(new Date(order.created_at), "dd MMM yyyy"),
+    paymentMode: order.payment_method === "cod" ? "COD" : "PREPAID",
+    pieces,
+    consignee: {
+      name,
+      phone,
+      line1: addr?.address_line1 || "",
+      line2: addr?.address_line2 || "",
+      city: addr?.city || "",
+      state: addr?.state || "",
+      pincode: addr?.pincode || "",
+    },
+  });
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
 }
+
