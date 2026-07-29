@@ -101,7 +101,7 @@ async function getRate(params: {
         width: "15",
         height: "5",
         weight_unit: "kg",
-        weight: String(Math.max(0.5, params.weight_kg)),
+        weight: String(Math.max(0.4, params.weight_kg)),
         declared_value: String(params.invoice_value || 0),
         cod_collection_mode: params.payment_type === "cod" ? "cash" : "",
         cod_amount: params.payment_type === "cod" ? String(params.invoice_value || 0) : "0",
@@ -282,7 +282,7 @@ async function createConsignment(orderId: string, serviceTypeInput?: string, awb
 
   const items = (order as any).order_items || [];
   const totalQty = items.reduce((s: number, i: any) => s + (i.quantity || 0), 0);
-  const weightKg = Math.max(0.5, totalQty * 0.4);
+  const weightKg = Math.max(0.4, totalQty * 0.4);
   const serviceType = resolveServiceType(serviceTypeInput);
 
   const awb = await pushConsignment({
@@ -328,7 +328,7 @@ async function createConsignmentForInvoice(invoiceId: string, serviceTypeInput?:
   }
 
   const totalQty = (inv.invoice_items || []).reduce((s: number, i: any) => s + (i.quantity || 0), 0);
-  const weightKg = Math.max(0.5, totalQty * 0.4);
+  const weightKg = Math.max(0.4, totalQty * 0.4);
   const serviceType = resolveServiceType(serviceTypeInput);
 
   const awb = await pushConsignment({
