@@ -401,10 +401,24 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }, 100);
   };
 
-  const handleBulkPrintLabels = () => {
+  const handleBulkPrintLabels = async () => {
     const selected = filtered.filter((o: any) => selectedIds.has(o.id));
     if (selected.length === 0) return;
-    setBulkLabelOrders(selected);
+    let list = selected;
+    try {
+      const { data } = await supabase
+        .from("orders")
+        .select("id, courier_name, tracking_number, dtdc_service_type, status")
+        .in("id", selected.map((o: any) => o.id));
+      if (data) {
+        const map = new Map(data.map((d: any) => [d.id, d]));
+        list = selected.map((o: any) => ({ ...o, ...(map.get(o.id) || {}) }));
+      }
+    } catch {
+      // fall back to cached rows
+    }
+    setBulkLabelOrders(list);
+
     setTimeout(() => {
       const content = bulkLabelRef.current;
       if (!content) return;
