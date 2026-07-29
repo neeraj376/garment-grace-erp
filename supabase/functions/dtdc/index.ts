@@ -74,21 +74,26 @@ async function checkServiceability(pincode: string) {
   return { serviceable, raw: data };
 }
 
+// Retail markup applied on top of DTDC's quoted price
+const RATE_MARKUP = 1.2;
+
 async function getRate(params: {
   destination_pincode: string;
   weight_kg: number;
   invoice_value: number;
   payment_type: string;
+  service_type_id?: string;
 }) {
   const token = await getRateToken();
   const customerCode = need("DTDC_CUSTOMER_CODE");
   const origin = need("DTDC_ORIGIN_PINCODE");
+  const serviceType = params.service_type_id || SERVICE_TYPE;
   const body = {
     customer_code: customerCode,
     consignments: [
       {
         customer_code: customerCode,
-        service_type_id: SERVICE_TYPE,
+        service_type_id: serviceType,
         load_type: "NON-DOCUMENT",
         description: "Apparel",
         dimension_unit: "cm",
@@ -121,14 +126,44 @@ async function getRate(params: {
     data?.totalAmount ??
     null;
   if (!charges) {
-    return { serviceable: false, cost: 0, raw: data };
+    return { serviceable: false, cost: 0, service_type_id: serviceType, raw: data };
   }
+  const baseCost = Math.round(Number(charges));
   return {
     serviceable: true,
-    cost: Math.round(Number(charges)),
-    service_type_id: SERVICE_TYPE,
+    base_cost: baseCost,
+    cost: Math.round(baseCost * RATE_MARKUP),
+    service_type_id: serviceType,
     raw: data,
   };
+}
+
+// Quote every live service type so the customer can pick a courier option
+async function getRates(params: {
+  destination_pincode: string;
+  weight_kg: number;
+  invoice_value: number;
+  payment_type: string;
+}) {
+  const results = await Promise.all(
+    SERVICE_TYPES.map(async (s) => {
+      try {
+        const r = await getRate({ ...params, service_type_id: s.id });
+        if (!r.serviceable || !r.cost) return null;
+        return {
+          service_type_id: s.id,
+          label: s.label,
+          eta: s.eta,
+          cost: r.cost,
+          base_cost: r.base_cost,
+        };
+      } catch {
+        return null;
+      }
+    })
+  );
+  const options = results.filter(Boolean);
+  return { serviceable: options.length > 0, options };
 }
 
 // DTDC service options offered at shipment creation (live account)
