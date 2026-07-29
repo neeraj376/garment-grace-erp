@@ -818,8 +818,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 placeholder="Enter AWB or tracking number"
               />
               <p className="text-xs text-muted-foreground">
-                If DTDC can't allot an AWB automatically, type the AWB from the DTDC portal here and click Save.
+                Enter the courier name and AWB manually and click Save — or use "Create DTDC Shipment" below to auto-assign one. Clearing both fields removes the assignment.
               </p>
+
             </div>
             <div className="space-y-2">
               <Label>DTDC Service Option</Label>
