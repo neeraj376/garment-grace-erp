@@ -265,9 +265,10 @@ async function pushConsignment(opts: {
       state: need("DTDC_ORIGIN_STATE"),
     },
     destination_details: {
-      ...opts.destination,
-      address_line_2: opts.destination.address_line_2 || "",
+      ...destination,
+      address_line_2: destination.address_line_2 || "",
     },
+
     pieces_detail: [
       {
         description: "Apparel",
