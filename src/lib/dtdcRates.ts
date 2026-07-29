@@ -75,6 +75,6 @@ export function calculateDtdcShipping(
   const base = perKg * billableKg;
   const withFuel = base * (1 + FUEL_SURCHARGE);
   const withFob = withFuel + invoiceValue * FOB_RATE;
-  const cost = Math.round(withFob * (1 + GST));
+  const cost = Math.round(withFob * (1 + GST) * RATE_MARKUP);
   return { cost, zone, base, billableKg };
 }
