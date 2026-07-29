@@ -212,8 +212,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
       }
 
       const updates: any = { status: editStatus };
-      if (newAwb) updates.tracking_number = newAwb;
+      updates.tracking_number = newAwb || null;
       updates.courier_name = newCourier || null;
+
 
       const { error } = await supabase
         .from("orders")
@@ -678,11 +679,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                           <Button
                             size="icon"
                             variant="ghost"
-                            title="Quick Status / AWB"
+                            title="Assign Courier / AWB"
                             onClick={(e) => handleOpenEdit(order, e)}
                           >
                             <Truck className="h-4 w-4" />
                           </Button>
+
                           <Button
                             size="icon"
                             variant="ghost"
@@ -782,7 +784,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
       <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Update Order — {editingOrder?.order_number}</DialogTitle>
+            <DialogTitle>Assign Courier / AWB — {editingOrder?.order_number}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -816,8 +818,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 placeholder="Enter AWB or tracking number"
               />
               <p className="text-xs text-muted-foreground">
-                If DTDC can't allot an AWB automatically, type the AWB from the DTDC portal here and click Save.
+                Enter the courier name and AWB manually and click Save — or use "Create DTDC Shipment" below to auto-assign one. Clearing both fields removes the assignment.
               </p>
+
             </div>
             <div className="space-y-2">
               <Label>DTDC Service Option</Label>
