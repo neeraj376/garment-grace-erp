@@ -491,9 +491,13 @@ serve(async (req) => {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[dtdc] error:", message);
+    // Return 200 so supabase.functions.invoke() surfaces the message in `data.error`
+    // instead of the generic "non-2xx status code" wrapper.
     return new Response(JSON.stringify({ error: message }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   }
 });
