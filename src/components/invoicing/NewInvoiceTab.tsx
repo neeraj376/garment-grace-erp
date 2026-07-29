@@ -187,6 +187,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [courierName, setCourierName] = useState(() => loadDraft()?.courierName ?? "");
   const [awbNo, setAwbNo] = useState(() => loadDraft()?.awbNo ?? "");
   const [deliveryCost, setDeliveryCost] = useState(() => loadDraft()?.deliveryCost ?? "");
+  const [dtdcService, setDtdcService] = useState<string>(DEFAULT_DTDC_SERVICE);
+  const [bookingDtdc, setBookingDtdc] = useState(false);
+
   const [source, setSource] = useState<string>("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
