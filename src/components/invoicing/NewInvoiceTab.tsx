@@ -1720,6 +1720,19 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     <Input value={awbNo} onChange={e => setAwbNo(e.target.value)} placeholder="Auto-filled after booking" />
                   </div>
                   <div className="sm:col-span-2">
+                    <Label className="text-xs">DTDC Service</Label>
+                    <Select value={dtdcService} onValueChange={setDtdcService}>
+                      <SelectTrigger><SelectValue placeholder="Select DTDC service" /></SelectTrigger>
+                      <SelectContent>
+                        {DTDC_SERVICE_OPTIONS.map(o => (
+                          <SelectItem key={o.id} value={o.id}>{o.label} — {o.eta}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1">After creating the invoice, use "Book DTDC Shipment" to auto-assign the AWB.</p>
+                  </div>
+
+                  <div className="sm:col-span-2">
                     <Label className="text-xs">Delivery Cost (₹) {source === "whatsapp" && <span className="text-destructive">*</span>}</Label>
                     <Input
                       type="number"
