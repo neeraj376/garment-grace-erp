@@ -75,7 +75,7 @@ async function checkServiceability(pincode: string) {
 }
 
 // Retail markup applied on top of DTDC's quoted price
-const RATE_MARKUP = 1.2;
+const RATE_MARKUP = 1.1;
 
 async function getRate(params: {
   destination_pincode: string;
