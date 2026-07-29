@@ -255,6 +255,7 @@ export default function ShopCheckout() {
           items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
           store_id: STORE_ID,
           courier_name: deliveryMethod === "pickup" ? "Store Pickup" : selectedCourier!.courier_name,
+          dtdc_service_type: deliveryMethod === "pickup" ? null : selectedCourier!.service_type_id,
           shipping_cost: deliveryMethod === "pickup" ? 0 : shippingCost,
         },
       });
