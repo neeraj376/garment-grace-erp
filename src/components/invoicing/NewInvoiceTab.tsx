@@ -1168,6 +1168,40 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
   };
 
+  const handleBookDtdc = async () => {
+    if (!lastInvoice) return;
+    setBookingDtdc(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dtdc", {
+        body: { action: "create_consignment_invoice", invoice_id: lastInvoice.id, service_type_id: dtdcService },
+      });
+      const awb = (data as any)?.awb_no;
+      if (error || (data as any)?.error || !awb) {
+        const msg = (data as any)?.error || error?.message || "DTDC did not return an AWB";
+        const manual = window.prompt(`DTDC booking failed: ${msg}\n\nEnter AWB number manually (or cancel):`);
+        if (manual?.trim()) {
+          const { error: upErr } = await supabase
+            .from("invoices")
+            .update({ awb_no: manual.trim(), courier_name: "DTDC" })
+            .eq("id", lastInvoice.id);
+          if (upErr) throw upErr;
+          setCourierName("DTDC");
+          setAwbNo(manual.trim());
+          toast({ title: "AWB saved", description: `DTDC — ${manual.trim()}` });
+        }
+        return;
+      }
+      setCourierName("DTDC");
+      setAwbNo(awb);
+      toast({ title: "DTDC shipment booked", description: `AWB ${awb}` });
+    } catch (err: any) {
+      toast({ title: "DTDC error", description: err.message, variant: "destructive" });
+    } finally {
+      setBookingDtdc(false);
+    }
+  };
+
+
   const handleSendWhatsApp = async () => {
     if (!lastInvoice) return;
     const phone = lastInvoice.customerMobile;
