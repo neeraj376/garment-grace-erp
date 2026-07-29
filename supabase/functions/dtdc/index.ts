@@ -445,6 +445,36 @@ serve(async (req) => {
         };
         break;
       }
+      case "debug_rate_probe": {
+        const key = await getSoftdataToken();
+        const paths = [
+          "/api/customer/integration/consignment/rate",
+          "/api/customer/integration/pricing/calculate",
+          "/api/customer/integration/ratecalculator",
+        ];
+        const out: unknown[] = [];
+        for (const p of paths) {
+          try {
+            const r = await fetch(`${SOFTDATA_BASE.replace("/api/customer/integration", "")}${p}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "api-key": key },
+              body: JSON.stringify({
+                customer_code: need("DTDC_CUSTOMER_CODE"),
+                origin_pincode: need("DTDC_ORIGIN_PINCODE"),
+                destination_pincode: body.destination_pincode || "682001",
+                weight: "0.4",
+                service_type_id: "B2C SMART EXPRESS",
+                load_type: "NON-DOCUMENT",
+              }),
+            });
+            out.push({ path: p, status: r.status, body: (await r.text()).slice(0, 400) });
+          } catch (e) {
+            out.push({ path: p, error: String(e) });
+          }
+        }
+        result = out;
+        break;
+      }
       case "debug_auth": {
         const username = need("DTDC_USERNAME");
         const password = need("DTDC_PASSWORD");
