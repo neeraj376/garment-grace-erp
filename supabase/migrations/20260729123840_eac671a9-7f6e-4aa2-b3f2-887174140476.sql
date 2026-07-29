@@ -1,0 +1,2 @@
+UPDATE public.orders SET tracking_number = NULL, courier_name = NULL, status = 'confirmed' WHERE id = '76238711-d540-4b93-8e46-9c89a6eec7a0';
+UPDATE public.orders SET tracking_number = NULL, courier_name = NULL, status = 'pending' WHERE id = '78ab903d-2f0b-4491-a990-4304f3ef455b';
