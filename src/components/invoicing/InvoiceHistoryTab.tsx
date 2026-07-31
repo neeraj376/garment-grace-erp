@@ -1019,6 +1019,12 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               {invoiceRows}
             </TableBody>
           </Table>
+          {filtered.length > visibleInvoices.length && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Showing first {visibleInvoices.length} of {filtered.length} invoices — refine the filters to narrow results.
+            </p>
+          )}
+
         </CardContent>
       </Card>
 
