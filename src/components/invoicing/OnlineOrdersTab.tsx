@@ -817,7 +817,13 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               {orderRows}
             </TableBody>
           </Table>
+          {filtered.length > visibleOrders.length && (
+            <p className="text-xs text-muted-foreground px-3 py-2">
+              Showing first {visibleOrders.length} of {filtered.length} orders — refine the search or filters to narrow results.
+            </p>
+          )}
         </div>
+
       )}
 
       {/* Edit Status / AWB Dialog */}
