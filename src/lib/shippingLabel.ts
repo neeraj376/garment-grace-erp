@@ -142,7 +142,7 @@ export function buildDtdcLabelHtml(d: DtdcLabelData): string {
 
     <!-- Service + eway -->
     <div style="display:flex;border-bottom:1.5px solid #000;font-size:12px;font-weight:700">
-      <div style="flex:1;${cell}">${esc(service.replace(/\b\w+/g, (w) => w[0] + w.slice(1).toLowerCase()))}</div>
+      <div style="flex:1;${cell}">${esc(service.replace(/\b[A-Za-z0-9]+/g, (w) => (/\d/.test(w) ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())))}</div>
       <div style="${cell};font-weight:600">E-Way Bill:</div>
     </div>
 
