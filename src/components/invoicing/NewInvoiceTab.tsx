@@ -308,7 +308,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const timeout = setTimeout(async () => {
       const { data } = await supabase
         .from("customers")
-        .select("id, mobile, name, gender, location, email")
+        .select("id, mobile, name, gender, location, email, address_line1, address_line2, city, state, pincode")
         .eq("store_id", storeId)
         .ilike("mobile", `%${customerMobile}%`)
         .limit(5);
@@ -328,7 +328,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const timeout = setTimeout(async () => {
       const { data } = await supabase
         .from("customers")
-        .select("id, mobile, name, gender, location, email")
+        .select("id, mobile, name, gender, location, email, address_line1, address_line2, city, state, pincode")
         .eq("store_id", storeId)
         .ilike("name", `%${customerName}%`)
         .limit(5);
@@ -344,9 +344,16 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCustomerGender(cust.gender || "");
     setCustomerLocation(cust.location || "");
     setCustomerEmail(cust.email || "");
+    // Prefill saved delivery address (used for WhatsApp orders)
+    setAddressLine1(cust.address_line1 || "");
+    setAddressLine2(cust.address_line2 || "");
+    setShipCity(cust.city || "");
+    setShipState(cust.state || "");
+    setShipPincode(cust.pincode || "");
     setShowCustomerSuggestions(false);
     setShowNameSuggestions(false);
   };
+
 
   // Persist draft to localStorage
   useEffect(() => {
