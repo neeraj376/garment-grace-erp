@@ -90,6 +90,9 @@ export type Database = {
       }
       customers: {
         Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
           created_at: string
           email: string | null
           gender: string | null
@@ -99,12 +102,17 @@ export type Database = {
           loyalty_points: number
           mobile: string
           name: string | null
+          pincode: string | null
+          state: string | null
           store_id: string
           total_spent: number
           updated_at: string
           visit_count: number
         }
         Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
           created_at?: string
           email?: string | null
           gender?: string | null
@@ -114,12 +122,17 @@ export type Database = {
           loyalty_points?: number
           mobile: string
           name?: string | null
+          pincode?: string | null
+          state?: string | null
           store_id: string
           total_spent?: number
           updated_at?: string
           visit_count?: number
         }
         Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
           created_at?: string
           email?: string | null
           gender?: string | null
@@ -129,6 +142,8 @@ export type Database = {
           loyalty_points?: number
           mobile?: string
           name?: string | null
+          pincode?: string | null
+          state?: string | null
           store_id?: string
           total_spent?: number
           updated_at?: string
