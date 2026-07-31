@@ -160,17 +160,24 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     enabled: !!storeId,
   });
 
-  const filtered = (orders || []).filter((o: any) => {
-    if (!search.trim()) return true;
-    const s = search.toLowerCase();
-    const addr = o.shipping_addresses;
-    return (
-      o.order_number?.toLowerCase().includes(s) ||
-      addr?.name?.toLowerCase().includes(s) ||
-      addr?.phone?.includes(s) ||
-      o.tracking_number?.toLowerCase().includes(s)
-    );
-  });
+  const deferredSearch = useDeferredValue(search);
+
+  const filtered = useMemo(() => {
+    const q = deferredSearch.trim().toLowerCase();
+    if (!q) return orders || [];
+    return (orders || []).filter((o: any) => {
+      const addr = o.shipping_addresses;
+      return (
+        o.order_number?.toLowerCase().includes(q) ||
+        addr?.name?.toLowerCase().includes(q) ||
+        addr?.phone?.includes(q) ||
+        o.tracking_number?.toLowerCase().includes(q)
+      );
+    });
+  }, [orders, deferredSearch]);
+
+  const ROW_RENDER_CAP = 200;
+  const visibleOrders = useMemo(() => filtered.slice(0, ROW_RENDER_CAP), [filtered]);
 
   const handleOpenEdit = (order: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -512,7 +519,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
 
   const orderRows = useMemo(() => (
     <>
-              {filtered.map((order: any) => {
+              {visibleOrders.map((order: any) => {
                 const addr = order.shipping_addresses;
                 const isExpanded = expandedOrder === order.id;
                 return (
