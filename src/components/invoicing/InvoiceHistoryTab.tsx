@@ -726,7 +726,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableRow>
                   <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No invoices found</TableCell>
                 </TableRow>
-              ) : filtered.map(inv => (
+              ) : visibleInvoices.map(inv => (
                 <TableRow key={inv.id} className={selectedIds.has(inv.id) ? "bg-muted/50" : ""}>
                   <TableCell>
                     <Checkbox
