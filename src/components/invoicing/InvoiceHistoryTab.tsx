@@ -185,21 +185,36 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     fetchInvoices();
   }, [storeId]);
 
-  const paymentMethods = Array.from(new Set(invoices.map(i => i.payment_method).filter(Boolean))).sort();
+  const paymentMethods = useMemo(
+    () => Array.from(new Set(invoices.map(i => i.payment_method).filter(Boolean))).sort(),
+    [invoices]
+  );
 
-  const filtered = invoices.filter(inv => {
-    const matchesSearch =
-      inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customers?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customers?.mobile?.includes(search);
-    const matchesNoteFilter = !filterNotes || (inv.notes && inv.notes.trim().length > 0);
-    const matchesSource = sourceFilter === "all" || inv.source === sourceFilter;
-    const matchesPayment = paymentFilter === "all" || inv.payment_method === paymentFilter;
-    const created = new Date(inv.created_at);
-    const matchesFrom = !dateFrom || created >= new Date(dateFrom + "T00:00:00");
-    const matchesTo = !dateTo || created <= new Date(dateTo + "T23:59:59");
-    return matchesSearch && matchesNoteFilter && matchesSource && matchesPayment && matchesFrom && matchesTo;
-  });
+  const deferredSearch = useDeferredValue(search);
+
+  const filtered = useMemo(() => {
+    const q = deferredSearch.trim().toLowerCase();
+    const fromTs = dateFrom ? new Date(dateFrom + "T00:00:00").getTime() : null;
+    const toTs = dateTo ? new Date(dateTo + "T23:59:59").getTime() : null;
+    return invoices.filter(inv => {
+      const matchesSearch =
+        !q ||
+        inv.invoice_number.toLowerCase().includes(q) ||
+        inv.customers?.name?.toLowerCase().includes(q) ||
+        inv.customers?.mobile?.includes(q);
+      const matchesNoteFilter = !filterNotes || (inv.notes && inv.notes.trim().length > 0);
+      const matchesSource = sourceFilter === "all" || inv.source === sourceFilter;
+      const matchesPayment = paymentFilter === "all" || inv.payment_method === paymentFilter;
+      const created = new Date(inv.created_at).getTime();
+      const matchesFrom = fromTs === null || created >= fromTs;
+      const matchesTo = toTs === null || created <= toTs;
+      return matchesSearch && matchesNoteFilter && matchesSource && matchesPayment && matchesFrom && matchesTo;
+    });
+  }, [invoices, deferredSearch, filterNotes, sourceFilter, paymentFilter, dateFrom, dateTo]);
+
+  const ROW_RENDER_CAP = 200;
+  const visibleInvoices = useMemo(() => filtered.slice(0, ROW_RENDER_CAP), [filtered]);
+
 
   const hasActiveFilters = !!(dateFrom || dateTo || sourceFilter !== "all" || paymentFilter !== "all" || filterNotes || search);
   const clearFilters = () => {
