@@ -752,6 +752,16 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         }
       }
 
+      const savedAddress = source === "whatsapp"
+        ? {
+            address_line1: addressLine1.trim() || null,
+            address_line2: addressLine2.trim() || null,
+            city: shipCity.trim() || null,
+            state: shipState.trim() || null,
+            pincode: shipPincode.trim() || null,
+          }
+        : null;
+
       let customerId: string | null = null;
       if (customerMobile) {
         const { data: existing } = await supabase
@@ -763,6 +773,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
         if (existing) {
           customerId = existing.id;
+          if (savedAddress) {
+            await supabase.from("customers").update(savedAddress).eq("id", customerId);
+          }
         } else {
           const { data: newCust } = await supabase
             .from("customers")
@@ -773,12 +786,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               gender: customerGender || null,
               location: customerLocation || null,
               email: customerEmail.trim() || null,
+              ...(savedAddress ?? {}),
             })
             .select()
             .single();
           customerId = newCust?.id ?? null;
         }
       }
+
 
       const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
 
