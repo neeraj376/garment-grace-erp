@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useDeferredValue } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeErrorMessage } from "@/lib/invokeError";
 
@@ -701,125 +701,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  return (
+  const invoiceRows = useMemo(() => (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="section-title">Invoice History</CardTitle>
-            {selectedIds.size > 0 && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrintShippingLabels}
-                  disabled={printingLabels}
-                >
-                  {printingLabels ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
-                  Print Shipping Labels ({selectedIds.size})
-                </Button>
-                {isOwner && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDeleteConfirm({ type: "bulk" })}
-                    disabled={deleting}
-                  >
-                    {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                    Delete {selectedIds.size} selected
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2 items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by invoice #, customer name or mobile..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={filterNotes ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => setFilterNotes(!filterNotes)}
-                    >
-                      <Star className={`h-4 w-4 ${filterNotes ? "fill-current" : ""}`} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{filterNotes ? "Show all invoices" : "Show only invoices with notes"}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">From</span>
-                <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-[150px]" />
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">To</span>
-                <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-[150px]" />
-              </div>
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Source" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sources</SelectItem>
-                  <SelectItem value="offline">Offline</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="wholesale">Wholesale</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Payment" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Payments</SelectItem>
-                  {paymentMethods.map(pm => (
-                    <SelectItem key={pm} value={pm} className="capitalize">{pm}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
-                  <X className="h-3 w-3" /> Clear
-                </Button>
-              )}
-              <span className="text-xs text-muted-foreground ml-auto">
-                {filtered.length} of {invoices.length} invoices
-              </span>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </TableHead>
-                <TableHead className="w-8"></TableHead>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Courier / AWB</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
@@ -996,6 +879,129 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   </TableCell>
                 </TableRow>
               ))}
+    </>
+  ), [loading, filtered, visibleInvoices, selectedIds, sendingWhatsApp, sendingEmail, printingLabelId, creatorNames, isOwner]);
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="section-title">Invoice History</CardTitle>
+            {selectedIds.size > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintShippingLabels}
+                  disabled={printingLabels}
+                >
+                  {printingLabels ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
+                  Print Shipping Labels ({selectedIds.size})
+                </Button>
+                {isOwner && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteConfirm({ type: "bulk" })}
+                    disabled={deleting}
+                  >
+                    {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                    Delete {selectedIds.size} selected
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by invoice #, customer name or mobile..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={filterNotes ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setFilterNotes(!filterNotes)}
+                    >
+                      <Star className={`h-4 w-4 ${filterNotes ? "fill-current" : ""}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{filterNotes ? "Show all invoices" : "Show only invoices with notes"}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">From</span>
+                <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">To</span>
+                <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Source" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Payment" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Payments</SelectItem>
+                  {paymentMethods.map(pm => (
+                    <SelectItem key={pm} value={pm} className="capitalize">{pm}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                  <X className="h-3 w-3" /> Clear
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground ml-auto">
+                {filtered.length} of {invoices.length} invoices
+              </span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
+                <TableHead className="w-8"></TableHead>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Courier / AWB</TableHead>
+                <TableHead>Created By</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {invoiceRows}
             </TableBody>
           </Table>
         </CardContent>
