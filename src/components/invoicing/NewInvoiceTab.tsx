@@ -115,15 +115,25 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
-function filterProductMatches(products: ProductSearchItem[], query: string, limit = 50) {
+const searchTextCache = new WeakMap<object, string>();
+
+function productSearchText(p: any) {
+  let text = searchTextCache.get(p);
+  if (text === undefined) {
+    text = [p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand]
+      .filter(Boolean).join(' ').toLowerCase();
+    searchTextCache.set(p, text);
+  }
+  return text;
+}
+
+function filterProductMatches(products: ProductSearchItem[], query: string, limit = 25) {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
 
   const matches: ProductSearchItem[] = [];
   for (const p of products) {
-    const searchableText = [
-      p.name, p.sku, p.category, p.subcategory, p.color, p.size, p.brand
-    ].filter(Boolean).join(' ').toLowerCase();
+    const searchableText = productSearchText(p);
 
     if (words.every(word => searchableText.includes(word))) {
       matches.push(p);
@@ -543,11 +553,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       buffer = "";
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
       if (code.length >= MIN_SCAN_LENGTH) {
-        console.log("[HID scan] commit:", code);
         setSearchProduct("");
         lookupAndAddBySku(code);
-      } else if (code.length) {
-        console.log("[HID scan] dropped (too short):", code);
       }
     };
 
@@ -558,9 +565,6 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const now = performance.now();
       const gap = now - lastTime;
       lastTime = now;
-
-      // Debug: surface every captured key
-      console.log("[HID key]", JSON.stringify(e.key), "gap=", Math.round(gap), "buf=", buffer.length);
 
       if (e.key === "Enter" || e.key === "Tab") {
         if (buffer.length >= MIN_SCAN_LENGTH) {

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useDeferredValue } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -160,17 +160,24 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     enabled: !!storeId,
   });
 
-  const filtered = (orders || []).filter((o: any) => {
-    if (!search.trim()) return true;
-    const s = search.toLowerCase();
-    const addr = o.shipping_addresses;
-    return (
-      o.order_number?.toLowerCase().includes(s) ||
-      addr?.name?.toLowerCase().includes(s) ||
-      addr?.phone?.includes(s) ||
-      o.tracking_number?.toLowerCase().includes(s)
-    );
-  });
+  const deferredSearch = useDeferredValue(search);
+
+  const filtered = useMemo(() => {
+    const q = deferredSearch.trim().toLowerCase();
+    if (!q) return orders || [];
+    return (orders || []).filter((o: any) => {
+      const addr = o.shipping_addresses;
+      return (
+        o.order_number?.toLowerCase().includes(q) ||
+        addr?.name?.toLowerCase().includes(q) ||
+        addr?.phone?.includes(q) ||
+        o.tracking_number?.toLowerCase().includes(q)
+      );
+    });
+  }, [orders, deferredSearch]);
+
+  const ROW_RENDER_CAP = 200;
+  const visibleOrders = useMemo(() => filtered.slice(0, ROW_RENDER_CAP), [filtered]);
 
   const handleOpenEdit = (order: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -510,121 +517,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by order #, name, phone, or AWB..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAYMENT_STATUS_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Total Orders", value: filtered.length },
-          { label: "Paid", value: filtered.filter((o: any) => o.payment_status === "paid").length },
-          { label: "Pending Payment", value: filtered.filter((o: any) => o.payment_status === "pending").length },
-          {
-            label: "Revenue",
-            value: `₹${filtered
-              .filter((o: any) => o.payment_status === "paid")
-              .reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0)
-              .toLocaleString("en-IN")}`,
-          },
-        ].map((card) => (
-          <Card key={card.label}>
-            <CardContent className="py-3 px-4">
-              <p className="text-xs text-muted-foreground">{card.label}</p>
-              <p className="text-lg font-bold">{card.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Bulk action bar */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
-          <span className="text-sm font-medium">{selectedIds.size} order(s) selected</span>
-          <Button
-            size="sm"
-            variant="default"
-            className="gap-1.5"
-            onClick={handleBulkPrintLabels}
-          >
-            <Printer className="h-3.5 w-3.5" /> Print Shipping Labels
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="gap-1.5"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Delete Selected
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
-            Clear selection
-          </Button>
-        </div>
-      )}
-
-
-      {/* Orders table */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />
-          <p>No orders found</p>
-        </div>
-      ) : (
-        <div className="rounded-lg border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </TableHead>
-                <TableHead className="w-8" />
-                <TableHead>Order #</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>AWB / Courier</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((order: any) => {
+  const orderRows = useMemo(() => (
+    <>
+              {visibleOrders.map((order: any) => {
                 const addr = order.shipping_addresses;
                 const isExpanded = expandedOrder === order.id;
                 return (
@@ -802,9 +697,133 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                   </>
                 );
               })}
+    </>
+  ), [visibleOrders, expandedOrder, selectedIds]);
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by order #, name, phone, or AWB..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PAYMENT_STATUS_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Total Orders", value: filtered.length },
+          { label: "Paid", value: filtered.filter((o: any) => o.payment_status === "paid").length },
+          { label: "Pending Payment", value: filtered.filter((o: any) => o.payment_status === "pending").length },
+          {
+            label: "Revenue",
+            value: `₹${filtered
+              .filter((o: any) => o.payment_status === "paid")
+              .reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0)
+              .toLocaleString("en-IN")}`,
+          },
+        ].map((card) => (
+          <Card key={card.label}>
+            <CardContent className="py-3 px-4">
+              <p className="text-xs text-muted-foreground">{card.label}</p>
+              <p className="text-lg font-bold">{card.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
+          <span className="text-sm font-medium">{selectedIds.size} order(s) selected</span>
+          <Button
+            size="sm"
+            variant="default"
+            className="gap-1.5"
+            onClick={handleBulkPrintLabels}
+          >
+            <Printer className="h-3.5 w-3.5" /> Print Shipping Labels
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="gap-1.5"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
+
+      {/* Orders table */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />
+          <p>No orders found</p>
+        </div>
+      ) : (
+        <div className="rounded-lg border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
+                <TableHead className="w-8" />
+                <TableHead>Order #</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>AWB / Courier</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orderRows}
             </TableBody>
           </Table>
+          {filtered.length > visibleOrders.length && (
+            <p className="text-xs text-muted-foreground px-3 py-2">
+              Showing first {visibleOrders.length} of {filtered.length} orders — refine the search or filters to narrow results.
+            </p>
+          )}
         </div>
+
       )}
 
       {/* Edit Status / AWB Dialog */}
