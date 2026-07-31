@@ -50,6 +50,11 @@ export interface DtdcLabelData {
   pieces?: number;
   weightKg?: number;
   declaredValue?: number;
+  /** Short routing code printed in the big box, e.g. "7D" */
+  routingCode?: string | null;
+  originCode?: string | null;
+  destinationCode?: string | null;
+  productDescription?: string;
   consignee: {
     name: string;
     phone: string;
@@ -63,8 +68,8 @@ export interface DtdcLabelData {
 
 const SHIPPER = {
   name: "Originee",
-  line1: "I-132, Sector 50, South City 2",
-  line2: "Gurugram, Haryana — 122018",
+  line1: "I-132, Sector 50, South City 2, Gurugram 122018",
+  line2: "GURGAON, PIN:122018, HARYANA, IN",
   phone: "+91 93109 04557, +91 88828 66833",
   pincode: "122018",
 };
@@ -72,66 +77,118 @@ const SHIPPER = {
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 
-/** DTDC-style 4x6in shipping label (destination pincode block, AWB barcode, routing strip). */
+/** DTDC official-style 4x6in shipping label. */
 export function buildDtdcLabelHtml(d: DtdcLabelData): string {
   const awb = (d.awb || "").trim();
-  const courier = d.courier || (awb ? "DTDC" : "");
   const service = d.serviceType || "B2C SMART EXPRESS";
+  const isAir = /priority|air/i.test(service);
+  const mode = isAir ? "AI" : "SF";
   const pin = d.consignee.pincode || "";
-  const awbBarcode = awb ? code128Svg(awb, { height: 58 }) : "";
-  const refBarcode = code128Svg(d.referenceNo, { height: 34, moduleWidth: 1.1 });
+  const pieces = d.pieces ?? 1;
+  const weight = d.weightKg ?? 0.4 * pieces;
+  const routing = (d.routingCode || awb.slice(0, 2) || "").toUpperCase();
+  const bottomCode = awb ? `${awb}${String(pieces).padStart(4, "0")}${pin}` : "";
+  const awbBarcode = awb ? code128Svg(awb, { height: 44, moduleWidth: 1.15 }) : "";
+  const bottomBarcode = bottomCode ? code128Svg(bottomCode, { height: 52, moduleWidth: 1.0 }) : "";
+  const pad = (n: number) => String(n).padStart(3, "0");
+
+  const cell = "padding:4px 6px;box-sizing:border-box";
+  const lbl = "font-size:9px;color:#111";
 
   return `
-  <div style="width:4in;height:6in;border:2px solid #000;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;line-height:1.2;overflow:hidden;display:flex;flex-direction:column">
-    <div style="display:flex;border-bottom:2px solid #000">
-      <div style="flex:1;padding:5px 7px">
-        <div style="font-size:17px;font-weight:800;letter-spacing:1px">${esc(courier || "COURIER")}</div>
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase">${esc(service)}</div>
+  <div style="width:4in;height:6in;border:1.5px solid #000;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;line-height:1.25;overflow:hidden;display:flex;flex-direction:column;color:#000;background:#fff">
+
+    <!-- Brand strip -->
+    <div style="display:flex;justify-content:flex-end;align-items:center;padding:2px 8px;border-bottom:1.5px solid #000">
+      <div style="font-size:19px;font-weight:900;letter-spacing:-1px;font-style:italic">DTDC<span style="color:#d0021b">.</span></div>
+    </div>
+
+    <!-- FROM + ship meta -->
+    <div style="display:flex;border-bottom:1.5px solid #000">
+      <div style="flex:1;${cell};border-right:1.5px solid #000">
+        <div style="font-size:10px;font-weight:700">FROM:</div>
+        <div style="font-size:9.5px">${SHIPPER.name},</div>
+        <div style="font-size:9.5px">${SHIPPER.line1}</div>
+        <div style="font-size:9.5px">${SHIPPER.line2}</div>
       </div>
-      <div style="width:1.35in;border-left:2px solid #000;padding:4px 6px;text-align:center">
-        <div style="font-size:8px;font-weight:700;color:#333">DESTINATION PIN</div>
-        <div style="font-size:21px;font-weight:800;letter-spacing:1px">${esc(pin || "—")}</div>
+      <div style="width:1.45in;${cell};font-size:9.5px">
+        <div><b>Ship Date :</b> ${esc(d.date)}</div>
+        <div><b>Ship value :</b> ${esc(d.declaredValue ?? "")}</div>
+        <div><b>Inv No :</b> ${esc(d.referenceNo)}</div>
+        <div><b>Inv Date :</b> ${esc(d.date)}</div>
+        <div style="font-weight:600">Bill Sender</div>
       </div>
     </div>
 
-    <div style="text-align:center;padding:5px 7px;border-bottom:2px solid #000">
-      ${awbBarcode || `<div style="font-size:11px;padding:16px 0;font-weight:700">AWB NOT ASSIGNED</div>`}
-      <div style="font-size:13px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:2px;margin-top:2px">${esc(awb || "—")}</div>
-    </div>
-
-    <div style="display:flex;border-bottom:1px solid #000;font-size:9px">
-      <div style="flex:1;padding:3px 6px;border-right:1px solid #000"><b>Mode:</b> ${esc(d.paymentMode || "PREPAID")}</div>
-      <div style="flex:1;padding:3px 6px;border-right:1px solid #000"><b>Pcs:</b> ${esc(d.pieces ?? 1)}</div>
-      <div style="flex:1;padding:3px 6px"><b>Wt:</b> ${esc((d.weightKg ?? 0.5).toFixed ? (d.weightKg ?? 0.5).toFixed(2) : d.weightKg)} kg</div>
-    </div>
-
-    <div style="padding:5px 7px;border-bottom:1px solid #000;flex:1">
-      <div style="font-size:8px;font-weight:700;color:#444;letter-spacing:.5px">CONSIGNEE</div>
-      <div style="font-size:13px;font-weight:800">${esc(d.consignee.name)}</div>
-      <div style="font-size:10.5px">${esc(d.consignee.line1 || "")}</div>
-      ${d.consignee.line2 ? `<div style="font-size:10.5px">${esc(d.consignee.line2)}</div>` : ""}
-      <div style="font-size:10.5px;font-weight:700">${esc([d.consignee.city, d.consignee.state].filter(Boolean).join(", "))} ${pin ? "— " + esc(pin) : ""}</div>
-      <div style="font-size:10.5px;margin-top:2px"><b>Ph:</b> ${esc(d.consignee.phone)}</div>
-    </div>
-
-    <div style="padding:4px 7px;border-bottom:1px solid #000">
-      <div style="font-size:8px;font-weight:700;color:#444;letter-spacing:.5px">SHIPPER / RETURN ADDRESS</div>
-      <div style="font-size:10px;font-weight:700">${SHIPPER.name}</div>
-      <div style="font-size:9.5px">${SHIPPER.line1}</div>
-      <div style="font-size:9.5px">${SHIPPER.line2}</div>
-      <div style="font-size:9.5px">Ph: ${SHIPPER.phone}</div>
-    </div>
-
-    <div style="display:flex;align-items:center;padding:4px 7px;gap:8px">
-      <div style="flex:1">
-        <div style="font-size:8px;font-weight:700;color:#444">REFERENCE NO</div>
-        ${refBarcode}
-        <div style="font-size:9.5px;font-family:'Courier New',monospace;font-weight:700">${esc(d.referenceNo)}</div>
+    <!-- TO + AWB barcode + routing box -->
+    <div style="display:flex;border-bottom:1.5px solid #000">
+      <div style="flex:1;${cell}">
+        <div style="font-size:10px;font-weight:700">TO:</div>
+        <div style="font-size:11px;font-weight:700">${esc(d.consignee.name)},</div>
+        <div style="font-size:10px">${esc(d.consignee.line1 || "")}</div>
+        ${d.consignee.line2 ? `<div style="font-size:10px">${esc(d.consignee.line2)}</div>` : ""}
+        <div style="font-size:10px">Ph no.${esc(d.consignee.phone)}</div>
+        <div style="font-size:10px;text-transform:uppercase">${esc(d.consignee.city || "")}${pin ? `, PIN:${esc(pin)}` : ""}${d.consignee.state ? `, ${esc(d.consignee.state)}, IN` : ""}</div>
+        <div style="font-size:30px;font-weight:800;letter-spacing:1px;margin-top:6px">${esc(pin || "—")}</div>
       </div>
-      <div style="text-align:right;font-size:9px">
-        <div><b>Date:</b> ${esc(d.date)}</div>
-        <div><b>Origin:</b> ${SHIPPER.pincode}</div>
+      <div style="width:1.55in;border-left:0;${cell};text-align:center">
+        ${awbBarcode || `<div style="font-size:10px;font-weight:700;padding:14px 0">AWB NOT ASSIGNED</div>`}
+        <div style="font-size:13px;font-weight:700;letter-spacing:1px">${esc(awb || "—")}</div>
+        <div style="margin:6px auto 0;border:3px solid #000;width:1.05in;height:0.72in;display:flex;align-items:center;justify-content:center">
+          <span style="font-size:34px;font-weight:800;letter-spacing:1px">${esc(routing || "—")}</span>
+        </div>
       </div>
+    </div>
+
+    <!-- Service + eway -->
+    <div style="display:flex;border-bottom:1.5px solid #000;font-size:12px;font-weight:700">
+      <div style="flex:1;${cell}">${esc(service.replace(/\b[A-Za-z0-9]+/g, (w) => (/\d/.test(w) ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())))}</div>
+      <div style="${cell};font-weight:600">E-Way Bill:</div>
+    </div>
+
+    <!-- Mode + pcs -->
+    <div style="display:flex;border-bottom:1.5px solid #000;font-size:12px;font-weight:700">
+      <div style="flex:1;${cell}">Mode: ${mode}</div>
+      <div style="${cell}">Pcs: ${pad(pieces)} OF ${pad(pieces)}</div>
+    </div>
+
+    <!-- Product description + ORG/DST/payment -->
+    <div style="display:flex;border-bottom:1.5px solid #000;flex:1">
+      <div style="flex:1;${cell};border-right:1.5px solid #000">
+        <div style="font-size:12px;font-weight:700">Product Description:</div>
+        <div style="font-size:10px;margin-top:4px">${esc(d.productDescription || "Apparel")}</div>
+      </div>
+      <div style="width:1.55in;text-align:center">
+        <div style="border-bottom:1.5px solid #000;padding:1px 0">
+          <div style="${lbl}">ORG</div>
+          <div style="font-size:17px;font-weight:700">${esc(d.originCode || SHIPPER.pincode.slice(0, 3))}</div>
+        </div>
+        <div style="border-bottom:1.5px solid #000;padding:1px 0">
+          <div style="${lbl}">DST</div>
+          <div style="font-size:17px;font-weight:700">${esc(d.destinationCode || pin.slice(0, 3) || "—")}</div>
+        </div>
+        <div style="padding:2px 0">
+          <div style="${lbl}">${esc(d.paymentMode || "PREPAID")}</div>
+          <div style="font-size:11px;font-weight:700">Don't collect money</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom barcode -->
+    <div style="text-align:center;padding:3px 8px;border-bottom:1.5px solid #000">
+      ${bottomBarcode || ""}
+      <div style="font-size:11px;font-weight:600;letter-spacing:.5px">${esc(bottomCode || "—")}</div>
+    </div>
+
+    <div style="display:flex;border-bottom:1.5px solid #000;font-size:10px;font-weight:700">
+      <div style="flex:1;${cell}">Ref. No: ${esc(d.referenceNo)}</div>
+      <div style="${cell}">LV :</div>
+    </div>
+
+    <div style="display:flex;align-items:center;font-size:10px">
+      <div style="flex:1;${cell};text-align:center;font-size:12px">Weight: ${weight.toFixed(1)}</div>
+      <div style="${cell};text-align:right;font-size:9px">${esc(d.date)}</div>
     </div>
   </div>`;
 }
+
