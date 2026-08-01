@@ -35,6 +35,8 @@ interface Invoice {
   pending_amount?: number;
   created_by: string | null;
   customer_id: string | null;
+  shipping_name?: string | null;
+  shipping_phone?: string | null;
   customers: { name: string | null; mobile: string; email?: string | null } | null;
 }
 
@@ -144,8 +146,12 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   };
 
   // Customer fields
-  const [customerMobile, setCustomerMobile] = useState(invoice.customers?.mobile || "");
-  const [customerName, setCustomerName] = useState(invoice.customers?.name || "");
+  const [customerMobile, setCustomerMobile] = useState(
+    invoice.source === "whatsapp" ? (invoice.shipping_phone || invoice.customers?.mobile || "") : (invoice.customers?.mobile || "")
+  );
+  const [customerName, setCustomerName] = useState(
+    invoice.source === "whatsapp" ? (invoice.shipping_name || invoice.customers?.name || "") : (invoice.customers?.name || "")
+  );
   const [customerEmail, setCustomerEmail] = useState(invoice.customers?.email || "");
 
   // Items
@@ -178,8 +184,8 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
     setNotes(invoice.notes || "");
     setDiscountAmount(String(invoice.discount_amount));
     setPendingAmount(String(invoice.pending_amount ?? 0));
-    setCustomerMobile(invoice.customers?.mobile || "");
-    setCustomerName(invoice.customers?.name || "");
+    setCustomerMobile(invoice.source === "whatsapp" ? (invoice.shipping_phone || invoice.customers?.mobile || "") : (invoice.customers?.mobile || ""));
+    setCustomerName(invoice.source === "whatsapp" ? (invoice.shipping_name || invoice.customers?.name || "") : (invoice.customers?.name || ""));
     setCustomerEmail(invoice.customers?.email || "");
     setItems([]);
     setSearchProduct("");
@@ -236,6 +242,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         setShipState((inv as any).shipping_state || "");
         setShipPincode((inv as any).shipping_pincode || "");
         setDeliveryCost(String((inv as any).delivery_cost ?? 0));
+        if (invoice.source === "whatsapp") {
+          setCustomerName((inv as any).shipping_name || invoice.customers?.name || "");
+          setCustomerMobile((inv as any).shipping_phone || invoice.customers?.mobile || "");
+        }
       }
 
       if (inv?.store_id) {
@@ -399,14 +409,6 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           (invoice.courier_name || "") !== normalizedCourierName ||
           (invoice.awb_no || "") !== normalizedAwbNo
         );
-
-      // Update customer if linked
-      if (invoice.customer_id) {
-        await supabase
-          .from("customers")
-          .update({ name: customerName, mobile: customerMobile, email: customerEmail.trim() || null })
-          .eq("id", invoice.customer_id);
-      }
 
       // Update invoice
       const { data: updatedRows, error } = await supabase
