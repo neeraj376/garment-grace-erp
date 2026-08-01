@@ -690,7 +690,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
+
                 );
               })}
     </>
