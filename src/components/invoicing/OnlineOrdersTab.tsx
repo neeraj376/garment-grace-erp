@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useDeferredValue } from "react";
+import { useState, useRef, useMemo, useDeferredValue, Fragment } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -509,13 +509,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+
+
 
   const orderRows = useMemo(() => (
     <>
@@ -523,7 +518,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 const addr = order.shipping_addresses;
                 const isExpanded = expandedOrder === order.id;
                 return (
-                  <>
+                  <Fragment key={order.id}>
+
                     <TableRow
                       key={order.id}
                       className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(order.id) ? "bg-muted/40" : ""}`}
@@ -694,11 +690,20 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
+
                 );
               })}
     </>
   ), [visibleOrders, expandedOrder, selectedIds]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
