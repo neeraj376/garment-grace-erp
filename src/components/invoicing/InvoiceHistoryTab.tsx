@@ -41,6 +41,8 @@ interface Invoice {
   created_at: string;
   created_by: string | null;
   customer_id: string | null;
+  shipping_name?: string | null;
+  shipping_phone?: string | null;
   customers: { name: string | null; mobile: string; email?: string | null } | null;
 }
 
