@@ -1041,6 +1041,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
 
       {editInvoice && (
         <EditInvoiceDialog
+          key={editInvoice.id}
           invoice={editInvoice}
           open={!!editInvoice}
           onClose={() => setEditInvoice(null)}

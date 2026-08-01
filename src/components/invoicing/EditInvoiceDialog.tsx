@@ -156,10 +156,40 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const [searchProduct, setSearchProduct] = useState("");
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
 
+  // Re-sync every prop-derived field whenever a different invoice is opened,
+  // otherwise stale values from the previously edited invoice get saved onto this one.
+  useEffect(() => {
+    if (!open) return;
+    const tokens = (invoice.payment_method || "").split(/[+,]/).map(s => s.trim()).filter(Boolean);
+    const methods: string[] = [];
+    const amounts: Record<string, string> = {};
+    tokens.forEach(t => {
+      const [m, a] = t.split(":").map(x => x.trim());
+      if (!m) return;
+      methods.push(m);
+      if (a) amounts[m] = a;
+    });
+    setPaymentMethods(methods);
+    setPaymentAmounts(amounts);
+    setSource(invoice.source);
+    setCourierName(invoice.courier_name || "");
+    setAwbNo(invoice.awb_no || "");
+    setStatus(invoice.status);
+    setNotes(invoice.notes || "");
+    setDiscountAmount(String(invoice.discount_amount));
+    setPendingAmount(String(invoice.pending_amount ?? 0));
+    setCustomerMobile(invoice.customers?.mobile || "");
+    setCustomerName(invoice.customers?.name || "");
+    setCustomerEmail(invoice.customers?.email || "");
+    setItems([]);
+    setSearchProduct("");
+  }, [open, invoice.id]);
+
   useEffect(() => {
     if (!open) return;
     const fetchData = async () => {
       setLoading(true);
+
 
       // Fetch invoice items with product details
       const { data: itemsData } = await supabase
