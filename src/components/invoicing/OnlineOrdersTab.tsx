@@ -518,7 +518,8 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
                 const addr = order.shipping_addresses;
                 const isExpanded = expandedOrder === order.id;
                 return (
-                  <>
+                  <Fragment key={order.id}>
+
                     <TableRow
                       key={order.id}
                       className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(order.id) ? "bg-muted/40" : ""}`}
