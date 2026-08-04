@@ -58,6 +58,7 @@ export interface DtdcLabelData {
   consignee: {
     name: string;
     phone: string;
+    altPhone?: string;
     line1?: string;
     line2?: string;
     city?: string;
@@ -127,7 +128,7 @@ export function buildDtdcLabelHtml(d: DtdcLabelData): string {
         <div style="font-size:11px;font-weight:700">${esc(d.consignee.name)},</div>
         <div style="font-size:10px">${esc(d.consignee.line1 || "")}</div>
         ${d.consignee.line2 ? `<div style="font-size:10px">${esc(d.consignee.line2)}</div>` : ""}
-        <div style="font-size:10px">Ph no.${esc(d.consignee.phone)}</div>
+        <div style="font-size:10px">Ph no.${esc(d.consignee.phone)}${d.consignee.altPhone ? ` / ${esc(d.consignee.altPhone)}` : ""}</div>
         <div style="font-size:10px;text-transform:uppercase">${esc(d.consignee.city || "")}${pin ? `, PIN:${esc(pin)}` : ""}${d.consignee.state ? `, ${esc(d.consignee.state)}, IN` : ""}</div>
         <div style="font-size:30px;font-weight:800;letter-spacing:1px;margin-top:6px">${esc(pin || "—")}</div>
       </div>

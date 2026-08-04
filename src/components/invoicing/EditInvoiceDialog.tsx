@@ -229,13 +229,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       // Fetch employee & shipping fields for this invoice
       const { data: inv } = await supabase
         .from("invoices")
-        .select("employee_id, store_id, delivery_cost, shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
+        .select("employee_id, store_id, delivery_cost, shipping_name, shipping_phone, shipping_phone_alt, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_pincode")
         .eq("id", invoice.id)
         .single();
 
       if (inv) {
         setShipName((inv as any).shipping_name || "");
         setShipPhone((inv as any).shipping_phone || "");
+        setAltPhone((inv as any).shipping_phone_alt || "");
         setAddressLine1((inv as any).shipping_address_line1 || "");
         setAddressLine2((inv as any).shipping_address_line2 || "");
         setShipCity((inv as any).shipping_city || "");
@@ -423,6 +424,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
           delivery_cost: source === "whatsapp" ? (Number(deliveryCost) || 0) : 0,
           shipping_name: source === "whatsapp" ? (shipName.trim() || customerName.trim() || null) : null,
           shipping_phone: source === "whatsapp" ? (shipPhone.trim() || customerMobile.trim() || null) : null,
+          shipping_phone_alt: source === "whatsapp" ? (altPhone.trim() || null) : null,
           shipping_address_line1: source === "whatsapp" ? (addressLine1.trim() || null) : null,
           shipping_address_line2: source === "whatsapp" ? (addressLine2.trim() || null) : null,
           shipping_city: source === "whatsapp" ? (shipCity.trim() || null) : null,
