@@ -192,6 +192,23 @@ export default function StickerPrinter() {
     setSelected(prev => ({ ...prev, [id]: Math.max(0, qty) }));
   };
 
+  const selectAllFiltered = () => {
+    const next: Record<string, number> = { ...selected };
+    filtered.forEach(p => { next[p.id] = p._stock && p._stock > 0 ? p._stock : 1; });
+    setSelected(next);
+  };
+
+  const deselectFiltered = () => {
+    const next: Record<string, number> = { ...selected };
+    filtered.forEach(p => { delete next[p.id]; });
+    setSelected(next);
+  };
+
+  const filteredAllSelected = useMemo(() => {
+    if (filtered.length === 0) return false;
+    return filtered.every(p => (selected[p.id] || 0) > 0);
+  }, [filtered, selected]);
+
   const generate = async () => {
     const items = products.filter(p => selected[p.id] > 0);
     if (items.length === 0) {
@@ -277,7 +294,8 @@ export default function StickerPrinter() {
                 {[category, filterSubcategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "all").length + (filterUploadFrom ? 1 : 0) + (filterUploadTo ? 1 : 0)}
               </Badge>}
             </Button>
-            <Button variant="outline" onClick={() => toggleAll(true)}>Select all (stock qty)</Button>
+            <Button variant="outline" onClick={selectAllFiltered}>Select all filtered</Button>
+            <Button variant="outline" onClick={deselectFiltered}>Deselect filtered</Button>
             <Button variant="outline" onClick={() => toggleAll(false)}>Clear</Button>
           </div>
 
@@ -370,7 +388,13 @@ export default function StickerPrinter() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-muted">
                   <tr>
-                    <th className="text-left p-2 w-10"></th>
+                    <th className="text-left p-2 w-10">
+                      <Checkbox
+                        checked={filteredAllSelected}
+                        onCheckedChange={(v) => (v ? selectAllFiltered() : deselectFiltered())}
+                        aria-label="Select all filtered products"
+                      />
+                    </th>
                     <th className="text-left p-2">Product</th>
                     <th className="text-left p-2">SKU</th>
                     <th className="text-center p-2">Stock</th>
