@@ -192,6 +192,23 @@ export default function StickerPrinter() {
     setSelected(prev => ({ ...prev, [id]: Math.max(0, qty) }));
   };
 
+  const selectAllFiltered = () => {
+    const next: Record<string, number> = { ...selected };
+    filtered.forEach(p => { next[p.id] = p._stock && p._stock > 0 ? p._stock : 1; });
+    setSelected(next);
+  };
+
+  const deselectFiltered = () => {
+    const next: Record<string, number> = { ...selected };
+    filtered.forEach(p => { delete next[p.id]; });
+    setSelected(next);
+  };
+
+  const filteredAllSelected = useMemo(() => {
+    if (filtered.length === 0) return false;
+    return filtered.every(p => (selected[p.id] || 0) > 0);
+  }, [filtered, selected]);
+
   const generate = async () => {
     const items = products.filter(p => selected[p.id] > 0);
     if (items.length === 0) {
