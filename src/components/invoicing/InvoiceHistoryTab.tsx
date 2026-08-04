@@ -440,6 +440,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           addrByInvoiceId[inv.id] = {
             name: anyInv.shipping_name,
             phone: anyInv.shipping_phone,
+            alt_phone: anyInv.shipping_phone_alt,
             address_line1: anyInv.shipping_address_line1,
             address_line2: anyInv.shipping_address_line2,
             city: anyInv.shipping_city,
@@ -546,6 +547,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       consignee: {
         name,
         phone,
+        altPhone: addr?.alt_phone || (inv as any).shipping_phone_alt || "",
         line1: addr?.address_line1 || (addr ? "" : "Address not available"),
         line2: addr?.address_line2 || "",
         city: addr?.city || "",
@@ -563,11 +565,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       let live = inv;
       const { data: fresh } = await supabase
         .from("invoices")
-        .select("courier_name, awb_no")
+        .select("courier_name, awb_no, shipping_phone_alt")
         .eq("id", inv.id)
         .maybeSingle();
       if (fresh) {
-        live = { ...inv, courier_name: fresh.courier_name, awb_no: fresh.awb_no } as Invoice;
+        live = { ...inv, courier_name: fresh.courier_name, awb_no: fresh.awb_no, shipping_phone_alt: (fresh as any).shipping_phone_alt } as Invoice;
         setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, courier_name: fresh.courier_name, awb_no: fresh.awb_no } : i));
       }
       if (!live.awb_no) {
@@ -606,7 +608,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       selected.forEach((inv, idx) => {
         const addr = addrByInvoiceId[inv.id] || null;
         const name = addr?.name || inv.customers?.name || "Walk-in Customer";
-        const mobile = addr?.phone || inv.customers?.mobile || "—";
+        const altMobile = addr?.alt_phone || (inv as any).shipping_phone_alt || "";
+        const mobile = [addr?.phone || inv.customers?.mobile || "—", altMobile].filter(Boolean).join(" / ");
         const addressParts = addr
           ? [addr.address_line1, addr.address_line2, [addr.city, addr.state, addr.pincode].filter(Boolean).join(", ")].filter(Boolean)
           : [];

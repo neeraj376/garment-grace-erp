@@ -227,6 +227,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   // Shipping (online source) state
   const [addressLine1, setAddressLine1] = useState(() => loadDraft()?.addressLine1 ?? "");
+  const [altPhone, setAltPhone] = useState("");
   const [addressLine2, setAddressLine2] = useState(() => loadDraft()?.addressLine2 ?? "");
   const [shipCity, setShipCity] = useState(() => loadDraft()?.shipCity ?? "");
   const [shipState, setShipState] = useState(() => loadDraft()?.shipState ?? "");
@@ -810,6 +811,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           delivery_cost: source === "whatsapp" ? (Number(deliveryCost) || 0) : 0,
           shipping_name: source === "whatsapp" ? (customerName.trim() || null) : null,
           shipping_phone: source === "whatsapp" ? (customerMobile.trim() || null) : null,
+          shipping_phone_alt: source === "whatsapp" ? (altPhone.trim() || null) : null,
           shipping_address_line1: source === "whatsapp" ? (addressLine1.trim() || null) : null,
           shipping_address_line2: source === "whatsapp" ? (addressLine2.trim() || null) : null,
           shipping_city: source === "whatsapp" ? (shipCity.trim() || null) : null,
@@ -917,7 +919,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
-      setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode("");
+      setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode(""); setAltPhone("");
       setServiceable(null);
       clearDraft();
     } catch (err: any) {
@@ -1076,6 +1078,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           delivery_cost: Number(deliveryCost) || 0,
           shipping_name: null,
           shipping_phone: null,
+          shipping_phone_alt: null,
           shipping_address_line1: null,
           shipping_address_line2: null,
           shipping_city: null,
@@ -1132,7 +1135,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
-      setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode("");
+      setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode(""); setAltPhone("");
       setServiceable(null);
       clearDraft();
     } catch (err: any) {
@@ -1695,6 +1698,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   </Button>
                 </div>
                 <div className="text-[10px] text-muted-foreground">Or enter the address manually below to create the invoice now.</div>
+                <div>
+                  <Label className="text-xs">Alternate Mobile Number</Label>
+                  <Input value={altPhone} onChange={e => setAltPhone(e.target.value)} placeholder="Optional second contact number" />
+                </div>
                 <div>
                   <Label className="text-xs">Address Line 1 <span className="text-destructive">*</span></Label>
                   <Input value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House/Flat, Building, Street" />

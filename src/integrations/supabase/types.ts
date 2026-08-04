@@ -664,6 +664,7 @@ export type Database = {
           shipping_email: string | null
           shipping_name: string | null
           shipping_phone: string | null
+          shipping_phone_alt: string | null
           shipping_pincode: string | null
           shipping_state: string | null
           source: string
@@ -696,6 +697,7 @@ export type Database = {
           shipping_email?: string | null
           shipping_name?: string | null
           shipping_phone?: string | null
+          shipping_phone_alt?: string | null
           shipping_pincode?: string | null
           shipping_state?: string | null
           source?: string
@@ -728,6 +730,7 @@ export type Database = {
           shipping_email?: string | null
           shipping_name?: string | null
           shipping_phone?: string | null
+          shipping_phone_alt?: string | null
           shipping_pincode?: string | null
           shipping_state?: string | null
           source?: string
