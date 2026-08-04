@@ -388,7 +388,13 @@ export default function StickerPrinter() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-muted">
                   <tr>
-                    <th className="text-left p-2 w-10"></th>
+                    <th className="text-left p-2 w-10">
+                      <Checkbox
+                        checked={filteredAllSelected}
+                        onCheckedChange={(v) => (v ? selectAllFiltered() : deselectFiltered())}
+                        aria-label="Select all filtered products"
+                      />
+                    </th>
                     <th className="text-left p-2">Product</th>
                     <th className="text-left p-2">SKU</th>
                     <th className="text-center p-2">Stock</th>
