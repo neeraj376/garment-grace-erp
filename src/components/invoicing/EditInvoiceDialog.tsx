@@ -94,6 +94,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   // Shipping address (loaded from DB in useEffect)
   const [shipName, setShipName] = useState("");
   const [shipPhone, setShipPhone] = useState("");
+  const [altPhone, setAltPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [shipCity, setShipCity] = useState("");
@@ -625,6 +626,10 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                   <div className="space-y-1">
                     <Label>Recipient Phone</Label>
                     <Input value={shipPhone} onChange={e => setShipPhone(e.target.value)} placeholder="Defaults to customer mobile" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Alternate Phone</Label>
+                    <Input value={altPhone} onChange={e => setAltPhone(e.target.value)} placeholder="Optional second number" />
                   </div>
                   <div className="space-y-1 md:col-span-2">
                     <Label>Address Line 1</Label>
