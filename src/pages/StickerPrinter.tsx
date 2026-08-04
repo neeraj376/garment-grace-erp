@@ -294,7 +294,8 @@ export default function StickerPrinter() {
                 {[category, filterSubcategory, filterBrand, filterSize, filterColor, filterStock].filter(f => f !== "all").length + (filterUploadFrom ? 1 : 0) + (filterUploadTo ? 1 : 0)}
               </Badge>}
             </Button>
-            <Button variant="outline" onClick={() => toggleAll(true)}>Select all (stock qty)</Button>
+            <Button variant="outline" onClick={selectAllFiltered}>Select all filtered</Button>
+            <Button variant="outline" onClick={deselectFiltered}>Deselect filtered</Button>
             <Button variant="outline" onClick={() => toggleAll(false)}>Clear</Button>
           </div>
 
