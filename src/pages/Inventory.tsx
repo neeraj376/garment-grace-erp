@@ -179,6 +179,12 @@ export default function Inventory() {
     e.preventDefault();
     if (!storeId) return;
 
+    const buyingPriceNum = parseFloat(form.buying_price);
+    if (!form.buying_price || isNaN(buyingPriceNum) || buyingPriceNum <= 0) {
+      toast({ title: "Buying price required", description: "Enter a buying price greater than 0 to add this product.", variant: "destructive" });
+      return;
+    }
+
     try {
         const { data: product, error } = await supabase
           .from("products")
@@ -193,7 +199,8 @@ export default function Inventory() {
             selling_price: parseFloat(form.selling_price),
             mrp: form.mrp ? parseFloat(form.mrp) : null,
             tax_rate: parseFloat(form.tax_rate),
-            buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+            buying_price: buyingPriceNum,
+
             photo_url: serializePhotoUrls(newProductPhotos),
             description: form.description || null,
           })
