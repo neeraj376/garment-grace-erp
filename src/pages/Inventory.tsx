@@ -179,6 +179,12 @@ export default function Inventory() {
     e.preventDefault();
     if (!storeId) return;
 
+    const buyingPriceNum = parseFloat(form.buying_price);
+    if (!form.buying_price || isNaN(buyingPriceNum) || buyingPriceNum <= 0) {
+      toast({ title: "Buying price required", description: "Enter a buying price greater than 0 to add this product.", variant: "destructive" });
+      return;
+    }
+
     try {
         const { data: product, error } = await supabase
           .from("products")
@@ -193,7 +199,8 @@ export default function Inventory() {
             selling_price: parseFloat(form.selling_price),
             mrp: form.mrp ? parseFloat(form.mrp) : null,
             tax_rate: parseFloat(form.tax_rate),
-            buying_price: form.buying_price ? parseFloat(form.buying_price) : 0,
+            buying_price: buyingPriceNum,
+
             photo_url: serializePhotoUrls(newProductPhotos),
             description: form.description || null,
           })
@@ -262,6 +269,7 @@ export default function Inventory() {
     setCsvProgress({ current: 0, total: totalRows });
 
     let count = 0;
+    let skipped = 0;
     for (let i = 1; i < lines.length; i++) {
       const vals = parseCSVLine(lines[i]);
       const row: any = {};
@@ -273,7 +281,15 @@ export default function Inventory() {
       const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
       const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 5;
 
+      if (!(buyingPrice > 0)) {
+        skipped++;
+        console.warn(`Row ${i} skipped: missing buying price`);
+        setCsvProgress({ current: i, total: totalRows });
+        continue;
+      }
+
       try {
+
         const photoUrl = row.photo_url || row.image_url || row.image || row.photo || row.picture || null;
         const { data: product, error } = await supabase
           .from("products")
@@ -310,7 +326,12 @@ export default function Inventory() {
       setCsvProgress({ current: i, total: totalRows });
     }
 
-    toast({ title: `${count} products imported` });
+    toast({
+      title: `${count} products imported`,
+      description: skipped > 0 ? `${skipped} row(s) skipped — buying price is mandatory.` : undefined,
+      variant: skipped > 0 ? "destructive" : undefined,
+    });
+
     setCsvProgress(null);
     fetchProducts();
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -634,7 +655,7 @@ export default function Inventory() {
                     <div className="border-t pt-3">
                       <p className="text-sm font-medium mb-2">Initial Stock (optional)</p>
                       <div className="grid grid-cols-2 gap-3">
-                        <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({...form, buying_price: e.target.value})} /></div>
+                        <div><Label>Buying Price *</Label><Input type="number" step="0.01" min="0.01" required value={form.buying_price} onChange={e => setForm({...form, buying_price: e.target.value})} /></div>
                         <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} /></div>
                       </div>
                     </div>
