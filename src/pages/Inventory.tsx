@@ -269,6 +269,7 @@ export default function Inventory() {
     setCsvProgress({ current: 0, total: totalRows });
 
     let count = 0;
+    let skipped = 0;
     for (let i = 1; i < lines.length; i++) {
       const vals = parseCSVLine(lines[i]);
       const row: any = {};
@@ -280,7 +281,15 @@ export default function Inventory() {
       const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
       const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 5;
 
+      if (!(buyingPrice > 0)) {
+        skipped++;
+        console.warn(`Row ${i} skipped: missing buying price`);
+        setCsvProgress({ current: i, total: totalRows });
+        continue;
+      }
+
       try {
+
         const photoUrl = row.photo_url || row.image_url || row.image || row.photo || row.picture || null;
         const { data: product, error } = await supabase
           .from("products")
