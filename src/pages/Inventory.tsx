@@ -655,7 +655,7 @@ export default function Inventory() {
                     <div className="border-t pt-3">
                       <p className="text-sm font-medium mb-2">Initial Stock (optional)</p>
                       <div className="grid grid-cols-2 gap-3">
-                        <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({...form, buying_price: e.target.value})} /></div>
+                        <div><Label>Buying Price *</Label><Input type="number" step="0.01" min="0.01" required value={form.buying_price} onChange={e => setForm({...form, buying_price: e.target.value})} /></div>
                         <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} /></div>
                       </div>
                     </div>
