@@ -326,7 +326,12 @@ export default function Inventory() {
       setCsvProgress({ current: i, total: totalRows });
     }
 
-    toast({ title: `${count} products imported` });
+    toast({
+      title: `${count} products imported`,
+      description: skipped > 0 ? `${skipped} row(s) skipped — buying price is mandatory.` : undefined,
+      variant: skipped > 0 ? "destructive" : undefined,
+    });
+
     setCsvProgress(null);
     fetchProducts();
     if (fileInputRef.current) fileInputRef.current.value = "";
