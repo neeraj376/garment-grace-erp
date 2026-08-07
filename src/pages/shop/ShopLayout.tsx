@@ -127,6 +127,34 @@ export default function ShopLayout() {
                 </Link>
               );
             })}
+            {brands.length > 0 && (
+              <div className="pt-2 border-t border-border">
+                <button
+                  className="flex w-full items-center justify-between py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  onClick={() => setBrandsOpen(!brandsOpen)}
+                >
+                  Brands
+                  <ChevronDown className={`h-4 w-4 transition-transform ${brandsOpen ? "rotate-180" : ""}`} />
+                </button>
+                {brandsOpen && (
+                  <div className="max-h-60 overflow-y-auto grid grid-cols-2 gap-x-4">
+                    {brands.map((b) => (
+                      <Link
+                        key={b}
+                        to={`/category/all?brand=${encodeURIComponent(b)}`}
+                        className="block py-1.5 text-sm text-muted-foreground hover:text-foreground truncate"
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setBrandsOpen(false);
+                        }}
+                      >
+                        {b}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
         )}
       </header>
