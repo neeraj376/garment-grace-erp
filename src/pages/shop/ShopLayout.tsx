@@ -1,13 +1,33 @@
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import { ShoppingBag, Search, Menu, X, Instagram, Youtube } from "lucide-react";
-import { useState } from "react";
+import { ShoppingBag, Search, Menu, X, Instagram, Youtube, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
+import { fetchInStockShopProducts } from "@/lib/shopProducts";
 
 export default function ShopLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [brandsOpen, setBrandsOpen] = useState(false);
   const { cartCount } = useCart();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const data = await fetchInStockShopProducts();
+      if (!active) return;
+      const set = new Set<string>();
+      for (const p of data as any[]) {
+        if ((p.photo_url || p.video_url) && p.brand?.trim()) set.add(p.brand.trim());
+      }
+      setBrands([...set].sort((a, b) => a.localeCompare(b)));
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
 
   return (
     <div className="min-h-screen bg-background">
