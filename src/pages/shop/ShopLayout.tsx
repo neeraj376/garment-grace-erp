@@ -1,13 +1,33 @@
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import { ShoppingBag, Search, Menu, X, Instagram, Youtube } from "lucide-react";
-import { useState } from "react";
+import { ShoppingBag, Search, Menu, X, Instagram, Youtube, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
+import { fetchInStockShopProducts } from "@/lib/shopProducts";
 
 export default function ShopLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [brandsOpen, setBrandsOpen] = useState(false);
   const { cartCount } = useCart();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const data = await fetchInStockShopProducts();
+      if (!active) return;
+      const set = new Set<string>();
+      for (const p of data as any[]) {
+        if ((p.photo_url || p.video_url) && p.brand?.trim()) set.add(p.brand.trim());
+      }
+      setBrands([...set].sort((a, b) => a.localeCompare(b)));
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,6 +58,34 @@ export default function ShopLayout() {
             <Link to="/category/Jeans" className="hover:text-foreground transition-colors">Jeans</Link>
             <Link to="/category/T-shirt" className="hover:text-foreground transition-colors">T-Shirts</Link>
             <Link to="/category/Jacket" className="hover:text-foreground transition-colors">Jackets</Link>
+
+            {/* Brands mega dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setBrandsOpen(true)}
+              onMouseLeave={() => setBrandsOpen(false)}
+            >
+              <button className="flex items-center gap-1 hover:text-foreground transition-colors">
+                Brands
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              {brandsOpen && brands.length > 0 && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 z-50">
+                  <div className="bg-card border border-border rounded-lg shadow-lg p-4 w-[min(70vw,640px)] max-h-[60vh] overflow-y-auto grid grid-cols-3 gap-x-6 gap-y-1">
+                    {brands.map((b) => (
+                      <Link
+                        key={b}
+                        to={`/category/all?brand=${encodeURIComponent(b)}`}
+                        className="block py-1 text-sm text-muted-foreground hover:text-foreground truncate"
+                        onClick={() => setBrandsOpen(false)}
+                      >
+                        {b}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -79,6 +127,34 @@ export default function ShopLayout() {
                 </Link>
               );
             })}
+            {brands.length > 0 && (
+              <div className="pt-2 border-t border-border">
+                <button
+                  className="flex w-full items-center justify-between py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  onClick={() => setBrandsOpen(!brandsOpen)}
+                >
+                  Brands
+                  <ChevronDown className={`h-4 w-4 transition-transform ${brandsOpen ? "rotate-180" : ""}`} />
+                </button>
+                {brandsOpen && (
+                  <div className="max-h-60 overflow-y-auto grid grid-cols-2 gap-x-4">
+                    {brands.map((b) => (
+                      <Link
+                        key={b}
+                        to={`/category/all?brand=${encodeURIComponent(b)}`}
+                        className="block py-1.5 text-sm text-muted-foreground hover:text-foreground truncate"
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setBrandsOpen(false);
+                        }}
+                      >
+                        {b}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
         )}
       </header>

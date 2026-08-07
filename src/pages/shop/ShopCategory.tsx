@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ const SLUG_CATEGORIES: Record<string, string[]> = {
 
 export default function ShopCategory() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const brandParam = searchParams.get("brand") ?? "";
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function ShopCategory() {
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(brandParam ? [brandParam] : []);
   const [priceMax, setPriceMax] = useState<string>("");
   const [priceMin, setPriceMin] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -47,10 +49,10 @@ export default function ShopCategory() {
     setSelectedSubcategories([]);
     setSelectedSizes([]);
     setSelectedColors([]);
-    setSelectedBrands([]);
+    setSelectedBrands(brandParam ? [brandParam] : []);
     setPriceMin("");
     setPriceMax("");
-  }, [slug]);
+  }, [slug, brandParam]);
 
   useEffect(() => {
     const fetchProducts = async () => {
