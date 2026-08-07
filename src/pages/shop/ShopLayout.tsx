@@ -58,6 +58,34 @@ export default function ShopLayout() {
             <Link to="/category/Jeans" className="hover:text-foreground transition-colors">Jeans</Link>
             <Link to="/category/T-shirt" className="hover:text-foreground transition-colors">T-Shirts</Link>
             <Link to="/category/Jacket" className="hover:text-foreground transition-colors">Jackets</Link>
+
+            {/* Brands mega dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setBrandsOpen(true)}
+              onMouseLeave={() => setBrandsOpen(false)}
+            >
+              <button className="flex items-center gap-1 hover:text-foreground transition-colors">
+                Brands
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              {brandsOpen && brands.length > 0 && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 z-50">
+                  <div className="bg-card border border-border rounded-lg shadow-lg p-4 w-[min(70vw,640px)] max-h-[60vh] overflow-y-auto grid grid-cols-3 gap-x-6 gap-y-1">
+                    {brands.map((b) => (
+                      <Link
+                        key={b}
+                        to={`/category/all?brand=${encodeURIComponent(b)}`}
+                        className="block py-1 text-sm text-muted-foreground hover:text-foreground truncate"
+                        onClick={() => setBrandsOpen(false)}
+                      >
+                        {b}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="flex items-center gap-2">
