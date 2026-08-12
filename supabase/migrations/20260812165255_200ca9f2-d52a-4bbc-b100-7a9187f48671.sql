@@ -1,0 +1,1 @@
+UPDATE public.products SET photo_url = 'https://kwbbkvfudrzznrhoumej.supabase.co/storage/v1/object/public/product-media/rc-polo-grey-zebra-1778.jpg', updated_at = now() WHERE sku IN ('SKU-1778251336606','SKU-1778251131371','SKU-1778250921256');
