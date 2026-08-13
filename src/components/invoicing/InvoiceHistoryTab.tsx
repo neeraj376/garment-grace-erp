@@ -147,7 +147,6 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       if (storeId) {
         await supabase.from("marketing_messages").insert({
           store_id: storeId,
-          customer_id: inv.customers?.id || null,
           phone,
           campaign: "order_tracking_details",
           status: ok ? "sent" : "failed",
