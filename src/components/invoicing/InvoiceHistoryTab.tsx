@@ -861,6 +861,18 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      {inv.source === "whatsapp" && inv.awb_no && inv.customers?.mobile && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => handleSendTracking(inv)} disabled={sendingTracking === inv.id}>
+                                {sendingTracking === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 text-emerald-600" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send tracking on WhatsApp (AWB {inv.awb_no})</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
