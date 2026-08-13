@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X, Printer, Truck } from "lucide-react";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X, Printer, Truck, Send } from "lucide-react";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
 import { saveAs } from "file-saver";
 import { useToast } from "@/hooks/use-toast";
@@ -68,6 +68,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [returnInvoice, setReturnInvoice] = useState<Invoice | null>(null);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
+  const [sendingTracking, setSendingTracking] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -117,6 +118,48 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       toast({ title: "WhatsApp Error", description: err.message, variant: "destructive" });
     } finally {
       setSendingWhatsApp(null);
+    }
+  };
+
+  const handleSendTracking = async (inv: Invoice) => {
+    const phone = inv.shipping_phone || inv.customers?.mobile;
+    if (!phone) {
+      toast({ title: "Error", description: "No mobile number for this customer", variant: "destructive" });
+      return;
+    }
+    if (!inv.awb_no) {
+      toast({ title: "No AWB", description: "Add courier / AWB first", variant: "destructive" });
+      return;
+    }
+    setSendingTracking(inv.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          templateName: "order_tracking_details",
+          phone,
+          customerName: inv.customers?.name || "Customer",
+          invoiceNumber: inv.invoice_number,
+          courierName: inv.courier_name || "DTDC",
+          awbNo: inv.awb_no,
+        },
+      });
+      const ok = !error && data?.success !== false;
+      if (storeId) {
+        await supabase.from("marketing_messages").insert({
+          store_id: storeId,
+          phone,
+          campaign: "order_tracking_details",
+          status: ok ? "sent" : "failed",
+          error: ok ? null : (error?.message || data?.error || "Unknown error"),
+          created_by: userId || null,
+        });
+      }
+      if (!ok) throw new Error(error?.message || data?.error || "Failed to send");
+      toast({ title: "Tracking sent", description: `Tracking sent to ${phone}` });
+    } catch (err: any) {
+      toast({ title: "Tracking WhatsApp failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingTracking(null);
     }
   };
 
@@ -861,6 +904,18 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      {inv.source === "whatsapp" && inv.awb_no && inv.customers?.mobile && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => handleSendTracking(inv)} disabled={sendingTracking === inv.id}>
+                                {sendingTracking === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 text-emerald-600" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send tracking on WhatsApp (AWB {inv.awb_no})</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -900,7 +955,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 </TableRow>
               ))}
     </>
-  ), [loading, filtered, visibleInvoices, selectedIds, sendingWhatsApp, sendingEmail, printingLabelId, creatorNames, isOwner]);
+  ), [loading, filtered, visibleInvoices, selectedIds, sendingWhatsApp, sendingTracking, sendingEmail, printingLabelId, creatorNames, isOwner]);
 
   return (
     <>
