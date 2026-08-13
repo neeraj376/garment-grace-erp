@@ -1197,6 +1197,42 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     }
   };
 
+  const sendTrackingWhatsApp = async (awb: string, courier = "DTDC") => {
+    if (!lastInvoice) return;
+    const phone = lastInvoice.customerMobile;
+    if (!phone) {
+      toast({ title: "Tracking not sent", description: "No customer mobile on this invoice" });
+      return;
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
+        body: {
+          templateName: "order_tracking_details",
+          phone,
+          customerName: lastInvoice.customerName || "Customer",
+          invoiceNumber: lastInvoice.invoice_number,
+          courierName: courier,
+          awbNo: awb,
+        },
+      });
+      const ok = !error && data?.success !== false;
+      if (storeId) {
+        await supabase.from("marketing_messages").insert({
+          store_id: storeId,
+          phone,
+          campaign: "order_tracking_details",
+          status: ok ? "sent" : "failed",
+          error: ok ? null : (error?.message || data?.error || "Unknown error"),
+          created_by: userId || null,
+        });
+      }
+      if (ok) toast({ title: "Tracking sent", description: `WhatsApp tracking sent to ${phone}` });
+      else toast({ title: "Tracking WhatsApp failed", description: error?.message || data?.error || "Unknown error", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Tracking WhatsApp failed", description: err.message, variant: "destructive" });
+    }
+  };
+
   const handleBookDtdc = async () => {
     if (!lastInvoice) return;
     setBookingDtdc(true);
@@ -1217,18 +1253,21 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           setCourierName("DTDC");
           setAwbNo(manual.trim());
           toast({ title: "AWB saved", description: `DTDC — ${manual.trim()}` });
+          await sendTrackingWhatsApp(manual.trim());
         }
         return;
       }
       setCourierName("DTDC");
       setAwbNo(awb);
       toast({ title: "DTDC shipment booked", description: `AWB ${awb}` });
+      await sendTrackingWhatsApp(awb);
     } catch (err: any) {
       toast({ title: "DTDC error", description: err.message, variant: "destructive" });
     } finally {
       setBookingDtdc(false);
     }
   };
+
 
 
   const handleSendWhatsApp = async () => {
