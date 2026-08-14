@@ -265,7 +265,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
 
   useEffect(() => {
     fetchInvoices();
+    fetchTrackingStatus();
   }, [storeId]);
+
 
   const paymentMethods = useMemo(
     () => Array.from(new Set(invoices.map(i => i.payment_method).filter(Boolean))).sort(),
