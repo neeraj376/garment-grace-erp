@@ -133,10 +133,34 @@ serve(async (req) => {
       template,
     };
 
-    // Attempt to send, retry once on failure
+    // Some approved tracking templates carry an extra header variable
+    // (e.g. "Status: {{Order Status}}") and/or a dynamic URL button.
+    // Meta rejects a payload that omits them with error 131008
+    // ("The request is missing a required parameter"), so on that error we
+    // retry with progressively richer variable sets.
+    const orderStatus = sanitize(raw.orderStatus) || "Shipped";
+    const trackingVariants: Array<() => void> = isTrackingTemplate
+      ? [
+          () => {
+            (payload.template as Record<string, unknown>).headerValues = [orderStatus];
+          },
+          () => {
+            (payload.template as Record<string, unknown>).headerValues = [orderStatus];
+            (payload.template as Record<string, unknown>).buttonValues = { "0": [awbNo] };
+          },
+          () => {
+            delete (payload.template as Record<string, unknown>).headerValues;
+            (payload.template as Record<string, unknown>).buttonValues = { "0": [awbNo] };
+          },
+        ]
+      : [];
+
+    const maxAttempts = isTrackingTemplate ? 1 + trackingVariants.length : 2;
+
+    // Attempt to send, retry on failure
     let firstError: string | null = null;
     let lastError: string | null = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const response = await fetch(WHATSAPP_API_URL, {
         method: "POST",
         headers: {
@@ -179,16 +203,23 @@ serve(async (req) => {
         );
       }
 
-      // On first failure, retry with the plain invoice link as the header media
-      // instead of dropping the header (templates with a media header reject an
-      // empty headerValues with \"Media Url is missing\").
-      if (attempt === 0 && !isTrackingTemplate) {
+      if (isTrackingTemplate) {
+        const variant = trackingVariants[attempt];
+        if (variant) {
+          console.log(`Retrying tracking template with variable variant ${attempt + 1}...`);
+          variant();
+        }
+      } else if (attempt === 0) {
+        // On first failure, retry with the plain invoice link as the header media
+        // instead of dropping the header (templates with a media header reject an
+        // empty headerValues with "Media Url is missing").
         console.log("Retrying with original invoice media URL as header...");
         (payload.template as Record<string, unknown>).headerValues = [
           invoiceImageUrl || invoiceUrl,
         ];
       }
     }
+
 
     throw new Error(firstError || lastError || "Failed to send WhatsApp message after retries");
   } catch (error: unknown) {
