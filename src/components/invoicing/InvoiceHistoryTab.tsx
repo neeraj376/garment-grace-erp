@@ -69,6 +69,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
   const [sendingTracking, setSendingTracking] = useState<string | null>(null);
+  const [trackingStatus, setTrackingStatus] = useState<Record<string, { status: string; created_at: string }>>({});
+
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
