@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X, Printer, Truck, Send } from "lucide-react";
+import { ExternalLink, RotateCcw, Search, MessageCircle, Loader2, Pencil, Trash2, Star, StickyNote, Mail, X, Printer, Truck, Send, RefreshCw } from "lucide-react";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx";
 import { saveAs } from "file-saver";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +69,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
   const [sendingTracking, setSendingTracking] = useState<string | null>(null);
+  const [trackingStatus, setTrackingStatus] = useState<Record<string, { status: string; created_at: string }>>({});
+
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -121,7 +123,37 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const handleSendTracking = async (inv: Invoice) => {
+  const normPhone = (p?: string | null) => (p || "").replace(/\D/g, "").slice(-10);
+
+  const fetchTrackingStatus = async () => {
+    if (!storeId) return;
+    const { data } = await supabase
+      .from("marketing_messages")
+      .select("phone, status, created_at")
+      .eq("store_id", storeId)
+      .eq("campaign", "order_tracking_details")
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    const map: Record<string, { status: string; created_at: string }> = {};
+    (data || []).forEach((m: any) => {
+      const key = normPhone(m.phone);
+      if (key && !map[key]) map[key] = { status: m.status, created_at: m.created_at };
+    });
+    setTrackingStatus(map);
+  };
+
+  // "sent" is healthy; "failed" needs a retry; anything still pending/queued for
+  // more than 15 minutes is considered stuck and also retryable.
+  const trackingState = (inv: Invoice): "none" | "sent" | "retry" => {
+    const rec = trackingStatus[normPhone(inv.shipping_phone || inv.customers?.mobile)];
+    if (!rec) return "none";
+    if (rec.status === "sent") return "sent";
+    if (rec.status === "failed") return "retry";
+    const ageMin = (Date.now() - new Date(rec.created_at).getTime()) / 60000;
+    return ageMin > 15 ? "retry" : "sent";
+  };
+
+  const handleSendTracking = async (inv: Invoice, isRetry = false) => {
     const phone = inv.shipping_phone || inv.customers?.mobile;
     if (!phone) {
       toast({ title: "Error", description: "No mobile number for this customer", variant: "destructive" });
@@ -154,14 +186,19 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           created_by: userId || null,
         });
       }
+      setTrackingStatus(prev => ({
+        ...prev,
+        [normPhone(phone)]: { status: ok ? "sent" : "failed", created_at: new Date().toISOString() },
+      }));
       if (!ok) throw new Error(error?.message || data?.error || "Failed to send");
-      toast({ title: "Tracking sent", description: `Tracking sent to ${phone}` });
+      toast({ title: isRetry ? "Tracking resent" : "Tracking sent", description: `Tracking sent to ${phone}` });
     } catch (err: any) {
-      toast({ title: "Tracking WhatsApp failed", description: err.message, variant: "destructive" });
+      toast({ title: isRetry ? "Tracking resend failed" : "Tracking WhatsApp failed", description: err.message, variant: "destructive" });
     } finally {
       setSendingTracking(null);
     }
   };
+
 
   const handleSendEmail = async (inv: Invoice) => {
     let email = inv.customers?.email?.trim();
@@ -228,7 +265,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
 
   useEffect(() => {
     fetchInvoices();
+    fetchTrackingStatus();
   }, [storeId]);
+
 
   const paymentMethods = useMemo(
     () => Array.from(new Set(invoices.map(i => i.payment_method).filter(Boolean))).sort(),
@@ -904,18 +943,33 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      {inv.source === "whatsapp" && inv.awb_no && inv.customers?.mobile && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => handleSendTracking(inv)} disabled={sendingTracking === inv.id}>
-                                {sendingTracking === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 text-emerald-600" />}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Send tracking on WhatsApp (AWB {inv.awb_no})</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+                      {inv.source === "whatsapp" && inv.awb_no && inv.customers?.mobile && (() => {
+                        const state = trackingState(inv);
+                        const retry = state === "retry";
+                        return (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => handleSendTracking(inv, retry)} disabled={sendingTracking === inv.id}>
+                                  {sendingTracking === inv.id
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : retry
+                                      ? <RefreshCw className="h-4 w-4 text-amber-600" />
+                                      : <Send className={`h-4 w-4 ${state === "sent" ? "text-muted-foreground" : "text-emerald-600"}`} />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {retry
+                                  ? `Resend tracking — last attempt failed or stuck (AWB ${inv.awb_no})`
+                                  : state === "sent"
+                                    ? `Tracking already sent — send again (AWB ${inv.awb_no})`
+                                    : `Send tracking on WhatsApp (AWB ${inv.awb_no})`}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })()}
+
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -955,7 +1009,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 </TableRow>
               ))}
     </>
-  ), [loading, filtered, visibleInvoices, selectedIds, sendingWhatsApp, sendingTracking, sendingEmail, printingLabelId, creatorNames, isOwner]);
+  ), [loading, filtered, visibleInvoices, selectedIds, sendingWhatsApp, sendingTracking, sendingEmail, printingLabelId, creatorNames, isOwner, trackingStatus]);
 
   return (
     <>
