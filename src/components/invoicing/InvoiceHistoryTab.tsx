@@ -1009,7 +1009,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 </TableRow>
               ))}
     </>
-  ), [loading, filtered, visibleInvoices, selectedIds, sendingWhatsApp, sendingTracking, sendingEmail, printingLabelId, creatorNames, isOwner]);
+  ), [loading, filtered, visibleInvoices, selectedIds, sendingWhatsApp, sendingTracking, sendingEmail, printingLabelId, creatorNames, isOwner, trackingStatus]);
 
   return (
     <>
