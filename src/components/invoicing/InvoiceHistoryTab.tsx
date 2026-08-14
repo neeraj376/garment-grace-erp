@@ -121,7 +121,37 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     }
   };
 
-  const handleSendTracking = async (inv: Invoice) => {
+  const normPhone = (p?: string | null) => (p || "").replace(/\D/g, "").slice(-10);
+
+  const fetchTrackingStatus = async () => {
+    if (!storeId) return;
+    const { data } = await supabase
+      .from("marketing_messages")
+      .select("phone, status, created_at")
+      .eq("store_id", storeId)
+      .eq("campaign", "order_tracking_details")
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    const map: Record<string, { status: string; created_at: string }> = {};
+    (data || []).forEach((m: any) => {
+      const key = normPhone(m.phone);
+      if (key && !map[key]) map[key] = { status: m.status, created_at: m.created_at };
+    });
+    setTrackingStatus(map);
+  };
+
+  // "sent" is healthy; "failed" needs a retry; anything still pending/queued for
+  // more than 15 minutes is considered stuck and also retryable.
+  const trackingState = (inv: Invoice): "none" | "sent" | "retry" => {
+    const rec = trackingStatus[normPhone(inv.shipping_phone || inv.customers?.mobile)];
+    if (!rec) return "none";
+    if (rec.status === "sent") return "sent";
+    if (rec.status === "failed") return "retry";
+    const ageMin = (Date.now() - new Date(rec.created_at).getTime()) / 60000;
+    return ageMin > 15 ? "retry" : "sent";
+  };
+
+  const handleSendTracking = async (inv: Invoice, isRetry = false) => {
     const phone = inv.shipping_phone || inv.customers?.mobile;
     if (!phone) {
       toast({ title: "Error", description: "No mobile number for this customer", variant: "destructive" });
@@ -154,14 +184,19 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
           created_by: userId || null,
         });
       }
+      setTrackingStatus(prev => ({
+        ...prev,
+        [normPhone(phone)]: { status: ok ? "sent" : "failed", created_at: new Date().toISOString() },
+      }));
       if (!ok) throw new Error(error?.message || data?.error || "Failed to send");
-      toast({ title: "Tracking sent", description: `Tracking sent to ${phone}` });
+      toast({ title: isRetry ? "Tracking resent" : "Tracking sent", description: `Tracking sent to ${phone}` });
     } catch (err: any) {
-      toast({ title: "Tracking WhatsApp failed", description: err.message, variant: "destructive" });
+      toast({ title: isRetry ? "Tracking resend failed" : "Tracking WhatsApp failed", description: err.message, variant: "destructive" });
     } finally {
       setSendingTracking(null);
     }
   };
+
 
   const handleSendEmail = async (inv: Invoice) => {
     let email = inv.customers?.email?.trim();
