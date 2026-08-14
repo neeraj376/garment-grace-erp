@@ -110,6 +110,13 @@ serve(async (req) => {
 
     console.log(`Sending WhatsApp to ${phoneNumber}, template=${WHATSAPP_TEMPLATE_NAME}, image=${headerMediaUrl}`);
 
+    // The approved order_tracking_details template starts with a header line
+    // "Status: {{Order Status}}", so the header variable must be supplied.
+    // Omitting it makes Meta reject the message asynchronously with error
+    // 131008 ("The request is missing a required parameter") — Interakt still
+    // returns result: true, so it only shows up in their dashboard.
+    const orderStatus = sanitize(raw.orderStatus) || "Shipped";
+
     const template: Record<string, unknown> = {
       name: WHATSAPP_TEMPLATE_NAME,
       languageCode: "en",
@@ -118,7 +125,9 @@ serve(async (req) => {
         : [customerName || "Customer", invoiceNumber || "N/A", `₹${totalAmount || "0"}`],
     };
 
-    if (!isTrackingTemplate) {
+    if (isTrackingTemplate) {
+      template.headerValues = [orderStatus];
+    } else {
       template.headerValues = [headerMediaUrl];
       template.buttonValues = {
         "0": [invoiceUrl],
@@ -133,27 +142,20 @@ serve(async (req) => {
       template,
     };
 
-    // Some approved tracking templates carry an extra header variable
-    // (e.g. "Status: {{Order Status}}") and/or a dynamic URL button.
-    // Meta rejects a payload that omits them with error 131008
-    // ("The request is missing a required parameter"), so on that error we
-    // retry with progressively richer variable sets.
-    const orderStatus = sanitize(raw.orderStatus) || "Shipped";
+    // Fallback variable sets used only when Interakt rejects the call
+    // synchronously (template shape differs from what we assume).
     const trackingVariants: Array<() => void> = isTrackingTemplate
       ? [
           () => {
-            (payload.template as Record<string, unknown>).headerValues = [orderStatus];
-          },
-          () => {
-            (payload.template as Record<string, unknown>).headerValues = [orderStatus];
             (payload.template as Record<string, unknown>).buttonValues = { "0": [awbNo] };
           },
           () => {
             delete (payload.template as Record<string, unknown>).headerValues;
-            (payload.template as Record<string, unknown>).buttonValues = { "0": [awbNo] };
+            delete (payload.template as Record<string, unknown>).buttonValues;
           },
         ]
       : [];
+
 
     const maxAttempts = isTrackingTemplate ? 1 + trackingVariants.length : 2;
 
