@@ -1818,6 +1818,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recalc_invoice_totals: {
+        Args: { p_invoice_id: string }
+        Returns: undefined
+      }
       search_invoicing_products: {
         Args: { p_limit?: number; p_query: string; p_store_id: string }
         Returns: {
