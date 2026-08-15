@@ -110,11 +110,11 @@ serve(async (req) => {
 
     console.log(`Sending WhatsApp to ${phoneNumber}, template=${WHATSAPP_TEMPLATE_NAME}, image=${headerMediaUrl}`);
 
-    // The approved order_tracking_details template starts with a header line
-    // "Status: {{Order Status}}", so the header variable must be supplied.
-    // Omitting it makes Meta reject the message asynchronously with error
-    // 131008 ("The request is missing a required parameter") — Interakt still
-    // returns result: true, so it only shows up in their dashboard.
+    // The approved order_tracking_details template renders with NO header line
+    // and NO button — only the two body variables {{1}} courier and {{2}} AWB.
+    // Sending extra header/button components made Meta reject the message
+    // asynchronously with 131008 ("missing a required parameter"), while
+    // Interakt still returned result: true. So: body variables only.
     const orderStatus = sanitize(raw.orderStatus) || "Shipped";
 
     const template: Record<string, unknown> = {
@@ -125,9 +125,7 @@ serve(async (req) => {
         : [customerName || "Customer", invoiceNumber || "N/A", `₹${totalAmount || "0"}`],
     };
 
-    if (isTrackingTemplate) {
-      template.headerValues = [orderStatus];
-    } else {
+    if (!isTrackingTemplate) {
       template.headerValues = [headerMediaUrl];
       template.buttonValues = {
         "0": [invoiceUrl],
@@ -150,11 +148,12 @@ serve(async (req) => {
             (payload.template as Record<string, unknown>).buttonValues = { "0": [awbNo] };
           },
           () => {
-            delete (payload.template as Record<string, unknown>).headerValues;
             delete (payload.template as Record<string, unknown>).buttonValues;
+            (payload.template as Record<string, unknown>).headerValues = [orderStatus];
           },
         ]
       : [];
+
 
 
     const maxAttempts = isTrackingTemplate ? 1 + trackingVariants.length : 2;
