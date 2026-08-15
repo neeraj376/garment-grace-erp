@@ -110,11 +110,9 @@ serve(async (req) => {
 
     console.log(`Sending WhatsApp to ${phoneNumber}, template=${WHATSAPP_TEMPLATE_NAME}, image=${headerMediaUrl}`);
 
-    // The approved order_tracking_details template renders with NO header line
-    // and NO button — only the two body variables {{1}} courier and {{2}} AWB.
-    // Sending extra header/button components made Meta reject the message
-    // asynchronously with 131008 ("missing a required parameter"), while
-    // Interakt still returned result: true. So: body variables only.
+    // The tracking template has two body variables and a dynamic URL button.
+    // Interakt accepts an incomplete payload and queues it, but Meta later
+    // rejects it with 131008 when the required button parameter is omitted.
     const orderStatus = sanitize(raw.orderStatus) || "Shipped";
 
     const template: Record<string, unknown> = {
@@ -130,6 +128,10 @@ serve(async (req) => {
       template.buttonValues = {
         "0": [invoiceUrl],
       };
+    } else {
+      template.buttonValues = {
+        "0": [awbNo],
+      };
     }
 
     const payload = {
@@ -140,15 +142,18 @@ serve(async (req) => {
       template,
     };
 
+    console.log(
+      `Template components: body=${(template.bodyValues as string[]).length}, header=0, buttons=${isTrackingTemplate ? 1 : 1}`,
+    );
+
     // Fallback variable sets used only when Interakt rejects the call
     // synchronously (template shape differs from what we assume).
     const trackingVariants: Array<() => void> = isTrackingTemplate
       ? [
           () => {
-            (payload.template as Record<string, unknown>).buttonValues = { "0": [awbNo] };
+            delete (payload.template as Record<string, unknown>).buttonValues;
           },
           () => {
-            delete (payload.template as Record<string, unknown>).buttonValues;
             (payload.template as Record<string, unknown>).headerValues = [orderStatus];
           },
         ]
