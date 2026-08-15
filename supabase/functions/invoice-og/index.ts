@@ -29,10 +29,25 @@ serve(async (req) => {
     return new Response("Invoice not found", { status: 404 });
   }
 
-  const { data: items } = await supabase
+  const { data: rawItems } = await supabase
     .from("invoice_items")
-    .select("quantity, unit_price, total, tax_amount, products!invoice_items_product_id_fkey(name, sku)")
+    .select("quantity, returned_quantity, unit_price, total, tax_amount, products!invoice_items_product_id_fkey(name, sku)")
     .eq("invoice_id", invoiceId);
+
+  // Exclude returned units so the shared invoice reflects only what the customer kept
+  const items = (rawItems || [])
+    .map((it: any) => {
+      const netQty = Math.max((it.quantity || 0) - (it.returned_quantity || 0), 0);
+      const ratio = it.quantity > 0 ? netQty / it.quantity : 0;
+      return {
+        ...it,
+        quantity: netQty,
+        total: Number(it.total || 0) * ratio,
+        tax_amount: Number(it.tax_amount || 0) * ratio,
+      };
+    })
+    .filter((it: any) => it.quantity > 0);
+
 
   const storeName = (invoice.stores as any)?.name || "Store";
   const storeAddress = (invoice.stores as any)?.address || "";
