@@ -278,7 +278,7 @@ export default function EditOnlineOrderDialog({ order, onClose, onSaved }: EditO
               "send-whatsapp-invoice",
               {
                 body: {
-                  templateName: "order_tracking_details",
+                  templateName: "order_shipped",
                   phone,
                   customerName,
                   invoiceNumber: order.order_number,

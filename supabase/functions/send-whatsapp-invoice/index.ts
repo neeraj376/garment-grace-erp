@@ -52,7 +52,7 @@ serve(async (req) => {
     const sanitize = (v: string) => (v || "").replace(/[\t\n\r]+/g, " ").replace(/\s{2,}/g, " ").trim();
     const requestedTemplateName = sanitize(raw.templateName);
     const WHATSAPP_TEMPLATE_NAME = requestedTemplateName || Deno.env.get("WHATSAPP_TEMPLATE_NAME") || "originee_invoice_new";
-    const isTrackingTemplate = WHATSAPP_TEMPLATE_NAME === "order_tracking_details";
+    const isTrackingTemplate = WHATSAPP_TEMPLATE_NAME === "order_shipped" || WHATSAPP_TEMPLATE_NAME === "order_tracking_details";
     const { phone, invoiceUrl, invoiceImageUrl } = raw;
     const customerName = sanitize(raw.customerName);
     const invoiceNumber = sanitize(raw.invoiceNumber);

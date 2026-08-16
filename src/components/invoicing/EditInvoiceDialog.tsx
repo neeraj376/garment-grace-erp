@@ -365,7 +365,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
   const sendTrackingWhatsApp = async (normalizedCourierName: string, normalizedAwbNo: string) => {
     const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
       body: {
-        templateName: "order_tracking_details",
+        templateName: "order_shipped",
         phone: customerMobile.trim(),
         customerName: customerName.trim() || "Customer",
         invoiceNumber: invoice.invoice_number,
