@@ -167,7 +167,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
     try {
       const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
         body: {
-          templateName: "order_tracking_details",
+          templateName: "order_shipped",
           phone,
           customerName: inv.customers?.name || "Customer",
           invoiceNumber: inv.invoice_number,

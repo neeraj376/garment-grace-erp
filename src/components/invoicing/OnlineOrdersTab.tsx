@@ -249,7 +249,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
               "send-whatsapp-invoice",
               {
                 body: {
-                  templateName: "order_tracking_details",
+                  templateName: "order_shipped",
                   phone,
                   customerName,
                   invoiceNumber: editingOrder.order_number,
@@ -309,7 +309,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
     try {
       const { data, error } = await supabase.functions.invoke("send-whatsapp-invoice", {
         body: {
-          templateName: "order_tracking_details",
+          templateName: "order_shipped",
           phone,
           customerName,
           invoiceNumber: editingOrder.order_number,
