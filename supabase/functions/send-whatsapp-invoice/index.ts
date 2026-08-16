@@ -67,12 +67,17 @@ serve(async (req) => {
       throw new Error("Missing required fields: courierName, awbNo");
     }
 
-    // Clean phone number - ensure country code
-    let cleanPhone = phone.replace(/\s+/g, "").replace(/[^0-9+]/g, "");
-    if (!cleanPhone.startsWith("+")) {
-      cleanPhone = "+91" + cleanPhone;
+    // Normalize phone number to Indian 10-digit + 91 country code
+    let digits = String(phone).replace(/\D/g, "");
+    digits = digits.replace(/^0+/, "");        // strip leading zeros
+    if (digits.startsWith("91")) digits = digits.slice(2);
+    digits = digits.replace(/^0+/, "");
+    if (digits.length > 10) digits = digits.slice(-10); // drop stray leading digits
+    if (!/^[6-9]\d{9}$/.test(digits)) {
+      throw new Error(`Invalid mobile number: ${digits.length} digits after normalization`);
     }
-    const phoneNumber = cleanPhone.replace("+", "");
+    const phoneNumber = "91" + digits;
+
 
     // Convert SVG → PNG for WhatsApp (Meta rejects SVG in template headers).
     // Try providers in order and use the first one that returns 200 with an image/* content-type.
