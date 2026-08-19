@@ -1,0 +1,1 @@
+UPDATE public.products SET photo_url = (SELECT photo_url FROM public.products WHERE sku = 'SKU-1787160432648') WHERE sku = 'SKU-1787160669786-S';
