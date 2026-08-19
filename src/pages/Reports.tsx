@@ -209,8 +209,9 @@ export default function Reports() {
       if (sourceFilter === "online") {
         invData.length = 0;
       } else {
+        const filteredInvoices = invData.filter((inv: any) => (inv.source || "offline").toLowerCase() === sourceFilter);
         invData.length = 0;
-        invData.push(...invData.filter((inv: any) => (inv.source || "offline").toLowerCase() === sourceFilter));
+        invData.push(...filteredInvoices);
         orderData.length = 0;
       }
     }
