@@ -538,6 +538,16 @@ export default function Reports() {
               </Label>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
+              <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as SourceFilter)}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
+                </SelectContent>
+              </Select>
               <Button variant="outline" size="sm" onClick={downloadReport}>
                 <Download className="h-4 w-4 mr-1" /> Export CSV
               </Button>
