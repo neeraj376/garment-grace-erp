@@ -90,6 +90,7 @@ export default function Reports() {
   const [current, setCurrent] = useState<ReportBundle>(EMPTY_BUNDLE);
   const [previous, setPrevious] = useState<ReportBundle | null>(null);
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [empSourceFilter, setEmpSourceFilter] = useState<SourceFilter>("all");
   const [drillEmp, setDrillEmp] = useState<{ name: string; invoices: EmpInvoice[] } | null>(null);
 
