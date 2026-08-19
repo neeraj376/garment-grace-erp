@@ -204,6 +204,17 @@ export default function Reports() {
     orderData.length = 0;
     orderData.push(...dedupedOrderData);
 
+    // Apply source filter for the Sales & P&L report
+    if (sourceFilter !== "all") {
+      if (sourceFilter === "online") {
+        invData.length = 0;
+      } else {
+        invData.length = 0;
+        invData.push(...invData.filter((inv: any) => (inv.source || "offline").toLowerCase() === sourceFilter));
+        orderData.length = 0;
+      }
+    }
+
     const productIds = new Set<string>();
     const batchIds = new Set<string>();
     invData.forEach(inv => {
