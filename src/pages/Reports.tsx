@@ -90,13 +90,14 @@ export default function Reports() {
   const [current, setCurrent] = useState<ReportBundle>(EMPTY_BUNDLE);
   const [previous, setPrevious] = useState<ReportBundle | null>(null);
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [empSourceFilter, setEmpSourceFilter] = useState<SourceFilter>("all");
   const [drillEmp, setDrillEmp] = useState<{ name: string; invoices: EmpInvoice[] } | null>(null);
 
   useEffect(() => {
     if (!storeId) return;
     runReports();
-  }, [storeId, period, customStart, customEnd, useCurrentPrice, compareMode, compareStart, compareEnd]);
+  }, [storeId, period, customStart, customEnd, useCurrentPrice, compareMode, compareStart, compareEnd, sourceFilter]);
 
   const getDateRange = () => {
     const now = new Date();
@@ -143,18 +144,18 @@ export default function Reports() {
 
   const runReports = async () => {
     const { start, end } = getDateRange();
-    const cur = await fetchBundle(start, end);
+    const cur = await fetchBundle(start, end, sourceFilter);
     setCurrent(cur);
     const cmpRange = getComparisonRange(start, end);
     if (cmpRange) {
-      const prev = await fetchBundle(cmpRange.start, cmpRange.end);
+      const prev = await fetchBundle(cmpRange.start, cmpRange.end, sourceFilter);
       setPrevious(prev);
     } else {
       setPrevious(null);
     }
   };
 
-  const fetchBundle = async (start: string, end: string): Promise<ReportBundle> => {
+  const fetchBundle = async (start: string, end: string, sourceFilter: SourceFilter = "all"): Promise<ReportBundle> => {
     // Page through invoices to avoid the default 1000-row cap silently truncating data
     const PAGE = 1000;
     let from = 0;
@@ -202,6 +203,18 @@ export default function Reports() {
     const dedupedOrderData = orderData.filter((o: any) => !invoiceSuffixes.has((o.order_number || "").slice(4)));
     orderData.length = 0;
     orderData.push(...dedupedOrderData);
+
+    // Apply source filter for the Sales & P&L report
+    if (sourceFilter !== "all") {
+      if (sourceFilter === "online") {
+        invData.length = 0;
+      } else {
+        const filteredInvoices = invData.filter((inv: any) => (inv.source || "offline").toLowerCase() === sourceFilter);
+        invData.length = 0;
+        invData.push(...filteredInvoices);
+        orderData.length = 0;
+      }
+    }
 
     const productIds = new Set<string>();
     const batchIds = new Set<string>();
@@ -525,6 +538,16 @@ export default function Reports() {
               </Label>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
+              <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as SourceFilter)}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
+                </SelectContent>
+              </Select>
               <Button variant="outline" size="sm" onClick={downloadReport}>
                 <Download className="h-4 w-4 mr-1" /> Export CSV
               </Button>
