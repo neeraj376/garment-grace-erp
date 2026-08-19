@@ -97,7 +97,7 @@ export default function Reports() {
   useEffect(() => {
     if (!storeId) return;
     runReports();
-  }, [storeId, period, customStart, customEnd, useCurrentPrice, compareMode, compareStart, compareEnd]);
+  }, [storeId, period, customStart, customEnd, useCurrentPrice, compareMode, compareStart, compareEnd, sourceFilter]);
 
   const getDateRange = () => {
     const now = new Date();
