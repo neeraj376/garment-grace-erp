@@ -57,13 +57,14 @@ export default function ShopProduct() {
       // Narrow server-side by brand when present (huge catalogs blow past the
       // default 1000-row cap otherwise). Fall back to a paginated full scan.
       let allActive: any[] = [];
-      if (base.brand) {
+      const brandTrimmed = (base.brand ?? "").trim();
+      if (brandTrimmed) {
         const { data } = await supabase
           .from("products")
           .select("*")
           .eq("store_id", base.store_id)
           .eq("is_active", true)
-          .ilike("brand", base.brand)
+          .ilike("brand", `%${brandTrimmed}%`)
           .limit(2000);
         allActive = data ?? [];
       } else {

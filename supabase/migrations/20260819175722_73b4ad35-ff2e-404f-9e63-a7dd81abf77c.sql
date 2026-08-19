@@ -1,0 +1,1 @@
+UPDATE public.products SET brand = NULLIF(btrim(brand), ''), name = regexp_replace(btrim(name), '\s+', ' ', 'g') WHERE brand IS DISTINCT FROM NULLIF(btrim(brand), '') OR name IS DISTINCT FROM regexp_replace(btrim(name), '\s+', ' ', 'g');
