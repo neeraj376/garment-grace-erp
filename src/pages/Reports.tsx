@@ -155,7 +155,7 @@ export default function Reports() {
     }
   };
 
-  const fetchBundle = async (start: string, end: string): Promise<ReportBundle> => {
+  const fetchBundle = async (start: string, end: string, sourceFilter: SourceFilter = "all"): Promise<ReportBundle> => {
     // Page through invoices to avoid the default 1000-row cap silently truncating data
     const PAGE = 1000;
     let from = 0;
