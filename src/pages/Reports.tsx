@@ -144,11 +144,11 @@ export default function Reports() {
 
   const runReports = async () => {
     const { start, end } = getDateRange();
-    const cur = await fetchBundle(start, end);
+    const cur = await fetchBundle(start, end, sourceFilter);
     setCurrent(cur);
     const cmpRange = getComparisonRange(start, end);
     if (cmpRange) {
-      const prev = await fetchBundle(cmpRange.start, cmpRange.end);
+      const prev = await fetchBundle(cmpRange.start, cmpRange.end, sourceFilter);
       setPrevious(prev);
     } else {
       setPrevious(null);
