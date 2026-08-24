@@ -379,12 +379,18 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
     if (data?.success === false) throw new Error(data.error || "Failed to send tracking message");
   };
 
+  // Returns reduce the billable quantity, so totals must be computed on net qty
+  const netQty = (i: InvoiceItem) => Math.max(0, i.quantity - (i.returned_quantity || 0));
+  const netTotal = (i: InvoiceItem) => {
+    if (i.quantity <= 0) return 0;
+    return (i.total / i.quantity) * netQty(i);
+  };
   const itemsSubtotal = items.reduce((s, i) => {
-    const priceExclTax = i.total / (1 + (i.tax_rate || 5) / 100);
+    const priceExclTax = netTotal(i) / (1 + (i.tax_rate || 5) / 100);
     return s + priceExclTax;
   }, 0);
-  const itemsTax = items.reduce((s, i) => s + i.tax_amount, 0);
-  const grandTotal = items.reduce((s, i) => s + i.total, 0) - (Number(discountAmount) || 0);
+  const itemsTax = items.reduce((s, i) => s + (i.quantity > 0 ? (i.tax_amount / i.quantity) * netQty(i) : 0), 0);
+  const grandTotal = items.reduce((s, i) => s + netTotal(i), 0) - (Number(discountAmount) || 0);
 
   const handleSave = async () => {
     if (items.length === 0) {
