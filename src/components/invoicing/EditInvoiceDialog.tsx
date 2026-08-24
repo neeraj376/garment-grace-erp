@@ -799,7 +799,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                           className="w-20 ml-auto text-right"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-medium">₹{item.total.toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        ₹{netTotal(item).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                        {(item.returned_quantity || 0) > 0 && (
+                          <div className="text-[10px] text-destructive font-normal">
+                            {item.returned_quantity} returned
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={items.length <= 1}>
                           <Trash2 className="h-4 w-4 text-destructive" />
