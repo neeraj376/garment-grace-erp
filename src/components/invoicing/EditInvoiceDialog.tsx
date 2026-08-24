@@ -48,6 +48,7 @@ interface InvoiceItem {
   discount: number;
   tax_amount: number;
   total: number;
+  returned_quantity?: number;
   product_name?: string;
   product_sku?: string;
   tax_rate?: number;
@@ -201,7 +202,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       // Fetch invoice items with product details
       const { data: itemsData } = await supabase
         .from("invoice_items")
-        .select("id, product_id, quantity, unit_price, discount, tax_amount, total")
+        .select("id, product_id, quantity, unit_price, discount, tax_amount, total, returned_quantity")
         .eq("invoice_id", invoice.id);
 
       if (itemsData) {
@@ -378,12 +379,18 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
     if (data?.success === false) throw new Error(data.error || "Failed to send tracking message");
   };
 
+  // Returns reduce the billable quantity, so totals must be computed on net qty
+  const netQty = (i: InvoiceItem) => Math.max(0, i.quantity - (i.returned_quantity || 0));
+  const netTotal = (i: InvoiceItem) => {
+    if (i.quantity <= 0) return 0;
+    return (i.total / i.quantity) * netQty(i);
+  };
   const itemsSubtotal = items.reduce((s, i) => {
-    const priceExclTax = i.total / (1 + (i.tax_rate || 5) / 100);
+    const priceExclTax = netTotal(i) / (1 + (i.tax_rate || 5) / 100);
     return s + priceExclTax;
   }, 0);
-  const itemsTax = items.reduce((s, i) => s + i.tax_amount, 0);
-  const grandTotal = items.reduce((s, i) => s + i.total, 0) - (Number(discountAmount) || 0);
+  const itemsTax = items.reduce((s, i) => s + (i.quantity > 0 ? (i.tax_amount / i.quantity) * netQty(i) : 0), 0);
+  const grandTotal = items.reduce((s, i) => s + netTotal(i), 0) - (Number(discountAmount) || 0);
 
   const handleSave = async () => {
     if (items.length === 0) {
@@ -792,7 +799,14 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
                           className="w-20 ml-auto text-right"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-medium">₹{item.total.toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        ₹{netTotal(item).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                        {(item.returned_quantity || 0) > 0 && (
+                          <div className="text-[10px] text-destructive font-normal">
+                            {item.returned_quantity} returned
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={items.length <= 1}>
                           <Trash2 className="h-4 w-4 text-destructive" />
