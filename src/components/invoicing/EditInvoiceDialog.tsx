@@ -48,6 +48,7 @@ interface InvoiceItem {
   discount: number;
   tax_amount: number;
   total: number;
+  returned_quantity?: number;
   product_name?: string;
   product_sku?: string;
   tax_rate?: number;
