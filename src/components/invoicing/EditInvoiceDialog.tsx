@@ -202,7 +202,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
       // Fetch invoice items with product details
       const { data: itemsData } = await supabase
         .from("invoice_items")
-        .select("id, product_id, quantity, unit_price, discount, tax_amount, total")
+        .select("id, product_id, quantity, unit_price, discount, tax_amount, total, returned_quantity")
         .eq("invoice_id", invoice.id);
 
       if (itemsData) {
