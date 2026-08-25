@@ -604,6 +604,20 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     };
   }, [storeId]);
 
+  // Some scanner modes send the code into the focused input without an Enter
+  // terminator. If the search box holds a SKU-shaped code and typing stops,
+  // auto-add it.
+  useEffect(() => {
+    const code = searchProduct.trim();
+    if (!code || !storeId) return;
+    const skuLike = /^(?:s?ku-)?[a-z0-9][a-z0-9-]{5,}$/i.test(code) && /\d{4,}/.test(code);
+    if (!skuLike) return;
+    const t = setTimeout(() => {
+      void lookupRef.current(code);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchProduct, storeId]);
+
 
 
 
