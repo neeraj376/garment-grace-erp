@@ -528,29 +528,34 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   };
 
 
+  // Keep the latest lookup implementation available to the global listener so the
+  // handler never runs against a stale closure (pricing toggle, product list, etc.).
+  const lookupRef = useRef(lookupAndAddBySku);
+  lookupRef.current = lookupAndAddBySku;
+
   // Global HID barcode scanner listener (Hellett HT410 Lite & similar USB/BT scanners).
-  // Scanners stream keystrokes quickly (typically 5-50ms apart) followed by Enter.
-  // We capture them even when the search input is not focused, so the user can scan
-  // from anywhere on the page. The HT410 Lite emits AT speeds ~80ms in some modes,
-  // so we use a generous inter-char gap and an absolute total-time fallback.
+  // Scanners stream keystrokes fast, usually followed by Enter. Some HT410 modes are
+  // slower (~150-250ms per char) or send no terminator at all, so we accept a wide
+  // inter-char gap and also commit after a short idle period.
   useEffect(() => {
     let buffer = "";
     let lastTime = 0;
     let flushTimer: any = null;
-    const SCAN_CHAR_GAP_MS = 120;    // generous - HT410 Lite can be slower
-    const MIN_SCAN_LENGTH = 3;
-    const IDLE_FLUSH_MS = 150;       // if no terminator, flush after idle
+    let busy = false;
+    const SCAN_CHAR_GAP_MS = 400;    // tolerate slow scanner modes
+    const MIN_SCAN_LENGTH = 4;
+    const IDLE_FLUSH_MS = 350;       // if no terminator, flush after idle
 
     const isBlockingTarget = (el: EventTarget | null) => {
       const node = el as HTMLElement | null;
       if (!node) return false;
+      // The search input handles its own Enter/idle submit.
+      if (node === searchInputRef.current) return true;
       const tag = node.tagName;
       if (tag === "TEXTAREA") return true;
       if (tag === "INPUT") {
-        if (node === searchInputRef.current) return false;
         const type = (node as HTMLInputElement).type;
-        if (["text", "search", "email", "tel", "number", "password", "url"].includes(type)) return true;
-        return false;
+        return ["text", "search", "email", "tel", "number", "password", "url"].includes(type);
       }
       if ((node as any).isContentEditable) return true;
       return false;
@@ -560,10 +565,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const code = buffer.trim();
       buffer = "";
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
-      if (code.length >= MIN_SCAN_LENGTH) {
-        setSearchProduct("");
-        lookupAndAddBySku(code);
-      }
+      if (code.length < MIN_SCAN_LENGTH || busy) return;
+      busy = true;
+      Promise.resolve(lookupRef.current(code)).finally(() => { busy = false; });
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -583,10 +587,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         return;
       }
 
-      // Reset if too slow between chars (likely human typing)
-      if (gap > SCAN_CHAR_GAP_MS) {
-        buffer = "";
-      }
+      // Reset only after a long pause (new scan starting)
+      if (gap > SCAN_CHAR_GAP_MS) buffer = "";
 
       if (e.key.length === 1) {
         buffer += e.key;
@@ -601,6 +603,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       if (flushTimer) clearTimeout(flushTimer);
     };
   }, [storeId]);
+
 
 
 
