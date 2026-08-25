@@ -667,7 +667,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
       if (e.key.length === 1) {
         buffer += e.key;
-        if (editableAtStart && editableAtStart !== searchInputRef.current && isLikelyScannerCode(buffer)) {
+        const bufferCode = extractScanCode(buffer);
+        const shouldCaptureAwayFromSearch = /^(?:s?ku|ku)-/i.test(bufferCode) && isLikelyScannerCode(bufferCode);
+        if (editableAtStart && editableAtStart !== searchInputRef.current && shouldCaptureAwayFromSearch) {
           e.preventDefault();
           e.stopPropagation();
         }
@@ -1623,14 +1625,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 onKeyDown={async (e) => {
                   if (e.key !== "Enter") return;
                   e.preventDefault();
-                  const code = searchProduct.trim();
+                  const code = e.currentTarget.value.trim();
                   if (!code) return;
                   const currentMatches = filterProductMatches(products, code, 2);
                   if (currentMatches.length === 1) {
                     addToCart(currentMatches[0]);
                     return;
                   }
-                  await lookupAndAddBySku(code);
+                  await commitScannedCode(code);
                 }}
                 autoFocus
                 className="flex-1"
