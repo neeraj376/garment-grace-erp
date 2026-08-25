@@ -146,7 +146,12 @@ function filterProductMatches(products: ProductSearchItem[], query: string, limi
 
 function extractScanCode(value: string) {
   const raw = value
-    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .split("")
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code > 31 && code !== 127;
+    })
+    .join("")
     .replace(/^\s*(?:SKU|CODE|BARCODE|QR)\s*[:#-]?\s*/i, (prefix) => {
       const normalized = prefix.trim().replace(/[:#-]\s*$/, "");
       return /^sku$/i.test(normalized) ? "SKU-" : "";
