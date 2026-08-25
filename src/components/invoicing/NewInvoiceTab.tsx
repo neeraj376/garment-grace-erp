@@ -145,7 +145,18 @@ function filterProductMatches(products: ProductSearchItem[], query: string, limi
 }
 
 function extractScanCode(value: string) {
-  const raw = value.trim();
+  const raw = value
+    .split("")
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code > 31 && code !== 127;
+    })
+    .join("")
+    .replace(/^\s*(?:SKU|CODE|BARCODE|QR)\s*[:#-]?\s*/i, (prefix) => {
+      const normalized = prefix.trim().replace(/[:#-]\s*$/, "");
+      return /^sku$/i.test(normalized) ? "SKU-" : "";
+    })
+    .trim();
   if (!raw) return "";
 
   try {
@@ -158,6 +169,12 @@ function extractScanCode(value: string) {
 
   const match = raw.match(/(?:sku|code|barcode|qr)=([^&\s]+)/i);
   return decodeURIComponent(match?.[1] ?? raw).trim();
+}
+
+function isLikelyScannerCode(value: string) {
+  const code = extractScanCode(value);
+  if (code.length < 4) return false;
+  return /^(?:s?ku|ku)-/i.test(code) || /\d{8,}/.test(code);
 }
 
 function getSkuLookupCandidates(code: string) {
@@ -472,11 +489,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setSearchProduct("");
   };
 
-  const lookupAndAddBySku = async (code: string) => {
+  const lookupAndAddBySku = async (code: string): Promise<boolean> => {
     const sku = extractScanCode(code);
-    if (!sku || !storeId) return;
+    if (!sku || !storeId) return false;
     const candidates = getSkuLookupCandidates(sku);
-    console.log("[scan lookup] raw=", JSON.stringify(code), "sku=", JSON.stringify(sku), "candidates=", candidates);
 
     const cols = "id, sku, name, selling_price, tax_rate, category, subcategory, color, size, brand";
     let match: any = null;
@@ -510,21 +526,22 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         match = list[0];
       } else if (list && list.length > 1) {
         toast({ title: "Multiple matches", description: `${list.length} products matched "${sku}"`, variant: "destructive" });
-        return;
+        return false;
       }
     }
 
     if (!match) {
       toast({ title: "No product found", description: sku, variant: "destructive" });
-      return;
+      return false;
     }
     const { data: stock } = await supabase.rpc("get_product_stock", { p_product_id: match.id });
     if ((typeof stock === "number" ? stock : 0) <= 0) {
       toast({ title: "Out of stock", description: match.name, variant: "destructive" });
-      return;
+      return false;
     }
     addToCart({ ...match, _stock: stock });
     toast({ title: "Added", description: match.name });
+    return true;
   };
 
 
@@ -532,6 +549,32 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   // handler never runs against a stale closure (pricing toggle, product list, etc.).
   const lookupRef = useRef(lookupAndAddBySku);
   lookupRef.current = lookupAndAddBySku;
+
+  const scannerBusyRef = useRef(false);
+  const lastScannerCommitRef = useRef<{ code: string; at: number }>({ code: "", at: 0 });
+
+  const commitScannedCode = useCallback(async (rawCode: string) => {
+    const code = extractScanCode(rawCode);
+    if (!code || !storeId) return false;
+
+    const now = Date.now();
+    const last = lastScannerCommitRef.current;
+    if (last.code.toLowerCase() === code.toLowerCase() && now - last.at < 1200) {
+      return true;
+    }
+    if (scannerBusyRef.current) return false;
+
+    scannerBusyRef.current = true;
+    try {
+      const added = await lookupRef.current(code);
+      if (added) {
+        lastScannerCommitRef.current = { code, at: Date.now() };
+      }
+      return added;
+    } finally {
+      scannerBusyRef.current = false;
+    }
+  }, [storeId]);
 
   // Global HID barcode scanner listener (Hellett HT410 Lite & similar USB/BT scanners).
   // Scanners stream keystrokes fast, usually followed by Enter. Some HT410 modes are
@@ -541,57 +584,95 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     let buffer = "";
     let lastTime = 0;
     let flushTimer: any = null;
-    let busy = false;
-    const SCAN_CHAR_GAP_MS = 400;    // tolerate slow scanner modes
+    let editableAtStart: HTMLInputElement | HTMLTextAreaElement | null = null;
+    let editableValueAtStart = "";
+    const SCAN_CHAR_GAP_MS = 500;    // tolerate slow scanner modes
     const MIN_SCAN_LENGTH = 4;
-    const IDLE_FLUSH_MS = 350;       // if no terminator, flush after idle
+    const IDLE_FLUSH_MS = 450;       // if no terminator, flush after idle
 
-    const isBlockingTarget = (el: EventTarget | null) => {
+    const editableTarget = (el: EventTarget | null) => {
       const node = el as HTMLElement | null;
-      if (!node) return false;
-      // The search input handles its own Enter/idle submit.
-      if (node === searchInputRef.current) return true;
+      if (!node) return null;
       const tag = node.tagName;
-      if (tag === "TEXTAREA") return true;
+      if (tag === "TEXTAREA") return node as HTMLTextAreaElement;
       if (tag === "INPUT") {
         const type = (node as HTMLInputElement).type;
-        return ["text", "search", "email", "tel", "number", "password", "url"].includes(type);
+        return ["text", "search", "email", "tel", "number", "password", "url"].includes(type)
+          ? node as HTMLInputElement
+          : null;
       }
-      if ((node as any).isContentEditable) return true;
-      return false;
+      return null;
+    };
+
+    const restoreEditableValue = (node: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+      const ownSetter = Object.getOwnPropertyDescriptor(node, "value")?.set;
+      const prototype = Object.getPrototypeOf(node);
+      const prototypeSetter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+
+      if (prototypeSetter && ownSetter !== prototypeSetter) {
+        prototypeSetter.call(node, value);
+      } else if (ownSetter) {
+        ownSetter.call(node, value);
+      } else {
+        node.value = value;
+      }
+
+      node.dispatchEvent(new Event("input", { bubbles: true }));
     };
 
     const commit = () => {
       const code = buffer.trim();
       buffer = "";
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
-      if (code.length < MIN_SCAN_LENGTH || busy) return;
-      busy = true;
-      Promise.resolve(lookupRef.current(code)).finally(() => { busy = false; });
+      if (code.length < MIN_SCAN_LENGTH || !isLikelyScannerCode(code)) return;
+
+      // Do not treat manually typed phone numbers/amounts in other fields as scans.
+      // Product labels printed by this app contain SKU-/KU-style codes; numeric-only
+      // fallback is accepted only when the page/search box is the active target.
+      if (editableAtStart && editableAtStart !== searchInputRef.current && !/^(?:s?ku|ku)-/i.test(extractScanCode(code))) {
+        return;
+      }
+
+      if (editableAtStart && editableAtStart !== searchInputRef.current) {
+        restoreEditableValue(editableAtStart, editableValueAtStart);
+      }
+
+      void commitScannedCode(code);
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (isBlockingTarget(e.target)) return;
 
       const now = performance.now();
       const gap = now - lastTime;
+      const startsNewScan = !lastTime || gap > SCAN_CHAR_GAP_MS;
       lastTime = now;
 
+      if (startsNewScan) {
+        buffer = "";
+        editableAtStart = editableTarget(e.target);
+        editableValueAtStart = editableAtStart?.value ?? "";
+      }
+
       if (e.key === "Enter" || e.key === "Tab") {
-        if (buffer.length >= MIN_SCAN_LENGTH) {
+        if (buffer.length >= MIN_SCAN_LENGTH && isLikelyScannerCode(buffer)) {
           e.preventDefault();
           e.stopPropagation();
+          commit();
+        } else {
+          buffer = "";
         }
-        commit();
         return;
       }
 
-      // Reset only after a long pause (new scan starting)
-      if (gap > SCAN_CHAR_GAP_MS) buffer = "";
-
       if (e.key.length === 1) {
         buffer += e.key;
+        const bufferCode = extractScanCode(buffer);
+        const shouldCaptureAwayFromSearch = /^(?:s?ku|ku)-/i.test(bufferCode) && isLikelyScannerCode(bufferCode);
+        if (editableAtStart && editableAtStart !== searchInputRef.current && shouldCaptureAwayFromSearch) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         if (flushTimer) clearTimeout(flushTimer);
         flushTimer = setTimeout(commit, IDLE_FLUSH_MS);
       }
@@ -602,7 +683,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       window.removeEventListener("keydown", onKeyDown, true);
       if (flushTimer) clearTimeout(flushTimer);
     };
-  }, [storeId]);
+  }, [commitScannedCode]);
 
   // Some scanner modes send the code into the focused input without an Enter
   // terminator. If the search box holds a SKU-shaped code and typing stops,
@@ -610,13 +691,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   useEffect(() => {
     const code = searchProduct.trim();
     if (!code || !storeId) return;
-    const skuLike = /^(?:s?ku-)?[a-z0-9][a-z0-9-]{5,}$/i.test(code) && /\d{4,}/.test(code);
-    if (!skuLike) return;
+    if (!isLikelyScannerCode(code)) return;
     const t = setTimeout(() => {
-      void lookupRef.current(code);
-    }, 400);
+      void commitScannedCode(code);
+    }, 450);
     return () => clearTimeout(t);
-  }, [searchProduct, storeId]);
+  }, [searchProduct, storeId, commitScannedCode]);
 
 
 
@@ -1545,14 +1625,14 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 onKeyDown={async (e) => {
                   if (e.key !== "Enter") return;
                   e.preventDefault();
-                  const code = searchProduct.trim();
+                  const code = e.currentTarget.value.trim();
                   if (!code) return;
                   const currentMatches = filterProductMatches(products, code, 2);
                   if (currentMatches.length === 1) {
                     addToCart(currentMatches[0]);
                     return;
                   }
-                  await lookupAndAddBySku(code);
+                  await commitScannedCode(code);
                 }}
                 autoFocus
                 className="flex-1"
