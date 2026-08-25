@@ -621,6 +621,13 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
       if (code.length < MIN_SCAN_LENGTH || !isLikelyScannerCode(code)) return;
 
+      // Do not treat manually typed phone numbers/amounts in other fields as scans.
+      // Product labels printed by this app contain SKU-/KU-style codes; numeric-only
+      // fallback is accepted only when the page/search box is the active target.
+      if (editableAtStart && editableAtStart !== searchInputRef.current && !/^(?:s?ku|ku)-/i.test(extractScanCode(code))) {
+        return;
+      }
+
       if (editableAtStart && editableAtStart !== searchInputRef.current) {
         restoreEditableValue(editableAtStart, editableValueAtStart);
       }
