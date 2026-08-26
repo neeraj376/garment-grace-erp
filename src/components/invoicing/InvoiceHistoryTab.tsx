@@ -285,7 +285,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         !q ||
         inv.invoice_number.toLowerCase().includes(q) ||
         inv.customers?.name?.toLowerCase().includes(q) ||
-        inv.customers?.mobile?.includes(q);
+        inv.customers?.mobile?.includes(q) ||
+        inv.awb_no?.toLowerCase().includes(q) ||
+        inv.courier_name?.toLowerCase().includes(q);
       const matchesNoteFilter = !filterNotes || (inv.notes && inv.notes.trim().length > 0);
       const matchesSource = sourceFilter === "all" || inv.source === sourceFilter;
       const matchesPayment = paymentFilter === "all" || inv.payment_method === paymentFilter;
@@ -1047,7 +1049,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by invoice #, customer name or mobile..."
+                  placeholder="Search by invoice #, customer, mobile, AWB..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="pl-9"
