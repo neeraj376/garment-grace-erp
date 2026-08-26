@@ -285,7 +285,9 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         !q ||
         inv.invoice_number.toLowerCase().includes(q) ||
         inv.customers?.name?.toLowerCase().includes(q) ||
-        inv.customers?.mobile?.includes(q);
+        inv.customers?.mobile?.includes(q) ||
+        inv.awb_no?.toLowerCase().includes(q) ||
+        inv.courier_name?.toLowerCase().includes(q);
       const matchesNoteFilter = !filterNotes || (inv.notes && inv.notes.trim().length > 0);
       const matchesSource = sourceFilter === "all" || inv.source === sourceFilter;
       const matchesPayment = paymentFilter === "all" || inv.payment_method === paymentFilter;
