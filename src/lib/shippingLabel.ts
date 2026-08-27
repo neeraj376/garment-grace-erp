@@ -40,6 +40,32 @@ export function code128Svg(value: string, opts?: { height?: number; moduleWidth?
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${x}" height="${height}" viewBox="0 0 ${x} ${height}" preserveAspectRatio="none" style="width:100%;height:${height}px;display:block">${bars}</svg>`;
 }
 
+/** Crisp, print-safe QR code (SVG string) generated synchronously. */
+export function qrSvg(value: string, opts?: { size?: number; quietZone?: number }): string {
+  const text = (value || "").trim();
+  if (!text) return "";
+  const size = opts?.size ?? 90;
+  const quiet = opts?.quietZone ?? 2;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
+    const count: number = qr.modules.size;
+    const data: Uint8Array = qr.modules.data;
+    const total = count + quiet * 2;
+    let rects = "";
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (data[r * count + c]) {
+          rects += `<rect x="${c + quiet}" y="${r + quiet}" width="1" height="1" fill="#000"/>`;
+        }
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" style="display:block"><rect width="${total}" height="${total}" fill="#fff"/>${rects}</svg>`;
+  } catch {
+    return "";
+  }
+}
+
 export interface DtdcLabelData {
   awb?: string | null;
   courier?: string | null;
