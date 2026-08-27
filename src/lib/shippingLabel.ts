@@ -1,4 +1,5 @@
 // Code 128 (subset B) barcode -> inline SVG string, plus a DTDC-style 4x6 shipping label builder.
+import QRCode from "qrcode";
 
 const CODE128_PATTERNS = [
   "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
@@ -38,6 +39,32 @@ export function code128Svg(value: string, opts?: { height?: number; moduleWidth?
     }
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${x}" height="${height}" viewBox="0 0 ${x} ${height}" preserveAspectRatio="none" style="width:100%;height:${height}px;display:block">${bars}</svg>`;
+}
+
+/** Crisp, print-safe QR code (SVG string) generated synchronously. */
+export function qrSvg(value: string, opts?: { size?: number; quietZone?: number }): string {
+  const text = (value || "").trim();
+  if (!text) return "";
+  const size = opts?.size ?? 90;
+  const quiet = opts?.quietZone ?? 2;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
+    const count: number = qr.modules.size;
+    const data: Uint8Array = qr.modules.data;
+    const total = count + quiet * 2;
+    let rects = "";
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (data[r * count + c]) {
+          rects += `<rect x="${c + quiet}" y="${r + quiet}" width="1" height="1" fill="#000"/>`;
+        }
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" style="display:block"><rect width="${total}" height="${total}" fill="#fff"/>${rects}</svg>`;
+  } catch {
+    return "";
+  }
 }
 
 export interface DtdcLabelData {
@@ -90,6 +117,7 @@ export function buildDtdcLabelHtml(d: DtdcLabelData): string {
   const routing = (d.routingCode || awb.slice(0, 2) || "").toUpperCase();
   const bottomCode = awb ? `${awb}${String(pieces).padStart(4, "0")}${pin}` : "";
   const awbBarcode = awb ? code128Svg(awb, { height: 44, moduleWidth: 1.15 }) : "";
+  const awbQr = awb ? qrSvg(awb, { size: 66, quietZone: 2 }) : "";
   const bottomBarcode = bottomCode ? code128Svg(bottomCode, { height: 52, moduleWidth: 1.0 }) : "";
   const pad = (n: number) => String(n).padStart(3, "0");
 
@@ -135,8 +163,11 @@ export function buildDtdcLabelHtml(d: DtdcLabelData): string {
       <div style="width:1.55in;border-left:0;${cell};text-align:center">
         ${awbBarcode || `<div style="font-size:10px;font-weight:700;padding:14px 0">AWB NOT ASSIGNED</div>`}
         <div style="font-size:13px;font-weight:700;letter-spacing:1px">${esc(awb || "—")}</div>
-        <div style="margin:6px auto 0;border:3px solid #000;width:1.05in;height:0.72in;display:flex;align-items:center;justify-content:center">
-          <span style="font-size:34px;font-weight:800;letter-spacing:1px">${esc(routing || "—")}</span>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px">
+          ${awbQr ? `<div style="width:0.72in;height:0.72in;background:#fff">${awbQr}</div>` : ""}
+          <div style="border:3px solid #000;width:0.78in;height:0.72in;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:28px;font-weight:800;letter-spacing:1px">${esc(routing || "—")}</span>
+          </div>
         </div>
       </div>
     </div>
