@@ -162,8 +162,11 @@ export function buildDtdcLabelHtml(d: DtdcLabelData): string {
       <div style="width:1.55in;border-left:0;${cell};text-align:center">
         ${awbBarcode || `<div style="font-size:10px;font-weight:700;padding:14px 0">AWB NOT ASSIGNED</div>`}
         <div style="font-size:13px;font-weight:700;letter-spacing:1px">${esc(awb || "—")}</div>
-        <div style="margin:6px auto 0;border:3px solid #000;width:1.05in;height:0.72in;display:flex;align-items:center;justify-content:center">
-          <span style="font-size:34px;font-weight:800;letter-spacing:1px">${esc(routing || "—")}</span>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px">
+          ${awbQr ? `<div style="width:0.72in;height:0.72in;background:#fff">${awbQr}</div>` : ""}
+          <div style="border:3px solid #000;width:0.78in;height:0.72in;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:28px;font-weight:800;letter-spacing:1px">${esc(routing || "—")}</span>
+          </div>
         </div>
       </div>
     </div>
