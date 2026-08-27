@@ -106,20 +106,24 @@ export default function Dashboard() {
       const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const todayOffline = todayInvSales - todayWhatsapp - todayWholesale;
 
-      // Monthly sales
-      const { data: monthInvoices } = await supabase
-        .from("invoices")
-        .select("total_amount, pending_amount, source, status, delivery_cost, invoice_number")
-        .eq("store_id", storeId)
-        .gte("created_at", startOfMonth);
+      // Monthly sales (paged — can exceed 1000 invoices in a month)
+      const monthInvoices = await fetchAllRows(() =>
+        supabase
+          .from("invoices")
+          .select("total_amount, pending_amount, source, status, delivery_cost, invoice_number")
+          .eq("store_id", storeId)
+          .gte("created_at", startOfMonth)
+          .order("created_at", { ascending: true }));
 
       // Monthly online orders (paid)
-      const { data: monthOrdersRaw } = await supabase
-        .from("orders")
-        .select("order_number, total_amount, customer_id, shipping_amount")
-        .eq("store_id", storeId)
-        .eq("payment_status", "paid")
-        .gte("created_at", startOfMonth);
+      const monthOrdersRaw = await fetchAllRows(() =>
+        supabase
+          .from("orders")
+          .select("order_number, total_amount, customer_id, shipping_amount")
+          .eq("store_id", storeId)
+          .eq("payment_status", "paid")
+          .gte("created_at", startOfMonth)
+          .order("created_at", { ascending: true }));
       const monthOrders = (monthOrdersRaw ?? []).filter(o => !hasMatchingInvoice(monthInvoices ?? [], o.order_number));
 
       const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
