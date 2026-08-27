@@ -344,15 +344,22 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         .update({ courier_name: courier || null, awb_no: awb || null })
         .eq("id", courierDialog.id);
       if (error) throw error;
+      const updated = { ...courierDialog, courier_name: courier || null, awb_no: awb || null };
       setInvoices(prev => prev.map(inv => inv.id === courierDialog.id ? { ...inv, courier_name: courier || null, awb_no: awb || null } : inv));
       toast({ title: "Courier details updated" });
+      const awbChanged = awb && awb !== (courierDialog.awb_no || "");
+      const courierChanged = courier && courier !== (courierDialog.courier_name || "");
       setCourierDialog(null);
+      if (courier && awb && (awbChanged || courierChanged)) {
+        await handleSendTracking(updated as Invoice);
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSavingCourier(false);
     }
   };
+
   const handleCreateDtdcShipment = async () => {
     if (!courierDialog) return;
     setDtdcBusy(true);
