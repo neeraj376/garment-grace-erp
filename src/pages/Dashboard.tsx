@@ -139,12 +139,14 @@ export default function Dashboard() {
       const dailyAverage = dayOfMonth > 0 ? monthlySales / dayOfMonth : 0;
 
       // Unique customers this month
-      const { data: monthlyCustomerInvoices } = await supabase
-        .from("invoices")
-        .select("customer_id")
-        .eq("store_id", storeId)
-        .gte("created_at", startOfMonth)
-        .not("customer_id", "is", null);
+      const monthlyCustomerInvoices = await fetchAllRows(() =>
+        supabase
+          .from("invoices")
+          .select("customer_id")
+          .eq("store_id", storeId)
+          .gte("created_at", startOfMonth)
+          .not("customer_id", "is", null)
+          .order("customer_id", { ascending: true }));
 
       const uniqueCustomerIds = new Set<string>();
       monthlyCustomerInvoices?.forEach((i) => i.customer_id && uniqueCustomerIds.add(i.customer_id));
