@@ -1,4 +1,5 @@
 // Code 128 (subset B) barcode -> inline SVG string, plus a DTDC-style 4x6 shipping label builder.
+import QRCode from "qrcode";
 
 const CODE128_PATTERNS = [
   "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
