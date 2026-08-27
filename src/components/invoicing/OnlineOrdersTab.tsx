@@ -391,12 +391,11 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <title>Shipping Label — ${order.order_number}</title>
           <style>
             @page { size: 100mm 150mm; margin: 0; }
-            html, body { width: 100mm; overflow-x: hidden; background: #fff !important; color: #000 !important; }
-            * { background-color: transparent; color: #000 !important; }
-            @media print { html, body { background: #fff !important; } }
+            html, body { width: 100mm; margin: 0; padding: 0; overflow-x: hidden; background: #fff !important; color: #000 !important; }
+            * { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: economy; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; padding: 24px; }
-            @media print { body { padding: 0; } }
+            body { font-family: Arial, sans-serif; }
+            .label-page { margin: 0 auto; padding: 0; page-break-inside: avoid; break-inside: avoid; }
           </style>
         </head>
         <body>${content.innerHTML}</body>
@@ -445,14 +444,12 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <title>Shipping Labels — ${selected.length} orders</title>
           <style>
             @page { size: 100mm 150mm; margin: 0; }
-            html, body { width: 100mm; overflow-x: hidden; background: #fff !important; color: #000 !important; }
-            * { background-color: transparent; color: #000 !important; }
-            @media print { html, body { background: #fff !important; } }
+            html, body { width: 100mm; margin: 0; padding: 0; overflow-x: hidden; background: #fff !important; color: #000 !important; }
+            * { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: economy; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; padding: 24px; }
-            .label-page { page-break-after: always; page-break-inside: avoid; break-inside: avoid; margin-bottom: 24px; }
-            .label-page:last-child { page-break-after: auto; margin-bottom: 0; }
-            @media print { body { padding: 0; } .label-page { margin-bottom: 0; } }
+            body { font-family: Arial, sans-serif; }
+            .label-page { margin: 0 auto; padding: 0; page-break-after: always; page-break-inside: avoid; break-inside: avoid; }
+            .label-page:last-child { page-break-after: auto; }
           </style>
         </head>
         <body>${content.innerHTML}</body>
