@@ -95,6 +95,7 @@ export default function Dashboard() {
         .select("order_number, total_amount, payment_method, customer_id, shipping_amount")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
+        .neq("status", "cancelled")
         .gte("created_at", startOfDay);
       const todayOrders = (todayOrdersRaw ?? []).filter(o => !hasMatchingInvoice(todayInvoices ?? [], o.order_number));
 
@@ -122,6 +123,7 @@ export default function Dashboard() {
           .select("order_number, total_amount, customer_id, shipping_amount")
           .eq("store_id", storeId)
           .eq("payment_status", "paid")
+          .neq("status", "cancelled")
           .gte("created_at", startOfMonth)
           .order("created_at", { ascending: true }));
       const monthOrders = (monthOrdersRaw ?? []).filter(o => !hasMatchingInvoice(monthInvoices ?? [], o.order_number));
