@@ -214,8 +214,13 @@ function sanitizeDestination(d: Destination): Destination {
     a2 = a1 === line2 ? "" : a2;
   }
   if (a1.length < 3) a1 = `${toAscii(d.city)} ${d.pincode}`.trim();
+  // DTDC requires at least 3 usable ASCII characters in the name.
+  let name = toAscii(d.name).replace(/[^A-Za-z0-9 .'-]/g, " ").replace(/\s+/g, " ").trim();
+  if (name.replace(/[^A-Za-z0-9]/g, "").length < 3) {
+    name = name ? `${name} Customer`.trim() : "Customer";
+  }
   return {
-    name: toAscii(d.name) || "Customer",
+    name: name.slice(0, 50),
     phone: String(d.phone || "").replace(/\D/g, "").slice(-10),
     address_line_1: a1.slice(0, 90),
     address_line_2: a2.slice(0, 90),
@@ -223,6 +228,7 @@ function sanitizeDestination(d: Destination): Destination {
     city: toAscii(d.city),
     state: toAscii(d.state),
   };
+
 }
 
 async function pushConsignment(opts: {
