@@ -675,7 +675,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
         return;
       }
       printWindow.document.write(`<!DOCTYPE html><html><head><title>Shipping Label — ${inv.invoice_number}</title>
-        <style>@page{size:100mm 150mm;margin:0}html,body{width:100mm;overflow-x:hidden}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial, sans-serif;padding:24px}@media print{body{padding:0}}</style>
+        <style>@page{size:100mm 150mm;margin:0}html,body{width:100mm;overflow-x:hidden;background:#fff !important;color:#000 !important}*{background-color:transparent;color:#000 !important}@media print{html,body{background:#fff !important}}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial, sans-serif;padding:24px}@media print{body{padding:0}}</style>
         </head><body>${html}</body></html>`);
       printWindow.document.close();
       printWindow.focus();

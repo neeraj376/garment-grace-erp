@@ -391,7 +391,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <title>Shipping Label — ${order.order_number}</title>
           <style>
             @page { size: 100mm 150mm; margin: 0; }
-            html, body { width: 100mm; overflow-x: hidden; }
+            html, body { width: 100mm; overflow-x: hidden; background: #fff !important; color: #000 !important; }
+            * { background-color: transparent; color: #000 !important; }
+            @media print { html, body { background: #fff !important; } }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; }
             @media print { body { padding: 0; } }
@@ -443,7 +445,9 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <title>Shipping Labels — ${selected.length} orders</title>
           <style>
             @page { size: 100mm 150mm; margin: 0; }
-            html, body { width: 100mm; overflow-x: hidden; }
+            html, body { width: 100mm; overflow-x: hidden; background: #fff !important; color: #000 !important; }
+            * { background-color: transparent; color: #000 !important; }
+            @media print { html, body { background: #fff !important; } }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; padding: 24px; }
             .label-page { page-break-after: always; page-break-inside: avoid; break-inside: avoid; margin-bottom: 24px; }
