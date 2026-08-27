@@ -117,6 +117,7 @@ export function buildDtdcLabelHtml(d: DtdcLabelData): string {
   const routing = (d.routingCode || awb.slice(0, 2) || "").toUpperCase();
   const bottomCode = awb ? `${awb}${String(pieces).padStart(4, "0")}${pin}` : "";
   const awbBarcode = awb ? code128Svg(awb, { height: 44, moduleWidth: 1.15 }) : "";
+  const awbQr = awb ? qrSvg(awb, { size: 66, quietZone: 2 }) : "";
   const bottomBarcode = bottomCode ? code128Svg(bottomCode, { height: 52, moduleWidth: 1.0 }) : "";
   const pad = (n: number) => String(n).padStart(3, "0");
 
