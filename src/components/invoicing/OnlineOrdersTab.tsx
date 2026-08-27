@@ -392,7 +392,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <style>
             @page { size: 100mm 150mm; margin: 0; }
             html, body { width: 100mm; margin: 0; padding: 0; overflow-x: hidden; background: #fff !important; color: #000 !important; }
-            * { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: economy; }
+            * { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; }
             .label-page { margin: 0 auto; padding: 0; page-break-inside: avoid; break-inside: avoid; }
@@ -445,7 +445,7 @@ export default function OnlineOrdersTab({ storeId }: OnlineOrdersTabProps) {
           <style>
             @page { size: 100mm 150mm; margin: 0; }
             html, body { width: 100mm; margin: 0; padding: 0; overflow-x: hidden; background: #fff !important; color: #000 !important; }
-            * { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: economy; }
+            * { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; }
             .label-page { margin: 0 auto; padding: 0; page-break-after: always; page-break-inside: avoid; break-inside: avoid; }
