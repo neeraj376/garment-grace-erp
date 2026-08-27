@@ -46,6 +46,21 @@ export default function Dashboard() {
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
 
+  // PostgREST caps a single request at 1000 rows — page through so monthly
+  // totals stay correct once volume exceeds that.
+  const fetchAllRows = async (build: () => any): Promise<any[]> => {
+    const PAGE = 1000;
+    const all: any[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await build().range(from, from + PAGE - 1);
+      if (error) throw error;
+      const rows = data ?? [];
+      all.push(...rows);
+      if (rows.length < PAGE) break;
+    }
+    return all;
+  };
+
 
   useEffect(() => {
     if (!storeId) return;
