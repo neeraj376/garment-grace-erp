@@ -46,6 +46,21 @@ export default function Dashboard() {
   const [paymentBreakdown, setPaymentBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [weeklySales, setWeeklySales] = useState<{ day: string; sales: number }[]>([]);
 
+  // PostgREST caps a single request at 1000 rows — page through so monthly
+  // totals stay correct once volume exceeds that.
+  const fetchAllRows = async (build: () => any): Promise<any[]> => {
+    const PAGE = 1000;
+    const all: any[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await build().range(from, from + PAGE - 1);
+      if (error) throw error;
+      const rows = data ?? [];
+      all.push(...rows);
+      if (rows.length < PAGE) break;
+    }
+    return all;
+  };
+
 
   useEffect(() => {
     if (!storeId) return;
@@ -91,20 +106,24 @@ export default function Dashboard() {
       const todayWholesale = todayInvoices?.filter(i => i.source === "wholesale").reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
       const todayOffline = todayInvSales - todayWhatsapp - todayWholesale;
 
-      // Monthly sales
-      const { data: monthInvoices } = await supabase
-        .from("invoices")
-        .select("total_amount, pending_amount, source, status, delivery_cost, invoice_number")
-        .eq("store_id", storeId)
-        .gte("created_at", startOfMonth);
+      // Monthly sales (paged — can exceed 1000 invoices in a month)
+      const monthInvoices = await fetchAllRows(() =>
+        supabase
+          .from("invoices")
+          .select("total_amount, pending_amount, source, status, delivery_cost, invoice_number")
+          .eq("store_id", storeId)
+          .gte("created_at", startOfMonth)
+          .order("created_at", { ascending: true }));
 
       // Monthly online orders (paid)
-      const { data: monthOrdersRaw } = await supabase
-        .from("orders")
-        .select("order_number, total_amount, customer_id, shipping_amount")
-        .eq("store_id", storeId)
-        .eq("payment_status", "paid")
-        .gte("created_at", startOfMonth);
+      const monthOrdersRaw = await fetchAllRows(() =>
+        supabase
+          .from("orders")
+          .select("order_number, total_amount, customer_id, shipping_amount")
+          .eq("store_id", storeId)
+          .eq("payment_status", "paid")
+          .gte("created_at", startOfMonth)
+          .order("created_at", { ascending: true }));
       const monthOrders = (monthOrdersRaw ?? []).filter(o => !hasMatchingInvoice(monthInvoices ?? [], o.order_number));
 
       const monthInvSales = monthInvoices?.reduce((sum, inv) => sum + saleAmount(inv), 0) ?? 0;
@@ -120,12 +139,14 @@ export default function Dashboard() {
       const dailyAverage = dayOfMonth > 0 ? monthlySales / dayOfMonth : 0;
 
       // Unique customers this month
-      const { data: monthlyCustomerInvoices } = await supabase
-        .from("invoices")
-        .select("customer_id")
-        .eq("store_id", storeId)
-        .gte("created_at", startOfMonth)
-        .not("customer_id", "is", null);
+      const monthlyCustomerInvoices = await fetchAllRows(() =>
+        supabase
+          .from("invoices")
+          .select("customer_id")
+          .eq("store_id", storeId)
+          .gte("created_at", startOfMonth)
+          .not("customer_id", "is", null)
+          .order("customer_id", { ascending: true }));
 
       const uniqueCustomerIds = new Set<string>();
       monthlyCustomerInvoices?.forEach((i) => i.customer_id && uniqueCustomerIds.add(i.customer_id));
