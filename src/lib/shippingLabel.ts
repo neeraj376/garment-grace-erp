@@ -97,7 +97,7 @@ export function buildDtdcLabelHtml(d: DtdcLabelData): string {
   const lbl = "font-size:9px;color:#111";
 
   return `
-  <div class="label-page" style="width:99mm;height:148mm;max-height:148mm;border:1.5px solid #000;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;line-height:1.22;overflow:hidden;display:flex;flex-direction:column;color:#000;background:#fff;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact">
+  <div class="label-page" style="width:99mm;height:148mm;max-height:148mm;border:1.5px solid #000;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;line-height:1.22;overflow:hidden;display:flex;flex-direction:column;color:#000;background:#fff;page-break-inside:avoid;break-inside:avoid">
 
     <!-- Brand strip -->
     <div style="display:flex;justify-content:flex-end;align-items:center;padding:2px 8px;border-bottom:1.5px solid #000">
