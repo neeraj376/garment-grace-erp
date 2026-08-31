@@ -329,9 +329,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   };
   const handleOpenCourierDialog = (inv: Invoice) => {
     setCourierDialog(inv);
+    setReassigning(false);
     setCourierName(inv.courier_name || "");
     setAwbNo(inv.awb_no || "");
   };
+
 
   const handleSaveCourier = async () => {
     if (!courierDialog) return;
