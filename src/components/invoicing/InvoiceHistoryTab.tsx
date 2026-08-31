@@ -86,6 +86,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [courierName, setCourierName] = useState("");
   const [awbNo, setAwbNo] = useState("");
   const [savingCourier, setSavingCourier] = useState(false);
+  const [reassigning, setReassigning] = useState(false);
+
   const [dtdcService, setDtdcService] = useState(DEFAULT_DTDC_SERVICE);
   const [dtdcBusy, setDtdcBusy] = useState(false);
 
