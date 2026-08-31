@@ -86,6 +86,8 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   const [courierName, setCourierName] = useState("");
   const [awbNo, setAwbNo] = useState("");
   const [savingCourier, setSavingCourier] = useState(false);
+  const [reassigning, setReassigning] = useState(false);
+
   const [dtdcService, setDtdcService] = useState(DEFAULT_DTDC_SERVICE);
   const [dtdcBusy, setDtdcBusy] = useState(false);
 
@@ -329,9 +331,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
   };
   const handleOpenCourierDialog = (inv: Invoice) => {
     setCourierDialog(inv);
+    setReassigning(false);
     setCourierName(inv.courier_name || "");
     setAwbNo(inv.awb_no || "");
   };
+
 
   const handleSaveCourier = async () => {
     if (!courierDialog) return;
@@ -1179,6 +1183,38 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
             <DialogTitle>Courier Details — {courierDialog?.invoice_number}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {courierDialog?.awb_no && !reassigning && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2">
+                <p className="text-xs text-amber-800">
+                  This invoice already has AWB <span className="font-semibold">{courierDialog.awb_no}</span>
+                  {courierDialog.courier_name ? ` via ${courierDialog.courier_name}` : ""}.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => { setReassigning(true); setCourierName(""); setAwbNo(""); }}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> Reassign Courier
+                </Button>
+              </div>
+            )}
+            {reassigning && (
+              <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 p-2 text-xs">
+                <span>Reassigning courier — old AWB will be replaced on save.</span>
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => {
+                    setReassigning(false);
+                    setCourierName(courierDialog?.courier_name || "");
+                    setAwbNo(courierDialog?.awb_no || "");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
             <div className="space-y-1">
               <label className="text-sm font-medium">Courier Name</label>
               <Input value={courierName} onChange={e => setCourierName(e.target.value)} placeholder="Courier partner" />
@@ -1190,6 +1226,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 If DTDC can't allot an AWB automatically, type the AWB from the DTDC portal here and click Save.
               </p>
             </div>
+
             <div className="space-y-1 border-t pt-3">
               <label className="text-sm font-medium">DTDC Service Option</label>
               <Select value={dtdcService} onValueChange={setDtdcService}>
