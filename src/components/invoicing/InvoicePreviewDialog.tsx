@@ -31,12 +31,15 @@ interface Props {
   taxAmount: number;
   discount: number;
   total: number;
+  deliveryCost?: number;
 }
 
 export default function InvoicePreviewDialog({
   open, onClose, storeId, cart, customerName, customerMobile,
-  paymentMethod, subtotal, taxAmount, discount, total,
+  paymentMethod, subtotal, taxAmount, discount, total, deliveryCost = 0,
 }: Props) {
+  const delivery = Number(deliveryCost) || 0;
+  const grandTotal = Number(total) + delivery;
   const [store, setStore] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
