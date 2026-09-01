@@ -2127,6 +2127,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       taxAmount={taxAmount}
       discount={discount}
       total={total}
+      deliveryCost={Number(deliveryCost) || 0}
     />
     </div>
   );

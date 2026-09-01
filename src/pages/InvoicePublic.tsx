@@ -9,6 +9,7 @@ interface InvoiceData {
   subtotal: number;
   tax_amount: number;
   discount_amount: number;
+  delivery_cost?: number;
   total_amount: number;
   payment_method: string;
   source: string;
@@ -158,9 +159,12 @@ export default function InvoicePublic() {
             {Number(invoice.discount_amount) > 0 && (
               <div className="flex justify-between"><span className="text-gray-500">Discount</span><span>-₹{Number(invoice.discount_amount).toFixed(2)}</span></div>
             )}
+            {Number(invoice.delivery_cost || 0) > 0 && (
+              <div className="flex justify-between"><span className="text-gray-500">Delivery Charges</span><span>₹{Number(invoice.delivery_cost).toFixed(2)}</span></div>
+            )}
             <div className="flex justify-between border-t pt-2 text-lg font-bold">
               <span>Total</span>
-              <span>₹{Number(invoice.total_amount).toLocaleString("en-IN")}</span>
+              <span>₹{(Number(invoice.total_amount) + Number(invoice.delivery_cost || 0)).toLocaleString("en-IN")}</span>
             </div>
           </div>
         </div>
