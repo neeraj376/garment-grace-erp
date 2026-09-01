@@ -172,9 +172,15 @@ export default function InvoicePreviewDialog({
                 <span style={{ color: "#d32f2f" }}>-₹{discount.toFixed(2)}</span>
               </div>
             )}
+            {delivery > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13 }}>
+                <span style={{ color: "#666" }}>Delivery Charges:</span>
+                <span>₹{delivery.toFixed(2)}</span>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 4px", fontSize: 16, fontWeight: 700, borderTop: "2px solid #1a1a2e", marginTop: 4 }}>
               <span>TOTAL:</span>
-              <span>₹{total.toLocaleString("en-IN")}</span>
+              <span>₹{grandTotal.toLocaleString("en-IN")}</span>
             </div>
           </div>
 
