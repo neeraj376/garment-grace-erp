@@ -9,6 +9,7 @@ interface InvoiceData {
   subtotal: number;
   tax_amount: number;
   discount_amount: number;
+  delivery_cost?: number;
   total_amount: number;
   payment_method: string;
   source: string;
