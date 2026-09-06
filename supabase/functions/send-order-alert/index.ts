@@ -7,8 +7,9 @@ const corsHeaders = {
 };
 
 const ALERT_TO = "originee.store@gmail.com";
+const ALERT_CC = ["gk579250@gmail.com"];
 async function sendEmailViaSMTP(to: string, subject: string, body: string): Promise<void> {
-  await sendGmail({ to, subject, html: body, fromName: "Originee Orders" });
+  await sendGmail({ to, subject, html: body, bcc: ALERT_CC, fromName: "Originee Orders" });
 }
 
 Deno.serve(async (req) => {
