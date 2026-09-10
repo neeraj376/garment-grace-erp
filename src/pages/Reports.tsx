@@ -652,7 +652,25 @@ export default function Reports() {
           </div>
 
           <Card>
-            <CardHeader><CardTitle className="section-title">Sales Trend{previous ? " — Current vs Previous" : ""}</CardTitle></CardHeader>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <CardTitle className="section-title">
+                  Sales Trend{previous ? " — Current vs Previous" : ""}
+                  {trendEmployee !== "all" && ` — ${trendEmployeeOptions.find(e => e.id === trendEmployee)?.name ?? ""}`}
+                </CardTitle>
+                <Select value={trendEmployee} onValueChange={setTrendEmployee}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All employees" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All employees</SelectItem>
+                    {trendEmployeeOptions.map(e => (
+                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
             <CardContent>
               <div className="h-72">
                 {comparisonTrend.length > 0 ? (
