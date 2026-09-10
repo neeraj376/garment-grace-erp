@@ -418,7 +418,7 @@ export default function Reports() {
     const employeeSales = Object.values(empMap)
       .filter(e => e.invoiceCount > 0).sort((a, b) => b.totalSales - a.totalSales);
 
-    return { summary, trend, paymentSplit, sourceSplit, employeeSales, rangeStart: start, rangeEnd: end };
+    return { summary, trend, trendDetail, paymentSplit, sourceSplit, employeeSales, rangeStart: start, rangeEnd: end };
   };
 
   const formatCurrency = (v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`;
