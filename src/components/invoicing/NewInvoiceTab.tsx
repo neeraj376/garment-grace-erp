@@ -552,6 +552,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   const scannerBusyRef = useRef(false);
   const lastScannerCommitRef = useRef<{ code: string; at: number }>({ code: "", at: 0 });
+  const [lastScan, setLastScan] = useState<string>("");
 
   const commitScannedCode = useCallback(async (rawCode: string) => {
     const code = extractScanCode(rawCode);
@@ -586,7 +587,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     let flushTimer: any = null;
     let editableAtStart: HTMLInputElement | HTMLTextAreaElement | null = null;
     let editableValueAtStart = "";
+    let fastBurst = false;
+    let fastKeys = 0;
     const SCAN_CHAR_GAP_MS = 500;    // tolerate slow scanner modes
+    const FAST_BURST_GAP_MS = 60;    // machine-fast keystrokes = scanner
     const MIN_SCAN_LENGTH = 4;
     const IDLE_FLUSH_MS = 450;       // if no terminator, flush after idle
 
@@ -622,21 +626,29 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const commit = () => {
       const code = buffer.trim();
+      const burst = fastBurst;
       buffer = "";
+      fastBurst = false;
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
-      if (code.length < MIN_SCAN_LENGTH || !isLikelyScannerCode(code)) return;
+      if (code.length < MIN_SCAN_LENGTH) return;
 
-      // Do not treat manually typed phone numbers/amounts in other fields as scans.
-      // Product labels printed by this app contain SKU-/KU-style codes; numeric-only
-      // fallback is accepted only when the page/search box is the active target.
-      if (editableAtStart && editableAtStart !== searchInputRef.current && !/^(?:s?ku|ku)-/i.test(extractScanCode(code))) {
+      // Accept anything that looks like a product code, or anything typed in a
+      // machine-fast burst (a real scanner) even if the label format is unusual.
+      const looksLikeCode = isLikelyScannerCode(code);
+      if (!looksLikeCode && !burst) return;
+
+      const inOtherField = !!editableAtStart && editableAtStart !== searchInputRef.current;
+
+      // Never hijack manual typing in other fields (phone numbers, amounts).
+      if (inOtherField && !burst && !/^(?:s?ku|ku)-/i.test(extractScanCode(code))) {
         return;
       }
 
-      if (editableAtStart && editableAtStart !== searchInputRef.current) {
-        restoreEditableValue(editableAtStart, editableValueAtStart);
+      if (inOtherField) {
+        restoreEditableValue(editableAtStart!, editableValueAtStart);
       }
 
+      setLastScan(code);
       void commitScannedCode(code);
     };
 
@@ -650,25 +662,33 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
       if (startsNewScan) {
         buffer = "";
+        fastBurst = false;
         editableAtStart = editableTarget(e.target);
         editableValueAtStart = editableAtStart?.value ?? "";
+      } else if (gap < FAST_BURST_GAP_MS) {
+        fastKeys += 1;
+        if (fastKeys >= 3) fastBurst = true;
       }
 
       if (e.key === "Enter" || e.key === "Tab") {
-        if (buffer.length >= MIN_SCAN_LENGTH && isLikelyScannerCode(buffer)) {
+        if (buffer.length >= MIN_SCAN_LENGTH && (fastBurst || isLikelyScannerCode(buffer))) {
           e.preventDefault();
           e.stopPropagation();
           commit();
         } else {
           buffer = "";
+          fastBurst = false;
         }
+        fastKeys = 0;
         return;
       }
 
       if (e.key.length === 1) {
+        if (startsNewScan) fastKeys = 0;
         buffer += e.key;
         const bufferCode = extractScanCode(buffer);
-        const shouldCaptureAwayFromSearch = /^(?:s?ku|ku)-/i.test(bufferCode) && isLikelyScannerCode(bufferCode);
+        const shouldCaptureAwayFromSearch =
+          (fastBurst || /^(?:s?ku|ku)-/i.test(bufferCode)) && buffer.length >= MIN_SCAN_LENGTH;
         if (editableAtStart && editableAtStart !== searchInputRef.current && shouldCaptureAwayFromSearch) {
           e.preventDefault();
           e.stopPropagation();
@@ -1647,6 +1667,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 <ScanLine className="h-4 w-4" />
               </Button>
             </div>
+            {lastScan && (
+              <p className="text-xs text-muted-foreground mb-2">Last scanned: <span className="font-mono">{lastScan}</span></p>
+            )}
             {searchProduct && (
               <div className="border rounded-lg max-h-60 overflow-y-auto mb-3">
                 {filteredProducts.map(p => (
