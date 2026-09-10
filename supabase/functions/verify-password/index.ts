@@ -39,8 +39,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Sign out the server-side session immediately — we only needed to verify
-    await supabaseAdmin.auth.admin.signOut(data.session!.access_token);
+    // Sign out ONLY this temporary server-side session ("local" scope).
+    // The default "global" scope would revoke the user's sessions on every
+    // other device, breaking multi-device login.
+    await supabaseAdmin.auth.admin.signOut(data.session!.access_token, "local");
 
     return new Response(
       JSON.stringify({ valid: true }),
