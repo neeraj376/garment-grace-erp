@@ -94,6 +94,7 @@ export default function Reports() {
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [empSourceFilter, setEmpSourceFilter] = useState<SourceFilter>("all");
+  const [trendEmployee, setTrendEmployee] = useState<string>("all");
   const [drillEmp, setDrillEmp] = useState<{ name: string; invoices: EmpInvoice[] } | null>(null);
 
   useEffect(() => {
