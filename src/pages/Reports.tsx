@@ -358,21 +358,33 @@ export default function Reports() {
     // Trend grouped by day-offset (numeric) so it can be aligned for comparison
     const startMs = new Date(start).getTime();
     const trendMap: Record<number, number> = {};
-    const bumpDay = (ts: number, amt: number) => {
+    const trendEmpMap: Record<number, Record<string, number>> = {};
+    const bumpDay = (ts: number, amt: number, empId?: string | null) => {
       const offset = Math.floor((new Date(new Date(ts).toDateString()).getTime() - new Date(new Date(startMs).toDateString()).getTime()) / 86400000);
       trendMap[offset] = (trendMap[offset] || 0) + amt;
+      if (empId) {
+        trendEmpMap[offset] = trendEmpMap[offset] || {};
+        trendEmpMap[offset][empId] = (trendEmpMap[offset][empId] || 0) + amt;
+      }
     };
-    invData.forEach(inv => bumpDay(new Date(inv.created_at).getTime(), saleAmount(inv)));
+    invData.forEach(inv => bumpDay(new Date(inv.created_at).getTime(), saleAmount(inv), (inv as any).employee_id));
     orderData.forEach((o: any) => bumpDay(new Date(o.created_at).getTime(), Number(o.total_amount || 0)));
 
-    const trend = Object.entries(trendMap)
+    const trendDetail = Object.entries(trendMap)
       .map(([k, v]) => {
         const off = Number(k);
         const d = new Date(startMs + off * 86400000);
-        return { offset: off, date: d.toLocaleDateString("en-IN", { month: "short", day: "numeric" }), total: v };
+        return {
+          offset: off,
+          date: d.toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
+          total: v,
+          byEmp: trendEmpMap[off] || {},
+        };
       })
       .sort((a, b) => a.offset - b.offset)
-      .map(({ date, total }) => ({ date, total }));
+      .map(({ date, total, byEmp }) => ({ date, total, byEmp }));
+
+    const trend = trendDetail.map(({ date, total }) => ({ date, total }));
 
     const empMap: Record<string, EmployeeSales> = {};
     (employees ?? []).forEach((e: any) => {
