@@ -1667,6 +1667,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 <ScanLine className="h-4 w-4" />
               </Button>
             </div>
+            {lastScan && (
+              <p className="text-xs text-muted-foreground mb-2">Last scanned: <span className="font-mono">{lastScan}</span></p>
+            )}
             {searchProduct && (
               <div className="border rounded-lg max-h-60 overflow-y-auto mb-3">
                 {filteredProducts.map(p => (
