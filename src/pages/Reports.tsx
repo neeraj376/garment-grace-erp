@@ -59,6 +59,7 @@ interface EmployeeSales {
 interface ReportBundle {
   summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number; operatingCost: number; operatingProfit: number };
   trend: { date: string; total: number }[];
+  trendDetail: { date: string; total: number; byEmp: Record<string, number> }[];
   paymentSplit: PaymentSplit[];
   sourceSplit: PaymentSplit[];
   employeeSales: EmployeeSales[];
