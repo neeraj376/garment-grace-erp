@@ -59,6 +59,7 @@ interface EmployeeSales {
 interface ReportBundle {
   summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number; operatingCost: number; operatingProfit: number };
   trend: { date: string; total: number }[];
+  trendDetail: { date: string; total: number; byEmp: Record<string, number> }[];
   paymentSplit: PaymentSplit[];
   sourceSplit: PaymentSplit[];
   employeeSales: EmployeeSales[];
@@ -71,6 +72,7 @@ type SourceFilter = "all" | "offline" | "whatsapp" | "online" | "wholesale";
 const EMPTY_BUNDLE: ReportBundle = {
   summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0, operatingCost: 0, operatingProfit: 0 },
   trend: [],
+  trendDetail: [],
   paymentSplit: [],
   sourceSplit: [],
   employeeSales: [],
@@ -92,6 +94,7 @@ export default function Reports() {
   const [useCurrentPrice, setUseCurrentPrice] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [empSourceFilter, setEmpSourceFilter] = useState<SourceFilter>("all");
+  const [trendEmployee, setTrendEmployee] = useState<string>("all");
   const [drillEmp, setDrillEmp] = useState<{ name: string; invoices: EmpInvoice[] } | null>(null);
 
   useEffect(() => {
@@ -356,21 +359,33 @@ export default function Reports() {
     // Trend grouped by day-offset (numeric) so it can be aligned for comparison
     const startMs = new Date(start).getTime();
     const trendMap: Record<number, number> = {};
-    const bumpDay = (ts: number, amt: number) => {
+    const trendEmpMap: Record<number, Record<string, number>> = {};
+    const bumpDay = (ts: number, amt: number, empId?: string | null) => {
       const offset = Math.floor((new Date(new Date(ts).toDateString()).getTime() - new Date(new Date(startMs).toDateString()).getTime()) / 86400000);
       trendMap[offset] = (trendMap[offset] || 0) + amt;
+      if (empId) {
+        trendEmpMap[offset] = trendEmpMap[offset] || {};
+        trendEmpMap[offset][empId] = (trendEmpMap[offset][empId] || 0) + amt;
+      }
     };
-    invData.forEach(inv => bumpDay(new Date(inv.created_at).getTime(), saleAmount(inv)));
+    invData.forEach(inv => bumpDay(new Date(inv.created_at).getTime(), saleAmount(inv), (inv as any).employee_id));
     orderData.forEach((o: any) => bumpDay(new Date(o.created_at).getTime(), Number(o.total_amount || 0)));
 
-    const trend = Object.entries(trendMap)
+    const trendDetail = Object.entries(trendMap)
       .map(([k, v]) => {
         const off = Number(k);
         const d = new Date(startMs + off * 86400000);
-        return { offset: off, date: d.toLocaleDateString("en-IN", { month: "short", day: "numeric" }), total: v };
+        return {
+          offset: off,
+          date: d.toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
+          total: v,
+          byEmp: trendEmpMap[off] || {},
+        };
       })
       .sort((a, b) => a.offset - b.offset)
-      .map(({ date, total }) => ({ date, total }));
+      .map(({ date, total, byEmp }) => ({ date, total, byEmp }));
+
+    const trend = trendDetail.map(({ date, total }) => ({ date, total }));
 
     const empMap: Record<string, EmployeeSales> = {};
     (employees ?? []).forEach((e: any) => {
@@ -404,7 +419,7 @@ export default function Reports() {
     const employeeSales = Object.values(empMap)
       .filter(e => e.invoiceCount > 0).sort((a, b) => b.totalSales - a.totalSales);
 
-    return { summary, trend, paymentSplit, sourceSplit, employeeSales, rangeStart: start, rangeEnd: end };
+    return { summary, trend, trendDetail, paymentSplit, sourceSplit, employeeSales, rangeStart: start, rangeEnd: end };
   };
 
   const formatCurrency = (v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`;
@@ -449,16 +464,28 @@ export default function Reports() {
     URL.revokeObjectURL(url);
   };
 
+  // Sales-trend employee filter options (union of current + previous period)
+  const trendEmployeeOptions = (() => {
+    const map = new Map<string, string>();
+    [...current.employeeSales, ...(previous?.employeeSales ?? [])].forEach(e => map.set(e.id, e.name));
+    return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
+  const trendValue = (row: { total: number; byEmp: Record<string, number> } | undefined) => {
+    if (!row) return null;
+    return trendEmployee === "all" ? row.total : (row.byEmp[trendEmployee] ?? 0);
+  };
+
   // Build comparison trend data aligned by day offset
   const comparisonTrend: { date: string; current: number | null; previous: number | null }[] = (() => {
-    if (!previous) return current.trend.map(t => ({ date: t.date, current: t.total, previous: null }));
-    const maxLen = Math.max(current.trend.length, previous.trend.length);
+    if (!previous) return current.trendDetail.map(t => ({ date: t.date, current: trendValue(t), previous: null }));
+    const maxLen = Math.max(current.trendDetail.length, previous.trendDetail.length);
     const rows: { date: string; current: number | null; previous: number | null }[] = [];
     for (let i = 0; i < maxLen; i++) {
       rows.push({
-        date: current.trend[i]?.date || previous.trend[i]?.date || `Day ${i + 1}`,
-        current: current.trend[i]?.total ?? null,
-        previous: previous.trend[i]?.total ?? null,
+        date: current.trendDetail[i]?.date || previous.trendDetail[i]?.date || `Day ${i + 1}`,
+        current: trendValue(current.trendDetail[i]),
+        previous: trendValue(previous.trendDetail[i]),
       });
     }
     return rows;
@@ -625,7 +652,25 @@ export default function Reports() {
           </div>
 
           <Card>
-            <CardHeader><CardTitle className="section-title">Sales Trend{previous ? " — Current vs Previous" : ""}</CardTitle></CardHeader>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <CardTitle className="section-title">
+                  Sales Trend{previous ? " — Current vs Previous" : ""}
+                  {trendEmployee !== "all" && ` — ${trendEmployeeOptions.find(e => e.id === trendEmployee)?.name ?? ""}`}
+                </CardTitle>
+                <Select value={trendEmployee} onValueChange={setTrendEmployee}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All employees" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All employees</SelectItem>
+                    {trendEmployeeOptions.map(e => (
+                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
             <CardContent>
               <div className="h-72">
                 {comparisonTrend.length > 0 ? (
