@@ -623,21 +623,29 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const commit = () => {
       const code = buffer.trim();
+      const burst = fastBurst;
       buffer = "";
+      fastBurst = false;
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
-      if (code.length < MIN_SCAN_LENGTH || !isLikelyScannerCode(code)) return;
+      if (code.length < MIN_SCAN_LENGTH) return;
 
-      // Do not treat manually typed phone numbers/amounts in other fields as scans.
-      // Product labels printed by this app contain SKU-/KU-style codes; numeric-only
-      // fallback is accepted only when the page/search box is the active target.
-      if (editableAtStart && editableAtStart !== searchInputRef.current && !/^(?:s?ku|ku)-/i.test(extractScanCode(code))) {
+      // Accept anything that looks like a product code, or anything typed in a
+      // machine-fast burst (a real scanner) even if the label format is unusual.
+      const looksLikeCode = isLikelyScannerCode(code);
+      if (!looksLikeCode && !burst) return;
+
+      const inOtherField = !!editableAtStart && editableAtStart !== searchInputRef.current;
+
+      // Never hijack manual typing in other fields (phone numbers, amounts).
+      if (inOtherField && !burst && !/^(?:s?ku|ku)-/i.test(extractScanCode(code))) {
         return;
       }
 
-      if (editableAtStart && editableAtStart !== searchInputRef.current) {
-        restoreEditableValue(editableAtStart, editableValueAtStart);
+      if (inOtherField) {
+        restoreEditableValue(editableAtStart!, editableValueAtStart);
       }
 
+      setLastScan(code);
       void commitScannedCode(code);
     };
 
@@ -651,25 +659,33 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
       if (startsNewScan) {
         buffer = "";
+        fastBurst = false;
         editableAtStart = editableTarget(e.target);
         editableValueAtStart = editableAtStart?.value ?? "";
+      } else if (gap < FAST_BURST_GAP_MS) {
+        fastKeys += 1;
+        if (fastKeys >= 3) fastBurst = true;
       }
 
       if (e.key === "Enter" || e.key === "Tab") {
-        if (buffer.length >= MIN_SCAN_LENGTH && isLikelyScannerCode(buffer)) {
+        if (buffer.length >= MIN_SCAN_LENGTH && (fastBurst || isLikelyScannerCode(buffer))) {
           e.preventDefault();
           e.stopPropagation();
           commit();
         } else {
           buffer = "";
+          fastBurst = false;
         }
+        fastKeys = 0;
         return;
       }
 
       if (e.key.length === 1) {
+        if (startsNewScan) fastKeys = 0;
         buffer += e.key;
         const bufferCode = extractScanCode(buffer);
-        const shouldCaptureAwayFromSearch = /^(?:s?ku|ku)-/i.test(bufferCode) && isLikelyScannerCode(bufferCode);
+        const shouldCaptureAwayFromSearch =
+          (fastBurst || /^(?:s?ku|ku)-/i.test(bufferCode)) && buffer.length >= MIN_SCAN_LENGTH;
         if (editableAtStart && editableAtStart !== searchInputRef.current && shouldCaptureAwayFromSearch) {
           e.preventDefault();
           e.stopPropagation();
