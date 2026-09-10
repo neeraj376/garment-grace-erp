@@ -463,16 +463,28 @@ export default function Reports() {
     URL.revokeObjectURL(url);
   };
 
+  // Sales-trend employee filter options (union of current + previous period)
+  const trendEmployeeOptions = (() => {
+    const map = new Map<string, string>();
+    [...current.employeeSales, ...(previous?.employeeSales ?? [])].forEach(e => map.set(e.id, e.name));
+    return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
+  const trendValue = (row: { total: number; byEmp: Record<string, number> } | undefined) => {
+    if (!row) return null;
+    return trendEmployee === "all" ? row.total : (row.byEmp[trendEmployee] ?? 0);
+  };
+
   // Build comparison trend data aligned by day offset
   const comparisonTrend: { date: string; current: number | null; previous: number | null }[] = (() => {
-    if (!previous) return current.trend.map(t => ({ date: t.date, current: t.total, previous: null }));
-    const maxLen = Math.max(current.trend.length, previous.trend.length);
+    if (!previous) return current.trendDetail.map(t => ({ date: t.date, current: trendValue(t), previous: null }));
+    const maxLen = Math.max(current.trendDetail.length, previous.trendDetail.length);
     const rows: { date: string; current: number | null; previous: number | null }[] = [];
     for (let i = 0; i < maxLen; i++) {
       rows.push({
-        date: current.trend[i]?.date || previous.trend[i]?.date || `Day ${i + 1}`,
-        current: current.trend[i]?.total ?? null,
-        previous: previous.trend[i]?.total ?? null,
+        date: current.trendDetail[i]?.date || previous.trendDetail[i]?.date || `Day ${i + 1}`,
+        current: trendValue(current.trendDetail[i]),
+        previous: trendValue(previous.trendDetail[i]),
       });
     }
     return rows;
