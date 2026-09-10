@@ -587,7 +587,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     let flushTimer: any = null;
     let editableAtStart: HTMLInputElement | HTMLTextAreaElement | null = null;
     let editableValueAtStart = "";
+    let fastBurst = false;
+    let fastKeys = 0;
     const SCAN_CHAR_GAP_MS = 500;    // tolerate slow scanner modes
+    const FAST_BURST_GAP_MS = 60;    // machine-fast keystrokes = scanner
     const MIN_SCAN_LENGTH = 4;
     const IDLE_FLUSH_MS = 450;       // if no terminator, flush after idle
 
