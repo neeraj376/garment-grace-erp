@@ -552,6 +552,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
   const scannerBusyRef = useRef(false);
   const lastScannerCommitRef = useRef<{ code: string; at: number }>({ code: "", at: 0 });
+  const [lastScan, setLastScan] = useState<string>("");
 
   const commitScannedCode = useCallback(async (rawCode: string) => {
     const code = extractScanCode(rawCode);
