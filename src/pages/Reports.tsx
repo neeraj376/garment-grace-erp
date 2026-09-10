@@ -72,6 +72,7 @@ type SourceFilter = "all" | "offline" | "whatsapp" | "online" | "wholesale";
 const EMPTY_BUNDLE: ReportBundle = {
   summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0, operatingCost: 0, operatingProfit: 0 },
   trend: [],
+  trendDetail: [],
   paymentSplit: [],
   sourceSplit: [],
   employeeSales: [],
