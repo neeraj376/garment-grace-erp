@@ -218,6 +218,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [bookingDtdc, setBookingDtdc] = useState(false);
 
   const [source, setSource] = useState<string>("");
+  // Sources that ship goods out and therefore need an address + delivery charge
+  const needsShipping = source === "whatsapp" || source === "wholesale";
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
