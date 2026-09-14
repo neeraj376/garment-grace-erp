@@ -218,6 +218,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [bookingDtdc, setBookingDtdc] = useState(false);
 
   const [source, setSource] = useState<string>("");
+  // Sources that ship goods out and therefore need an address + delivery charge
+  const needsShipping = source === "whatsapp" || source === "wholesale";
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
@@ -776,7 +778,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Error", description: "Please select a source", variant: "destructive" });
       return;
     }
-    if (source === "whatsapp") {
+    if (needsShipping) {
       if (!addressLine1.trim()) {
         toast({ title: "Error", description: "Shipping address line 1 is required", variant: "destructive" });
         return;
@@ -794,7 +796,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         return;
       }
       if (!deliveryCost || Number(deliveryCost) <= 0) {
-        toast({ title: "Error", description: "Delivery cost is required for online invoices", variant: "destructive" });
+        toast({ title: "Error", description: "Delivery cost is required for this source", variant: "destructive" });
         return;
       }
     }
@@ -870,7 +872,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
         }
       }
 
-      const savedAddress = source === "whatsapp"
+      const savedAddress = needsShipping
         ? {
             address_line1: addressLine1.trim() || null,
             address_line2: addressLine2.trim() || null,
@@ -923,17 +925,17 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           customer_id: customerId,
           employee_id: (selectedEmployee && selectedEmployee !== "none") ? selectedEmployee : null,
           source,
-          courier_name: source === "whatsapp" && courierName.trim() ? courierName.trim() : null,
-          awb_no: source === "whatsapp" && awbNo.trim() ? awbNo.trim() : null,
-          delivery_cost: source === "whatsapp" ? (Number(deliveryCost) || 0) : 0,
-          shipping_name: source === "whatsapp" ? (customerName.trim() || null) : null,
-          shipping_phone: source === "whatsapp" ? (customerMobile.trim() || null) : null,
-          shipping_phone_alt: source === "whatsapp" ? (altPhone.trim() || null) : null,
-          shipping_address_line1: source === "whatsapp" ? (addressLine1.trim() || null) : null,
-          shipping_address_line2: source === "whatsapp" ? (addressLine2.trim() || null) : null,
-          shipping_city: source === "whatsapp" ? (shipCity.trim() || null) : null,
-          shipping_state: source === "whatsapp" ? (shipState.trim() || null) : null,
-          shipping_pincode: source === "whatsapp" ? (shipPincode.trim() || null) : null,
+          courier_name: needsShipping && courierName.trim() ? courierName.trim() : null,
+          awb_no: needsShipping && awbNo.trim() ? awbNo.trim() : null,
+          delivery_cost: needsShipping ? (Number(deliveryCost) || 0) : 0,
+          shipping_name: needsShipping ? (customerName.trim() || null) : null,
+          shipping_phone: needsShipping ? (customerMobile.trim() || null) : null,
+          shipping_phone_alt: needsShipping ? (altPhone.trim() || null) : null,
+          shipping_address_line1: needsShipping ? (addressLine1.trim() || null) : null,
+          shipping_address_line2: needsShipping ? (addressLine2.trim() || null) : null,
+          shipping_city: needsShipping ? (shipCity.trim() || null) : null,
+          shipping_state: needsShipping ? (shipState.trim() || null) : null,
+          shipping_pincode: needsShipping ? (shipPincode.trim() || null) : null,
           payment_method: paymentMethods.join("+"),
           notes: breakdownNote || null,
           subtotal,
@@ -987,7 +989,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       toast({ title: "Invoice created", description: `${invoiceNumber} — ₹${total.toLocaleString("en-IN")}` });
       setLastInvoice({
         id: invoice.id, invoice_number: invoiceNumber, total, customerMobile, customerName, source,
-        shipping: source === "whatsapp" ? {
+        shipping: needsShipping ? {
           name: customerName.trim(), phone: customerMobile.trim(),
           line1: addressLine1.trim(), line2: addressLine2.trim(),
           city: shipCity.trim(), state: shipState.trim(), pincode: shipPincode.trim(),
@@ -1835,11 +1837,12 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            {source === "whatsapp" && (
+            {needsShipping && (
               <div className="space-y-3 rounded-md border p-3 bg-muted/20">
                 <div className="text-xs font-medium flex items-center gap-1.5">
                   <Truck className="h-3.5 w-3.5" /> Shipping Address
                 </div>
+                {source === "whatsapp" && (
                 <div className="rounded-md bg-background border p-2.5 space-y-2">
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
                     Don&apos;t have the address yet? Create a draft invoice and send the customer a secure link to fill their delivery address (valid 12 hours). The invoice will be finalized automatically once they submit it.
@@ -1856,7 +1859,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     Send Address Link (WhatsApp + Email)
                   </Button>
                 </div>
-                <div className="text-[10px] text-muted-foreground">Or enter the address manually below to create the invoice now.</div>
+                )}
+                {source === "whatsapp" && <div className="text-[10px] text-muted-foreground">Or enter the address manually below to create the invoice now.</div>}
                 <div>
                   <Label className="text-xs">Alternate Mobile Number</Label>
                   <Input value={altPhone} onChange={e => setAltPhone(e.target.value)} placeholder="Optional second contact number" />
@@ -1906,7 +1910,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
 
                   <div className="sm:col-span-2">
-                    <Label className="text-xs">Delivery Cost (₹) {source === "whatsapp" && <span className="text-destructive">*</span>}</Label>
+                    <Label className="text-xs">Delivery Cost (₹) {needsShipping && <span className="text-destructive">*</span>}</Label>
                     <Input
                       type="number"
                       inputMode="decimal"
@@ -2094,7 +2098,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     {groupInviteSent ? "Group invite sent ✓" : "Send WhatsApp group invite"}
                   </Button>
                 )}
-                {lastInvoice.source === "whatsapp" && lastInvoice.shipping && (
+                {(lastInvoice.source === "whatsapp" || lastInvoice.source === "wholesale") && lastInvoice.shipping && (
                   <div className="space-y-2">
                     <Select value={dtdcService} onValueChange={setDtdcService}>
                       <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="DTDC service" /></SelectTrigger>
@@ -2110,7 +2114,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                     </Button>
                   </div>
                 )}
-                {lastInvoice.source === "whatsapp" && lastInvoice.shipping && (
+                {(lastInvoice.source === "whatsapp" || lastInvoice.source === "wholesale") && lastInvoice.shipping && (
 
                   <Button
                     variant="outline"
