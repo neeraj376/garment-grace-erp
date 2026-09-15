@@ -90,7 +90,7 @@ export default function OrderInvoiceDialog({ order, onClose }: OrderInvoiceDialo
               <div className="text-right">
                 <h3 className="text-lg font-bold">TAX INVOICE</h3>
                 <p className="text-xs"><strong>Order #:</strong> {order.order_number}</p>
-                <p className="text-xs"><strong>Date:</strong> {format(new Date(order.created_at), "dd MMM yyyy")}</p>
+                <p className="text-xs"><strong>Date:</strong> {format(new Date(order.created_at), "dd MMM yyyy, hh:mm a")}</p>
                 <p className="text-xs"><strong>Payment:</strong> {order.payment_status} ({order.payment_method || "—"})</p>
                 <p className="text-xs"><strong>Status:</strong> {order.status}</p>
               </div>
