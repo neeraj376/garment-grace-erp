@@ -854,7 +854,10 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                     )}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {new Date(inv.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                    <div>{new Date(inv.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(inv.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-medium">₹{Number(inv.total_amount).toLocaleString("en-IN")}</TableCell>
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
