@@ -103,7 +103,11 @@ export default function InvoicePublic() {
             <div className="text-right">
               <p className="text-sm opacity-80">Invoice</p>
               <p className="text-lg font-bold">{invoice.invoice_number}</p>
-              <p className="text-sm opacity-80">{date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+              <p className="text-sm opacity-80">
+                {date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                {", "}
+                {date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+              </p>
             </div>
           </div>
         </div>
