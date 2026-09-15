@@ -80,7 +80,7 @@ export default function InvoicePreviewDialog({
     printWindow.document.close();
   };
 
-  const now = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const now = `${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}, ${new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
   const storeName = store?.name || "Store";
 
   const getLineTotal = (item: CartItem) => item.unit_price * item.quantity - item.item_discount;
