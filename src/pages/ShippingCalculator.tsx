@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   calculateVolumetricShipping,
   FIRST_SLAB_RATE,
+  FUEL_SURCHARGE_PCT,
   PER_KG_RATE,
   VOLUMETRIC_DIVISOR,
 } from "@/lib/volumetricShipping";
