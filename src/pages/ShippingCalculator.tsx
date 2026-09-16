@@ -48,7 +48,7 @@ export default function ShippingCalculator() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Volumetric weight = (Length × Width × Height) ÷ {VOLUMETRIC_DIVISOR}. Up to 500 g costs ₹
-          {FIRST_SLAB_RATE}, then ₹{PER_KG_RATE} per kg.
+          {FIRST_SLAB_RATE}, then ₹{PER_KG_RATE} per kg, plus {FUEL_SURCHARGE_PCT}% fuel surcharge.
         </p>
       </div>
 
@@ -103,8 +103,16 @@ export default function ShippingCalculator() {
               <span className="text-muted-foreground">Chargeable weight (higher of the two)</span>
               <span className="font-medium">{quote.chargeableWeight} kg</span>
             </div>
-            <div className="border-t border-border pt-3">
-              <div className="flex justify-between items-baseline">
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Slab cost</span>
+                <span className="font-medium">₹{quote.slabCost.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Fuel surcharge ({FUEL_SURCHARGE_PCT}%)</span>
+                <span className="font-medium">₹{quote.fuelSurcharge.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex justify-between items-baseline pt-1">
                 <span className="font-semibold">Shipping Cost</span>
                 <span className="text-2xl font-bold text-primary">₹{quote.cost.toLocaleString("en-IN")}</span>
               </div>
@@ -131,10 +139,10 @@ export default function ShippingCalculator() {
         </CardHeader>
         <CardContent>
           <div className="text-sm space-y-1">
-            <div className="flex justify-between border-b border-border pb-1"><span>Up to 500 g</span><span className="font-medium">₹{FIRST_SLAB_RATE}</span></div>
-            <div className="flex justify-between border-b border-border pb-1"><span>Up to 1 kg</span><span className="font-medium">₹{PER_KG_RATE}</span></div>
-            <div className="flex justify-between border-b border-border pb-1"><span>Up to 2 kg</span><span className="font-medium">₹{PER_KG_RATE * 2}</span></div>
-            <div className="flex justify-between"><span>Each additional kg</span><span className="font-medium">+₹{PER_KG_RATE}</span></div>
+            <div className="flex justify-between border-b border-border pb-1"><span>Up to 500 g</span><span className="font-medium">₹{FIRST_SLAB_RATE} + {FUEL_SURCHARGE_PCT}%</span></div>
+            <div className="flex justify-between border-b border-border pb-1"><span>Up to 1 kg</span><span className="font-medium">₹{PER_KG_RATE} + {FUEL_SURCHARGE_PCT}%</span></div>
+            <div className="flex justify-between border-b border-border pb-1"><span>Up to 2 kg</span><span className="font-medium">₹{PER_KG_RATE * 2} + {FUEL_SURCHARGE_PCT}%</span></div>
+            <div className="flex justify-between"><span>Each additional kg</span><span className="font-medium">+₹{PER_KG_RATE} + {FUEL_SURCHARGE_PCT}%</span></div>
           </div>
         </CardContent>
       </Card>
