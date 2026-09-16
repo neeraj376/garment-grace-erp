@@ -1,0 +1,1 @@
+ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS can_shipping_calculator boolean NOT NULL DEFAULT false;

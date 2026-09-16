@@ -1509,6 +1509,7 @@ export type Database = {
           can_print_stickers: boolean
           can_reports: boolean
           can_settings: boolean
+          can_shipping_calculator: boolean
           can_stock_summary: boolean
           can_upload_inventory: boolean
           created_at: string
@@ -1529,6 +1530,7 @@ export type Database = {
           can_print_stickers?: boolean
           can_reports?: boolean
           can_settings?: boolean
+          can_shipping_calculator?: boolean
           can_stock_summary?: boolean
           can_upload_inventory?: boolean
           created_at?: string
@@ -1549,6 +1551,7 @@ export type Database = {
           can_print_stickers?: boolean
           can_reports?: boolean
           can_settings?: boolean
+          can_shipping_calculator?: boolean
           can_stock_summary?: boolean
           can_upload_inventory?: boolean
           created_at?: string
