@@ -26,6 +26,7 @@ import Marketing from "@/pages/Marketing";
 import WhatsAppRotation from "@/pages/WhatsAppRotation";
 import StickerPrinter from "@/pages/StickerPrinter";
 import Expenses from "@/pages/Expenses";
+import ShippingCalculator from "@/pages/ShippingCalculator";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
 import AddressCollection from "@/pages/AddressCollection";
@@ -152,6 +153,7 @@ function AppRoutes() {
         <Route path="whatsapp-rotation" element={<WhatsAppRotation />} />
         <Route path="stickers" element={<StickerPrinter />} />
         <Route path="expenses" element={<Expenses />} />
+        <Route path="shipping-calculator" element={<ShippingCalculator />} />
       </Route>
       {shopRoutes}
       <Route path="/administrator/auth" element={<Navigate to="/administrator" replace />} />
