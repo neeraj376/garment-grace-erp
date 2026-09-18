@@ -4,6 +4,7 @@ import { useStore } from "@/hooks/useStore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Boxes } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface StockItem {
   product_name: string;
@@ -17,6 +18,8 @@ interface StockItem {
 
 export default function StockSummary() {
   const { storeId } = useStore();
+  const { role, can_view_buying_price } = usePermissions();
+  const canViewBuying = role === "owner" || can_view_buying_price;
   const [stock, setStock] = useState<StockItem[]>([]);
 
   useEffect(() => {
@@ -69,7 +72,7 @@ export default function StockSummary() {
       <div>
         <h1 className="page-header">Stock Summary</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {totalUnits} units · ₹{totalValue.toLocaleString("en-IN")} total value
+          {totalUnits} units{canViewBuying ? ` · ₹${totalValue.toLocaleString("en-IN")} total value` : ""}
         </p>
       </div>
 
@@ -81,15 +84,15 @@ export default function StockSummary() {
               <TableHead>Product</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="text-right">Avg. Cost</TableHead>
+              {canViewBuying && <TableHead className="text-right">Avg. Cost</TableHead>}
               <TableHead className="text-right">Sell Price</TableHead>
-              <TableHead className="text-right">Stock Value</TableHead>
+              {canViewBuying && <TableHead className="text-right">Stock Value</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {stock.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={canViewBuying ? 7 : 5} className="text-center py-12">
                   <Boxes className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">No stock data</p>
                 </TableCell>
@@ -102,9 +105,9 @@ export default function StockSummary() {
                 <TableCell className="text-right">
                   <Badge variant={s.total_stock > 0 ? "default" : "destructive"}>{s.total_stock}</Badge>
                 </TableCell>
-                <TableCell className="text-right">₹{s.avg_buying_price.toFixed(2)}</TableCell>
+                {canViewBuying && <TableCell className="text-right">₹{s.avg_buying_price.toFixed(2)}</TableCell>}
                 <TableCell className="text-right">₹{s.selling_price.toLocaleString("en-IN")}</TableCell>
-                <TableCell className="text-right font-medium">₹{s.stock_value.toLocaleString("en-IN")}</TableCell>
+                {canViewBuying && <TableCell className="text-right font-medium">₹{s.stock_value.toLocaleString("en-IN")}</TableCell>}
               </TableRow>
             ))}
           </TableBody>

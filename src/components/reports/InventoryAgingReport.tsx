@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, ArrowUpDown, Package } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface AgingProduct {
   id: string;
@@ -26,6 +27,8 @@ type SortDir = "asc" | "desc";
 
 export default function InventoryAgingReport() {
   const { storeId } = useStore();
+  const { role, can_view_buying_price } = usePermissions();
+  const canViewBuying = role === "owner" || can_view_buying_price;
   const [products, setProducts] = useState<AgingProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>("age");
@@ -134,9 +137,9 @@ export default function InventoryAgingReport() {
       const s = String(v);
       return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const headers = ["Product", "SKU", "Category", "Brand", "Stock", "Selling Price", "Buying Price", "Age (Days)", "Oldest Batch"];
+    const headers = ["Product", "SKU", "Category", "Brand", "Stock", "Selling Price", ...(canViewBuying ? ["Buying Price"] : []), "Age (Days)", "Oldest Batch"];
     const rows = filtered.map((p) => [
-      p.name, p.sku, p.category || "", p.brand || "", p.stock, p.sellingPrice, p.buyingPrice, p.ageDays,
+      p.name, p.sku, p.category || "", p.brand || "", p.stock, p.sellingPrice, ...(canViewBuying ? [p.buyingPrice] : []), p.ageDays,
       new Date(p.oldestBatchDate).toLocaleDateString("en-IN"),
     ]);
     const csv = [headers.map(escape).join(","), ...rows.map((r) => r.map(escape).join(","))].join("\n");
@@ -199,12 +202,12 @@ export default function InventoryAgingReport() {
             <p className="text-2xl font-bold font-display">{filtered.reduce((s, p) => s + p.stock, 0).toLocaleString("en-IN")}</p>
           </CardContent>
         </Card>
-        <Card>
+        {canViewBuying && <Card>
           <CardContent className="pt-5">
             <p className="text-sm text-muted-foreground">Stock Value (Cost)</p>
             <p className="text-2xl font-bold font-display">{formatCurrency(filtered.reduce((s, p) => s + p.buyingPrice * p.stock, 0))}</p>
           </CardContent>
-        </Card>
+        </Card>}
         <Card>
           <CardContent className="pt-5">
             <p className="text-sm text-muted-foreground">Avg Age</p>
@@ -230,9 +233,9 @@ export default function InventoryAgingReport() {
                   <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("sellingPrice")}>
                     <span className="flex items-center gap-1">Selling Price <ArrowUpDown className="h-3 w-3" />{sortIcon("sellingPrice")}</span>
                   </TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("buyingPrice")}>
+                  {canViewBuying && <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("buyingPrice")}>
                     <span className="flex items-center gap-1">Buying Price <ArrowUpDown className="h-3 w-3" />{sortIcon("buyingPrice")}</span>
-                  </TableHead>
+                  </TableHead>}
                   <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("age")}>
                     <span className="flex items-center gap-1">Age <ArrowUpDown className="h-3 w-3" />{sortIcon("age")}</span>
                   </TableHead>
@@ -251,7 +254,7 @@ export default function InventoryAgingReport() {
                     <TableCell className="text-muted-foreground">{p.brand || "—"}</TableCell>
                     <TableCell className="font-medium">{p.stock}</TableCell>
                     <TableCell>{formatCurrency(p.sellingPrice)}</TableCell>
-                    <TableCell>{formatCurrency(p.buyingPrice)}</TableCell>
+                    {canViewBuying && <TableCell>{formatCurrency(p.buyingPrice)}</TableCell>}
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getAgeBadge(p.ageDays)}
