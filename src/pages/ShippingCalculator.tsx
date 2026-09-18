@@ -3,15 +3,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calculator, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
   calculateVolumetricShipping,
-  FIRST_SLAB_RATE,
   FUEL_SURCHARGE_PCT,
-  PER_KG_RATE,
+  ORIGIN,
+  RATE_CARD,
   VOLUMETRIC_DIVISOR,
+  ZONE_LABELS,
+  getZone,
+  type ShippingZone,
 } from "@/lib/volumetricShipping";
+
+const STATES = [
+  "Andaman and Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh",
+  "Chhattisgarh","Dadra and Nagar Haveli and Daman and Diu","Delhi","Goa","Gujarat","Haryana",
+  "Himachal Pradesh","Jammu and Kashmir","Jharkhand","Karnataka","Kerala","Ladakh","Lakshadweep",
+  "Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Puducherry",
+  "Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand",
+  "West Bengal",
+];
+
+const ZONES: ShippingZone[] = ["City", "Region", "Zone", "Metro", "ROI", "Special"];
 
 export default function ShippingCalculator() {
   const [length, setLength] = useState("");
@@ -19,6 +34,10 @@ export default function ShippingCalculator() {
   const [height, setHeight] = useState("");
   const [actualWeight, setActualWeight] = useState("");
   const [boxes, setBoxes] = useState("1");
+  const [state, setState] = useState("Haryana");
+  const [city, setCity] = useState("");
+
+  const detectedZone = useMemo(() => getZone(state, city), [state, city]);
 
   const quote = useMemo(
     () =>
@@ -28,8 +47,10 @@ export default function ShippingCalculator() {
         heightCm: parseFloat(height) || 0,
         actualWeightKg: parseFloat(actualWeight) || 0,
         boxes: parseInt(boxes) || 1,
+        state,
+        city,
       }),
-    [length, width, height, actualWeight, boxes]
+    [length, width, height, actualWeight, boxes, state, city]
   );
 
   const reset = () => {
@@ -38,6 +59,8 @@ export default function ShippingCalculator() {
     setHeight("");
     setActualWeight("");
     setBoxes("1");
+    setState("Haryana");
+    setCity("");
   };
 
   return (
@@ -47,8 +70,8 @@ export default function ShippingCalculator() {
           <Calculator className="h-6 w-6 text-primary" /> Shipping Cost Calculator
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Volumetric weight = (Length × Width × Height) ÷ {VOLUMETRIC_DIVISOR}. Up to 500 g costs ₹
-          {FIRST_SLAB_RATE}, then ₹{PER_KG_RATE} per kg, plus {FUEL_SURCHARGE_PCT}% fuel surcharge.
+          Pickup from {ORIGIN.city}, {ORIGIN.state} – {ORIGIN.pincode}. Volumetric weight = (Length × Width × Height) ÷ {VOLUMETRIC_DIVISOR}.
+          Rates depend on the destination zone, plus {FUEL_SURCHARGE_PCT}% fuel surcharge.
         </p>
       </div>
 
@@ -82,6 +105,22 @@ export default function ShippingCalculator() {
                 <Input id="bx" type="number" min="1" step="1" value={boxes} onChange={(e) => setBoxes(e.target.value)} />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Destination State</Label>
+                <Select value={state} onValueChange={setState}>
+                  <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="city">Destination City</Label>
+                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Gurugram" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Zone applied: <span className="font-medium text-foreground">{ZONE_LABELS[detectedZone]}</span></p>
             <Button variant="outline" onClick={reset} className="w-full">Clear</Button>
           </CardContent>
         </Card>
@@ -105,7 +144,7 @@ export default function ShippingCalculator() {
             </div>
             <div className="border-t border-border pt-3 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Slab cost</span>
+                <span className="text-muted-foreground">Slab cost ({quote.zone})</span>
                 <span className="font-medium">₹{quote.slabCost.toLocaleString("en-IN")}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -135,15 +174,31 @@ export default function ShippingCalculator() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Rate Slabs</CardTitle>
+          <CardTitle className="text-lg">Rate Card (before {FUEL_SURCHARGE_PCT}% fuel surcharge)</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-sm space-y-1">
-            <div className="flex justify-between border-b border-border pb-1"><span>Up to 500 g</span><span className="font-medium">₹{FIRST_SLAB_RATE} + {FUEL_SURCHARGE_PCT}%</span></div>
-            <div className="flex justify-between border-b border-border pb-1"><span>Up to 1 kg</span><span className="font-medium">₹{PER_KG_RATE} + {FUEL_SURCHARGE_PCT}%</span></div>
-            <div className="flex justify-between border-b border-border pb-1"><span>Up to 2 kg</span><span className="font-medium">₹{PER_KG_RATE * 2} + {FUEL_SURCHARGE_PCT}%</span></div>
-            <div className="flex justify-between"><span>Each additional kg</span><span className="font-medium">+₹{PER_KG_RATE} + {FUEL_SURCHARGE_PCT}%</span></div>
-          </div>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-2 pr-3 font-semibold">Weight</th>
+                {ZONES.map((z) => <th key={z} className="py-2 px-3 font-semibold text-center">{z}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border">
+                <td className="py-2 pr-3">Up to 500 g</td>
+                {ZONES.map((z) => <td key={z} className="py-2 px-3 text-center">₹{RATE_CARD[z].upto500g}</td>)}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 pr-3">1–5 kg (per kg)</td>
+                {ZONES.map((z) => <td key={z} className="py-2 px-3 text-center">₹{RATE_CARD[z].perKg1to5}</td>)}
+              </tr>
+              <tr>
+                <td className="py-2 pr-3">5–10 kg (per kg)</td>
+                {ZONES.map((z) => <td key={z} className="py-2 px-3 text-center">₹{RATE_CARD[z].perKg5to10}</td>)}
+              </tr>
+            </tbody>
+          </table>
         </CardContent>
       </Card>
     </div>
