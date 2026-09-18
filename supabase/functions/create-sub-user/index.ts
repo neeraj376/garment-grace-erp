@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
         can_upload_inventory: permissions?.can_upload_inventory ?? false,
         can_print_stickers: permissions?.can_print_stickers ?? false,
         can_shipping_calculator: permissions?.can_shipping_calculator ?? false,
+        can_view_buying_price: permissions?.can_view_buying_price ?? false,
       });
 
     if (permError) throw permError;

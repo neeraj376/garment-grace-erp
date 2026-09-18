@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,8 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
   const [stockAdjustment, setStockAdjustment] = useState("");
   const [stockMode, setStockMode] = useState<"add" | "set">("add");
   const [photos, setPhotos] = useState<string[]>([]);
+  const { role, can_view_buying_price } = usePermissions();
+  const canViewBuying = role === "owner" || can_view_buying_price;
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "5", buying_price: "",
@@ -241,7 +244,7 @@ export default function EditProductDialog({ product, open, onOpenChange, storeId
             <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({ ...form, selling_price: e.target.value })} required /></div>
             <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({ ...form, mrp: e.target.value })} /></div>
             <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({ ...form, tax_rate: e.target.value })} /></div>
-            <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({ ...form, buying_price: e.target.value })} /></div>
+            {canViewBuying && <div><Label>Buying Price</Label><Input type="number" step="0.01" value={form.buying_price} onChange={e => setForm({ ...form, buying_price: e.target.value })} /></div>}
           </div>
 
           <div>
