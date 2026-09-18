@@ -14,6 +14,8 @@ import {
   VOLUMETRIC_DIVISOR,
   ZONE_LABELS,
   getZone,
+  getZoneForPincodes,
+  stateForPincode,
   type ShippingZone,
 } from "@/lib/volumetricShipping";
 
