@@ -188,6 +188,8 @@ export function calculateVolumetricShipping(params: {
   boxes?: number;
   state?: string;
   city?: string;
+  originPincode?: string;
+  destPincode?: string;
   zone?: ShippingZone;
 }): ShippingQuote {
   const boxes = Math.max(1, Math.floor(params.boxes || 1));
@@ -195,7 +197,10 @@ export function calculateVolumetricShipping(params: {
   const volumetricWeight = volPerBox * boxes;
   const actualWeight = Math.max(0, params.actualWeightKg || 0);
   const chargeableWeight = Math.max(volumetricWeight, actualWeight);
-  const zone = params.zone ?? getZone(params.state || "", params.city);
+  const zone =
+    params.zone ??
+    getZoneForPincodes(params.originPincode || ORIGIN.pincode, params.destPincode || "") ??
+    getZone(params.state || "", params.city);
   const { slabCost, fuelSurcharge, cost, breakdown } = costForWeight(chargeableWeight, zone);
   return {
     volumetricWeight: Number(volumetricWeight.toFixed(3)),
