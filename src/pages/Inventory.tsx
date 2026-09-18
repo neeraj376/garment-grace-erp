@@ -47,9 +47,10 @@ interface Product {
 export default function Inventory() {
   const { storeId } = useStore();
   const { toast } = useToast();
-  const { role, can_upload_inventory, can_edit_invoices } = usePermissions();
+  const { role, can_upload_inventory, can_edit_invoices, can_view_buying_price } = usePermissions();
   const isOwner = role === "owner";
   const canUpload = isOwner || can_upload_inventory;
+  const canViewBuying = role === "owner" || can_view_buying_price;
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("__all__");
@@ -378,7 +379,8 @@ export default function Inventory() {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", "Purchase Price", "Stock", "Photo URL"];
+    const showBuying = role === "owner" || can_view_buying_price;
+    const headers = ["SKU", "Name", "Category", "Subcategory", "Brand", "Size", "Color", "Selling Price", "MRP", "Tax Rate %", ...(showBuying ? ["Purchase Price"] : []), "Stock", "Photo URL"];
     const rows = products.map(p => {
       const batches = p.inventory_batches || [];
       const avgBuyingPrice = batches.length
@@ -386,7 +388,7 @@ export default function Inventory() {
         : "";
       return [
         p.sku, p.name, p.category || "", p.subcategory || "", p.brand || "", p.size || "", p.color || "",
-        p.selling_price, p.mrp ?? "", p.tax_rate, avgBuyingPrice, p.total_stock ?? 0, p.photo_url || "",
+        p.selling_price, p.mrp ?? "", p.tax_rate, ...(showBuying ? [avgBuyingPrice] : []), p.total_stock ?? 0, p.photo_url || "",
       ];
     });
     const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
@@ -727,20 +729,20 @@ export default function Inventory() {
                 <SelectItem value="out_of_stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-1.5">
+            {canViewBuying && <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground whitespace-nowrap">Buying ₹</span>
               <Input type="number" placeholder="Min" value={filterBuyingPriceMin} onChange={e => setFilterBuyingPriceMin(e.target.value)} className="w-24 h-9 bg-background" />
               <span className="text-xs text-muted-foreground">–</span>
               <Input type="number" placeholder="Max" value={filterBuyingPriceMax} onChange={e => setFilterBuyingPriceMax(e.target.value)} className="w-24 h-9 bg-background" />
-            </div>
-            <div className="flex items-center gap-2">
+            </div>}
+            {canViewBuying && <div className="flex items-center gap-2">
               <Checkbox
                 id="missing-buying-price"
                 checked={filterMissingBuyingPrice}
                 onCheckedChange={(checked) => setFilterMissingBuyingPrice(Boolean(checked))}
               />
               <Label htmlFor="missing-buying-price" className="text-sm cursor-pointer">No Buying Price</Label>
-            </div>
+            </div>}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground whitespace-nowrap">Uploaded</span>
               <Input type="date" value={filterUploadDateFrom} onChange={e => setFilterUploadDateFrom(e.target.value)} className="w-40 h-9 bg-background" />
