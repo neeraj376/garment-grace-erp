@@ -1512,6 +1512,7 @@ export type Database = {
           can_shipping_calculator: boolean
           can_stock_summary: boolean
           can_upload_inventory: boolean
+          can_view_buying_price: boolean
           created_at: string
           id: string
           store_id: string
@@ -1533,6 +1534,7 @@ export type Database = {
           can_shipping_calculator?: boolean
           can_stock_summary?: boolean
           can_upload_inventory?: boolean
+          can_view_buying_price?: boolean
           created_at?: string
           id?: string
           store_id: string
@@ -1554,6 +1556,7 @@ export type Database = {
           can_shipping_calculator?: boolean
           can_stock_summary?: boolean
           can_upload_inventory?: boolean
+          can_view_buying_price?: boolean
           created_at?: string
           id?: string
           store_id?: string
