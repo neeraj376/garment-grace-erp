@@ -38,8 +38,12 @@ export default function ShippingCalculator() {
   const [boxes, setBoxes] = useState("1");
   const [state, setState] = useState("Haryana");
   const [city, setCity] = useState("");
+  const [originPin, setOriginPin] = useState(ORIGIN.pincode);
+  const [destPin, setDestPin] = useState("");
 
-  const detectedZone = useMemo(() => getZone(state, city), [state, city]);
+  const pinZone = useMemo(() => getZoneForPincodes(originPin, destPin), [originPin, destPin]);
+  const detectedZone = pinZone ?? getZone(state, city);
+  const destPinState = useMemo(() => stateForPincode(destPin), [destPin]);
 
   const quote = useMemo(
     () =>
@@ -51,8 +55,10 @@ export default function ShippingCalculator() {
         boxes: parseInt(boxes) || 1,
         state,
         city,
+        originPincode: originPin,
+        destPincode: destPin,
       }),
-    [length, width, height, actualWeight, boxes, state, city]
+    [length, width, height, actualWeight, boxes, state, city, originPin, destPin]
   );
 
   const reset = () => {
@@ -63,6 +69,8 @@ export default function ShippingCalculator() {
     setBoxes("1");
     setState("Haryana");
     setCity("");
+    setOriginPin(ORIGIN.pincode);
+    setDestPin("");
   };
 
   return (
