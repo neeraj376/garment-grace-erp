@@ -117,20 +117,35 @@ export default function ShippingCalculator() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Destination State</Label>
-                <Select value={state} onValueChange={setState}>
-                  <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="opin">Pickup Pincode</Label>
+                <Input id="opin" inputMode="numeric" maxLength={6} value={originPin} onChange={(e) => setOriginPin(e.target.value.replace(/\D/g, ""))} placeholder={ORIGIN.pincode} />
               </div>
               <div>
-                <Label htmlFor="city">Destination City</Label>
-                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Gurugram" />
+                <Label htmlFor="dpin">Delivery Pincode</Label>
+                <Input id="dpin" inputMode="numeric" maxLength={6} value={destPin} onChange={(e) => setDestPin(e.target.value.replace(/\D/g, ""))} placeholder="682001" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Zone applied: <span className="font-medium text-foreground">{ZONE_LABELS[detectedZone]}</span></p>
+            {!pinZone && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Destination State</Label>
+                  <Select value={state} onValueChange={setState}>
+                    <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="city">Destination City</Label>
+                  <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Gurugram" />
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Zone applied: <span className="font-medium text-foreground">{ZONE_LABELS[detectedZone]}</span>
+              {pinZone && destPinState ? ` — delivery pincode in ${destPinState}` : !pinZone ? " — enter both pincodes for automatic zoning" : ""}
+            </p>
             <Button variant="outline" onClick={reset} className="w-full">Clear</Button>
           </CardContent>
         </Card>
