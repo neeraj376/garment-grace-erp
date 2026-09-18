@@ -31,6 +31,7 @@ interface SubUser {
   can_upload_inventory: boolean;
   can_print_stickers: boolean;
   can_shipping_calculator: boolean;
+  can_view_buying_price: boolean;
   permission_id: string;
 }
 
@@ -48,6 +49,7 @@ const PERMISSION_MODULES = [
   { key: "can_photos", label: "Photo Manager" },
   { key: "can_print_stickers", label: "Print Stickers" },
   { key: "can_shipping_calculator", label: "Shipping Calculator" },
+  { key: "can_view_buying_price", label: "View Buying Price" },
   { key: "can_settings", label: "Settings" },
 ];
 
@@ -142,6 +144,7 @@ export default function SubUserManager() {
     can_upload_inventory: false,
     can_print_stickers: false,
     can_shipping_calculator: false,
+    can_view_buying_price: false,
   });
 
   const fetchSubUsers = async () => {
@@ -202,6 +205,7 @@ export default function SubUserManager() {
         can_upload_inventory: (perm as any)?.can_upload_inventory ?? false,
         can_print_stickers: (perm as any)?.can_print_stickers ?? false,
         can_shipping_calculator: (perm as any)?.can_shipping_calculator ?? false,
+        can_view_buying_price: (perm as any)?.can_view_buying_price ?? false,
         permission_id: perm?.id ?? "",
       };
     });
@@ -242,6 +246,7 @@ export default function SubUserManager() {
           can_upload_inventory: form.can_upload_inventory,
           can_print_stickers: form.can_print_stickers,
           can_shipping_calculator: form.can_shipping_calculator,
+          can_view_buying_price: form.can_view_buying_price,
         },
       });
 
@@ -249,7 +254,7 @@ export default function SubUserManager() {
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "Sub-user created", description: `${form.email} can now log in.` });
-      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false, can_edit_invoices: false, can_upload_inventory: false, can_print_stickers: false, can_shipping_calculator: false });
+      setForm({ email: "", password: "", fullName: "", can_invoicing: true, can_inventory: false, can_photos: false, can_customers: false, can_dashboard: false, can_reports: false, can_loyalty: false, can_employees: false, can_stock_summary: false, can_settings: false, can_edit_invoices: false, can_upload_inventory: false, can_print_stickers: false, can_shipping_calculator: false, can_view_buying_price: false });
       setDialogOpen(false);
       fetchSubUsers();
     } catch (err: any) {
