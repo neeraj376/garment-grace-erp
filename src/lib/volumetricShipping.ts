@@ -61,6 +61,75 @@ export function getZone(state: string, city?: string): ShippingZone {
   return "ROI";
 }
 
+// ---- Pincode based zone detection ----
+
+// First two digits of an Indian PIN -> state (broad mapping, good enough for zoning)
+const PIN_STATE: Record<string, string> = {
+  "11": "Delhi",
+  "12": "Haryana", "13": "Haryana",
+  "14": "Punjab", "15": "Punjab", "16": "Punjab",
+  "17": "Himachal Pradesh",
+  "18": "Jammu and Kashmir", "19": "Jammu and Kashmir",
+  "20": "Uttar Pradesh", "21": "Uttar Pradesh", "22": "Uttar Pradesh", "23": "Uttar Pradesh",
+  "24": "Uttarakhand", "25": "Uttar Pradesh", "26": "Uttar Pradesh", "27": "Uttar Pradesh",
+  "28": "Uttar Pradesh",
+  "30": "Rajasthan", "31": "Rajasthan", "32": "Rajasthan", "33": "Rajasthan", "34": "Rajasthan",
+  "36": "Gujarat", "37": "Gujarat", "38": "Gujarat", "39": "Gujarat",
+  "40": "Maharashtra", "41": "Maharashtra", "42": "Maharashtra", "43": "Maharashtra", "44": "Maharashtra",
+  "45": "Madhya Pradesh", "46": "Madhya Pradesh", "47": "Madhya Pradesh", "48": "Madhya Pradesh",
+  "49": "Chhattisgarh",
+  "50": "Telangana", "51": "Telangana",
+  "52": "Andhra Pradesh", "53": "Andhra Pradesh",
+  "56": "Karnataka", "57": "Karnataka", "58": "Karnataka", "59": "Karnataka",
+  "60": "Tamil Nadu", "61": "Tamil Nadu", "62": "Tamil Nadu", "63": "Tamil Nadu", "64": "Tamil Nadu",
+  "67": "Kerala", "68": "Kerala", "69": "Kerala",
+  "70": "West Bengal", "71": "West Bengal", "72": "West Bengal", "73": "West Bengal", "74": "West Bengal",
+  "75": "Odisha", "76": "Odisha", "77": "Odisha",
+  "78": "Assam",
+  "79": "Arunachal Pradesh",
+  "80": "Bihar", "81": "Bihar", "82": "Jharkhand", "83": "Jharkhand", "84": "Bihar", "85": "Bihar",
+};
+
+// More specific prefixes that override the two-digit mapping
+const PIN_STATE_3: Record<string, string> = {
+  "160": "Chandigarh", "140": "Punjab",
+  "682": "Lakshadweep", "744": "Andaman and Nicobar Islands", "737": "Sikkim",
+  "793": "Meghalaya", "794": "Meghalaya", "795": "Manipur", "796": "Mizoram",
+  "797": "Nagaland", "798": "Nagaland", "799": "Tripura", "792": "Arunachal Pradesh",
+  "605": "Puducherry", "607": "Puducherry",
+};
+
+// Metro PIN prefixes (first three digits)
+const METRO_PIN_PREFIX = ["110", "400", "401", "410", "411", "500", "560", "600", "700", "380"];
+
+export function stateForPincode(pin: string): string | null {
+  const p = (pin || "").trim();
+  if (!/^[1-9]\d{5}$/.test(p)) return null;
+  return PIN_STATE_3[p.slice(0, 3)] ?? PIN_STATE[p.slice(0, 2)] ?? null;
+}
+
+/** Zone between two pincodes: same city, same region, north zone, metro, rest of India or special. */
+export function getZoneForPincodes(originPin: string, destPin: string): ShippingZone | null {
+  const o = (originPin || "").trim();
+  const d = (destPin || "").trim();
+  if (!/^[1-9]\d{5}$/.test(o) || !/^[1-9]\d{5}$/.test(d)) return null;
+
+  const oState = stateForPincode(o);
+  const dState = stateForPincode(d);
+
+  // Same city / local area — first three digits identify the delivery city
+  if (o.slice(0, 3) === d.slice(0, 3)) return "City";
+  if (dState && SPECIAL_STATES.includes(dState)) return "Special";
+
+  // Same state, or Delhi <-> Haryana (NCR)
+  const ncr = ["Delhi", "Haryana"];
+  if (oState && dState && (oState === dState || (ncr.includes(oState) && ncr.includes(dState)))) return "Region";
+
+  if (METRO_PIN_PREFIX.includes(d.slice(0, 3))) return "Metro";
+  if (dState && ZONE_STATES.concat(REGION_STATES).includes(dState)) return "Zone";
+  return "ROI";
+}
+
 export interface ShippingQuote {
   volumetricWeight: number;
   actualWeight: number;
