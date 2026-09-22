@@ -655,10 +655,16 @@ export default function Inventory() {
                       </div>
                       <div>
                         <Label>Size</Label>
-                        <Input list="inv-sizes" value={form.size} onChange={e => setForm({...form, size: e.target.value})} placeholder="Select or type new" />
-                        <datalist id="inv-sizes">
-                          {sizes.map(s => <option key={s} value={s} />)}
-                        </datalist>
+                        {multiSize ? (
+                          <p className="text-xs text-muted-foreground mt-2">Set below in size variations</p>
+                        ) : (
+                          <>
+                            <Input list="inv-sizes" value={form.size} onChange={e => setForm({...form, size: e.target.value})} placeholder="Select or type new" />
+                            <datalist id="inv-sizes">
+                              {sizes.map(s => <option key={s} value={s} />)}
+                            </datalist>
+                          </>
+                        )}
                       </div>
                       <div>
                         <Label>Color</Label>
