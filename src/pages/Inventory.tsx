@@ -685,13 +685,67 @@ export default function Inventory() {
                       <PhotoUploader photos={newProductPhotos} onChange={setNewProductPhotos} storeId={storeId!} />
                     </div>
                     <div className="border-t pt-3">
-                      <p className="text-sm font-medium mb-2">Initial Stock (optional)</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">Size variations</p>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setMultiSize(v => !v)}>
+                          {multiSize ? "Single size" : "Add multiple sizes"}
+                        </Button>
+                      </div>
+                      {multiSize && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            Each size is saved as its own product with its own SKU (e.g. {(form.sku || "SKU-XXXX")}-M).
+                          </p>
+                          {sizeRows.map((row, i) => (
+                            <div key={i} className="flex gap-2 items-end">
+                              <div className="flex-1">
+                                <Label className="text-xs text-muted-foreground">Size</Label>
+                                <Input
+                                  list="inv-sizes"
+                                  value={row.size}
+                                  placeholder="e.g. M or 32"
+                                  onChange={e => setSizeRows(rows => rows.map((r, idx) => idx === i ? { ...r, size: e.target.value } : r))}
+                                />
+                              </div>
+                              <div className="w-28">
+                                <Label className="text-xs text-muted-foreground">Qty</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={row.quantity}
+                                  onChange={e => setSizeRows(rows => rows.map((r, idx) => idx === i ? { ...r, quantity: e.target.value } : r))}
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                disabled={sizeRows.length === 1}
+                                onClick={() => setSizeRows(rows => rows.filter((_, idx) => idx !== i))}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <datalist id="inv-sizes">
+                            {sizes.map(s => <option key={s} value={s} />)}
+                          </datalist>
+                          <Button type="button" variant="outline" size="sm" onClick={() => setSizeRows(rows => [...rows, { size: "", quantity: "" }])}>
+                            <Plus className="h-4 w-4 mr-1" /> Add size
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="border-t pt-3">
+                      <p className="text-sm font-medium mb-2">Initial Stock {multiSize ? "" : "(optional)"}</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div><Label>Buying Price *</Label><Input type="number" step="0.01" min="0.01" required value={form.buying_price} onChange={e => setForm({...form, buying_price: e.target.value})} /></div>
-                        <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} /></div>
+                        {!multiSize && <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} /></div>}
                       </div>
                     </div>
-                    <Button type="submit" className="w-full">Add Product</Button>
+                    <Button type="submit" className="w-full">
+                      {multiSize ? `Add ${sizeRows.filter(r => r.size.trim()).length || 0} Size Variants` : "Add Product"}
+                    </Button>
                   </form>
                 </DialogContent>
               </Dialog>
