@@ -75,6 +75,8 @@ export default function Inventory() {
     description: "",
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
+  const [multiSize, setMultiSize] = useState(false);
+  const [sizeRows, setSizeRows] = useState<Array<{ size: string; quantity: string }>>([{ size: "", quantity: "" }]);
   const [csvProgress, setCsvProgress] = useState<{ current: number; total: number } | null>(null);
   const [soldDialogOpen, setSoldDialogOpen] = useState(false);
   const [soldInvoicesLoading, setSoldInvoicesLoading] = useState(false);
