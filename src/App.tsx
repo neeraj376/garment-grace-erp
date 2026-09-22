@@ -75,6 +75,19 @@ function ProtectedAdminRoute({
   return <>{children}</>;
 }
 
+function NoAdminAccess() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center px-6 text-center">
+      <div>
+        <h1 className="text-xl font-semibold text-foreground">Access not available</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Ask the account owner to enable access to an administrator section.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { storeId, loading: storeLoading } = useStore();
@@ -146,7 +159,7 @@ function AppRoutes() {
     if (p.can_reports) return "reports";
     if (p.can_employees) return "employees";
     if (p.can_settings) return "settings";
-    return "invoicing"; // fallback
+    return "access-denied";
   })();
 
   const defaultAdminPath = defaultStaffPage
@@ -158,6 +171,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/administrator" element={<AppLayout />}>
         <Route index element={defaultStaffPage ? <Navigate to={`/administrator/${defaultStaffPage}`} replace /> : <Dashboard />} />
+        <Route path="access-denied" element={<NoAdminAccess />} />
         <Route path="inventory" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_inventory)} fallbackPath={defaultAdminPath}><Inventory /></ProtectedAdminRoute>} />
         <Route path="invoicing" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_invoicing)} fallbackPath={defaultAdminPath}><Invoicing /></ProtectedAdminRoute>} />
         <Route path="stock" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_stock_summary)} fallbackPath={defaultAdminPath}><StockSummary /></ProtectedAdminRoute>} />
