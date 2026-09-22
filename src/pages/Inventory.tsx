@@ -188,16 +188,35 @@ export default function Inventory() {
       return;
     }
 
+    // Each size becomes its own product with its own SKU.
+    const variants = multiSize
+      ? sizeRows.filter(r => r.size.trim()).map(r => ({ size: r.size.trim(), quantity: r.quantity }))
+      : [{ size: form.size, quantity: form.quantity }];
+
+    if (multiSize && variants.length === 0) {
+      toast({ title: "Add at least one size", variant: "destructive" });
+      return;
+    }
+
+    const baseSku = form.sku || `SKU-${Date.now()}`;
+    const skuFor = (size: string, i: number) => {
+      if (!multiSize) return baseSku;
+      const suffix = size.toUpperCase().replace(/[^A-Z0-9]+/g, "") || String(i + 1);
+      return `${baseSku}-${suffix}`;
+    };
+
     try {
+      for (let i = 0; i < variants.length; i++) {
+        const v = variants[i];
         const { data: product, error } = await supabase
           .from("products")
           .insert({
             store_id: storeId,
-            sku: form.sku || `SKU-${Date.now()}`,
+            sku: skuFor(v.size, i),
             name: form.name,
             category: normalizeCategoryWithMappings(form.category, "category"),
             brand: form.brand || null,
-            size: normalizeCategoryWithMappings(form.size, "size"),
+            size: normalizeCategoryWithMappings(v.size, "size"),
             color: normalizeCategoryWithMappings(form.color, "color"),
             selling_price: parseFloat(form.selling_price),
             mrp: form.mrp ? parseFloat(form.mrp) : null,
@@ -207,24 +226,27 @@ export default function Inventory() {
             photo_url: serializePhotoUrls(newProductPhotos),
             description: form.description || null,
           })
-        .select()
-        .single();
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (form.buying_price && form.quantity) {
-        await supabase.from("inventory_batches").insert({
-          product_id: product.id,
-          store_id: storeId,
-          buying_price: parseFloat(form.buying_price),
-          quantity: parseInt(form.quantity),
-        });
+        if (v.quantity && parseInt(v.quantity) > 0) {
+          await supabase.from("inventory_batches").insert({
+            product_id: product.id,
+            store_id: storeId,
+            buying_price: buyingPriceNum,
+            quantity: parseInt(v.quantity),
+          });
+        }
       }
 
-      toast({ title: "Product added" });
+      toast({ title: variants.length > 1 ? `${variants.length} size variants added` : "Product added" });
       setDialogOpen(false);
       setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "", description: "" });
       setNewProductPhotos([]);
+      setMultiSize(false);
+      setSizeRows([{ size: "", quantity: "" }]);
       fetchProducts();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
