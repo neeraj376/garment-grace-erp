@@ -1,0 +1,1 @@
+ALTER FUNCTION public.get_in_stock_shop_products_page(uuid, text, integer, integer) SECURITY DEFINER;
