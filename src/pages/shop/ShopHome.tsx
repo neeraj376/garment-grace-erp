@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
@@ -150,8 +150,13 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
   { name: "Underwear", Icon: UnderwearIcon, categories: ["underwear", "vest"] },
 ];
 
+const MAX_FEED = 200;
+const FEED_STEP = 40;
+
 export default function ShopHome() {
   const [feed, setFeed] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(FEED_STEP);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
@@ -206,10 +211,26 @@ export default function ShopHome() {
       setSortedCategories(all);
 
       const grouped = groupVariants(withMediaAll);
-      setFeed(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 60));
+      setFeed(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, MAX_FEED));
     };
     fetchProducts();
   }, []);
+
+  // Infinite scroll: reveal more products as the shopper scrolls, up to MAX_FEED
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((c) => Math.min(c + FEED_STEP, MAX_FEED));
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [feed.length]);
 
 
 
@@ -315,7 +336,7 @@ export default function ShopHome() {
             </Link>
           </div>
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3">
-            {feed.map((g) => (
+            {feed.slice(0, visibleCount).map((g) => (
               <MasonryProductCard
                 key={g.key}
                 product={g.primary}
@@ -324,6 +345,16 @@ export default function ShopHome() {
               />
             ))}
           </div>
+          <div ref={sentinelRef} className="h-10" />
+          {visibleCount >= Math.min(feed.length, MAX_FEED) && (
+            <div className="text-center mt-4">
+              <Link to="/category/all">
+                <Button variant="outline" className="rounded-full px-8 gap-2">
+                  See all products <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          )}
         </section>
       )}
 
