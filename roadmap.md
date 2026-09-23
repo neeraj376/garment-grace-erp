@@ -5,4 +5,4 @@
 - [x] Expand the home-page recent-product feed from 200 to 500 products.
 - [x] Identify every lead photo used by those 500 home-page products that is not already cleaned.
 - [x] Publish cleaned replacements and backfill around unfinished or missing photos so every displayed card has clean media.
-- [ ] Verify the 500-product scroll and image loading in the storefront.
+- [x] Verify the 500-product scroll and image loading in the storefront.
