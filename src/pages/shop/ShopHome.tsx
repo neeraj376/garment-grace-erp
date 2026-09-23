@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MasonryProductCard from "@/components/shop/MasonryProductCard";
-import { groupVariants } from "@/lib/variantUtils";
 import { fetchInStockShopProducts, SHOP_STORE_ID } from "@/lib/shopProducts";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
@@ -150,7 +149,7 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
   { name: "Underwear", Icon: UnderwearIcon, categories: ["underwear", "vest"] },
 ];
 
-const MAX_FEED = 200;
+const MAX_FEED = 500;
 const FEED_STEP = 40;
 
 export default function ShopHome() {
@@ -210,8 +209,7 @@ export default function ShopHome() {
       const all = [...visible, ...extraTiles].sort((a, b) => b.count - a.count);
       setSortedCategories(all);
 
-      const grouped = groupVariants(withMediaAll);
-      setFeed(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, MAX_FEED));
+      setFeed(withMediaAll.slice(0, MAX_FEED));
     };
     fetchProducts();
   }, []);
@@ -336,12 +334,10 @@ export default function ShopHome() {
             </Link>
           </div>
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3">
-            {feed.slice(0, visibleCount).map((g) => (
+            {feed.slice(0, visibleCount).map((product) => (
               <MasonryProductCard
-                key={g.key}
-                product={g.primary}
-                minPrice={g.minPrice}
-                maxPrice={g.maxPrice}
+                key={product.id}
+                product={product}
               />
             ))}
           </div>

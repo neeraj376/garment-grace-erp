@@ -1739,6 +1739,43 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_in_stock_shop_products_page: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_offset?: number
+          p_store_id: string
+        }
+        Returns: {
+          brand: string | null
+          buying_price: number | null
+          category: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          hsn_code: string | null
+          id: string
+          is_active: boolean
+          material: string | null
+          mrp: number | null
+          name: string
+          photo_url: string | null
+          selling_price: number
+          size: string | null
+          sku: string
+          store_id: string
+          subcategory: string | null
+          tax_rate: number
+          updated_at: string
+          video_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_inventory_overview: {
         Args: { p_store_id: string }
         Returns: {

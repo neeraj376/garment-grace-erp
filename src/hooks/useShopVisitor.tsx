@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
 export interface ShopVisitor {
   id: string;
@@ -34,9 +34,7 @@ export function ShopVisitorProvider({ children }: { children: ReactNode }) {
       return null;
     }
   });
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => { setReady(true); }, []);
+  const ready = true;
 
   const setVisitor = (v: ShopVisitor) => {
     setVisitorState(v);
