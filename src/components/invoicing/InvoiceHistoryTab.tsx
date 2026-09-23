@@ -43,6 +43,7 @@ interface Invoice {
   customer_id: string | null;
   shipping_name?: string | null;
   shipping_phone?: string | null;
+  employees: { name: string } | null;
   customers: { name: string | null; mobile: string; email?: string | null } | null;
 }
 
@@ -234,7 +235,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
       while (true) {
         const { data, error } = await supabase
           .from("invoices")
-          .select("*, customers(name, mobile, email)")
+          .select("*, customers(name, mobile, email), employees(name)")
           .eq("store_id", storeId)
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
@@ -890,7 +891,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                   </TableCell>
 
                   <TableCell className="text-sm text-muted-foreground">
-                    {inv.created_by ? (creatorNames[inv.created_by] || "—") : "—"}
+                    {inv.employees?.name || (inv.created_by ? (creatorNames[inv.created_by] || "—") : "—")}
                   </TableCell>
                   <TableCell>{statusBadge(inv.status)}</TableCell>
                   <TableCell className="text-right">
@@ -1140,7 +1141,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableHead>Payment</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Courier / AWB</TableHead>
-                <TableHead>Created By</TableHead>
+                <TableHead>Sales Person</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
