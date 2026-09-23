@@ -37,6 +37,7 @@ export default function MasonryProductCard({ product, minPrice, maxPrice }: Prop
   return (
     <Link
       to={`/product/${product.id}`}
+      data-product-card
       className="group block mb-3 break-inside-avoid bg-card rounded-lg overflow-hidden border border-border hover:shadow-md transition-shadow"
     >
       <div className="relative bg-muted">

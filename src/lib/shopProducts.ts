@@ -11,11 +11,11 @@ export async function fetchInStockShopProducts() {
   for (let from = 0; from < MAX_PRODUCTS; from += PAGE_SIZE) {
     const to = Math.min(from + PAGE_SIZE - 1, MAX_PRODUCTS - 1);
     const { data, error } = await supabase
-      .rpc("get_in_stock_shop_products", {
+      .rpc("get_in_stock_shop_products_page", {
         p_store_id: SHOP_STORE_ID,
-        p_limit: MAX_PRODUCTS,
-      })
-      .range(from, to);
+        p_limit: to - from + 1,
+        p_offset: from,
+      });
 
     if (error) {
       console.error("Failed to fetch shop products", error);
