@@ -5,6 +5,7 @@ import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MasonryProductCard from "@/components/shop/MasonryProductCard";
 import { fetchInStockShopProducts, SHOP_STORE_ID } from "@/lib/shopProducts";
+import { parsePhotoUrls } from "@/lib/photoUtils";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
 // Refined garment category icons — clean, recognizable, consistent stroke
@@ -151,11 +152,24 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
 
 const MAX_FEED = 500;
 const FEED_STEP = 40;
+const MISSING_CLEAN_PHOTO_IDS = new Set([
+  "c522856e-5488-413c-9008-31a8a1ed5e81", "544fee12-c9b0-492f-8b2c-6a913c4838b4",
+  "c5f65b64-76e6-43d2-802b-57b3facdefd0", "0544ed37-333e-4f8f-a47d-482525885c3b",
+  "b59d4341-aeda-4c2b-8ee6-b62a579e09a1", "d3126f0a-030a-48d0-8c57-976f88ace467",
+  "a5ff013d-d7a0-4450-a2db-c96e4ff33943", "34abdd1b-72a3-4bd9-898a-c517c77918eb",
+  "7e81c03f-6c0a-47cd-9202-61d67bf05514", "c4a3b080-2bb1-44c6-ab59-cb8fc4182cf8",
+  "9311b9c9-34bf-4d72-a2c2-8f19727ab0b3", "88b719a0-fce1-4232-be0f-de0095e1bb40",
+  "93036c0c-e92e-4bea-8805-83a4d78ff100", "cc116081-142b-43a7-a1c4-148643975da9",
+  "448993ed-7443-46f3-824c-3399223eedc7", "78fbbdb5-842a-4be3-bd1a-4af3750d5e3a",
+  "3a96ef6c-92b5-467a-8cc1-955e060e71c2", "b7164135-652d-4782-a73b-e84130cef957",
+]);
 
 const hasUsableMedia = (product: any) => {
-  const photo = String(product.photo_url ?? "").toLowerCase();
+  const photo = String(parsePhotoUrls(product.photo_url)[0] ?? "").toLowerCase().replace(/%2f/g, "/");
   const video = String(product.video_url ?? "").toLowerCase();
-  return (!!photo && !photo.includes("example.com/")) || (!!video && !video.includes("example.com/"));
+  const cleanPhoto = !!photo && !photo.includes("example.com/") && !MISSING_CLEAN_PHOTO_IDS.has(product.id)
+    && (photo.includes("/cleaned/") || photo.includes("-clean.") || photo.includes("-clean-"));
+  return cleanPhoto || (!!video && !video.includes("example.com/"));
 };
 
 export default function ShopHome() {
