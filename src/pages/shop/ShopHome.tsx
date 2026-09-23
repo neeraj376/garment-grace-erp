@@ -152,6 +152,12 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
 const MAX_FEED = 500;
 const FEED_STEP = 40;
 
+const hasUsableMedia = (product: any) => {
+  const photo = String(product.photo_url ?? "").toLowerCase();
+  const video = String(product.video_url ?? "").toLowerCase();
+  return (!!photo && !photo.includes("example.com/")) || (!!video && !video.includes("example.com/"));
+};
+
 export default function ShopHome() {
   const [feed, setFeed] = useState<any[]>([]);
   const [visibleCount, setVisibleCount] = useState(FEED_STEP);
@@ -179,7 +185,7 @@ export default function ShopHome() {
   useEffect(() => {
     const fetchProducts = async () => {
       const allInStock = await fetchInStockShopProducts();
-      const withMediaAll = allInStock.filter((p: any) => p.photo_url || p.video_url);
+      const withMediaAll = allInStock.filter(hasUsableMedia);
 
       const counts = HERO_CATEGORIES.map((cat) => {
         const count = withMediaAll.filter((p: any) => {
