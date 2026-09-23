@@ -336,7 +336,7 @@ export default function ShopHome() {
             </Link>
           </div>
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3">
-            {feed.map((g) => (
+            {feed.slice(0, visibleCount).map((g) => (
               <MasonryProductCard
                 key={g.key}
                 product={g.primary}
@@ -345,6 +345,16 @@ export default function ShopHome() {
               />
             ))}
           </div>
+          <div ref={sentinelRef} className="h-10" />
+          {visibleCount >= Math.min(feed.length, MAX_FEED) && (
+            <div className="text-center mt-4">
+              <Link to="/category/all">
+                <Button variant="outline" className="rounded-full px-8 gap-2">
+                  See all products <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          )}
         </section>
       )}
 
