@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
@@ -150,8 +150,13 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
   { name: "Underwear", Icon: UnderwearIcon, categories: ["underwear", "vest"] },
 ];
 
+const MAX_FEED = 200;
+const FEED_STEP = 40;
+
 export default function ShopHome() {
   const [feed, setFeed] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(FEED_STEP);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [sortedCategories, setSortedCategories] = useState<typeof HERO_CATEGORIES>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
