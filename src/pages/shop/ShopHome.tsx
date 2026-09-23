@@ -206,10 +206,26 @@ export default function ShopHome() {
       setSortedCategories(all);
 
       const grouped = groupVariants(withMediaAll);
-      setFeed(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, 60));
+      setFeed(grouped.filter((g) => g.primary.photo_url || g.primary.video_url).slice(0, MAX_FEED));
     };
     fetchProducts();
   }, []);
+
+  // Infinite scroll: reveal more products as the shopper scrolls, up to MAX_FEED
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((c) => Math.min(c + FEED_STEP, MAX_FEED));
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [feed.length]);
 
 
 
