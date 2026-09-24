@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { variantGroupKey } from "@/lib/variantUtils";
 import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MasonryProductCard from "@/components/shop/MasonryProductCard";
