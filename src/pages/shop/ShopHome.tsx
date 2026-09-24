@@ -154,6 +154,9 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
 const MAX_FEED = 500;
 const CLUBBED_KEYS = new Set([
   variantGroupKey({ name: "Ann Taylor Ladies Pants", brand: "Ann Taylor" }),
+  variantGroupKey({ name: "Psycho Bunny Lower", brand: "Psycho Bunny" }),
+  variantGroupKey({ name: "Rabit Lower", brand: "Psycho Bunny" }),
+  variantGroupKey({ name: "Psycho Bunny Set", brand: "Psycho Bunny" }),
 ]);
 const FEED_STEP = 40;
 const MISSING_CLEAN_PHOTO_IDS = new Set([
