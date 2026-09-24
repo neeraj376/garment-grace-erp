@@ -158,6 +158,7 @@ const CLUBBED_KEYS = new Set([
   variantGroupKey({ name: "Rabit Lower", brand: "Psycho Bunny" }),
   variantGroupKey({ name: "Psycho Bunny Set", brand: "Psycho Bunny" }),
   variantGroupKey({ name: "Charles Formal Shirts", brand: "Charles Tyrwhitt" }),
+  variantGroupKey({ name: "CK Polo T-Shirt", brand: "CK" }),
 ]);
 const FEED_STEP = 40;
 const MISSING_CLEAN_PHOTO_IDS = new Set([
