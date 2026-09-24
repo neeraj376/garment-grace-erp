@@ -217,11 +217,12 @@ export default function ShopProduct() {
     ];
     const seen = new Set<string>();
     const items: { type: "image" | "video"; url: string }[] = [];
+    const isPlaceholder = (u: string) => /example\.com|placeholder|via\.placeholder/i.test(u);
     for (const v of ordered) {
       for (const url of parsePhotoUrls(v?.photo_url ?? null)) {
-        if (url && !seen.has(url)) { seen.add(url); items.push({ type: "image", url }); }
+        if (url && !seen.has(url) && !isPlaceholder(url)) { seen.add(url); items.push({ type: "image", url }); }
       }
-      if (v?.video_url && !seen.has(v.video_url)) {
+      if (v?.video_url && !seen.has(v.video_url) && !isPlaceholder(v.video_url)) {
         seen.add(v.video_url);
         items.push({ type: "video", url: v.video_url });
       }
