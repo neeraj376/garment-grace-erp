@@ -247,7 +247,7 @@ export default function ShopProduct() {
     ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100)
     : 0;
 
-  const current = mediaItems[activeMedia];
+  const current = mediaItems[activeMedia] ?? mediaItems[0];
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -295,6 +295,7 @@ export default function ShopProduct() {
                     src={current.url}
                     alt={product.name}
                     className="w-full h-full object-cover cursor-zoom-in"
+                    onError={() => markMediaDead(current.url)}
                     onClick={() => setZoomOpen(true)}
                   />
                   <button
@@ -324,7 +325,7 @@ export default function ShopProduct() {
                   }`}
                 >
                   {m.type === "image" ? (
-                    <img src={m.url} alt="" className="w-full h-full object-cover" />
+                    <img src={m.url} alt="" className="w-full h-full object-cover" onError={() => markMediaDead(m.url)} />
                   ) : (
                     <video src={m.url} muted className="w-full h-full object-cover" />
                   )}
