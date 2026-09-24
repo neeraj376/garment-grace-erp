@@ -51,7 +51,7 @@ export default function ShippingCalculator() {
         lengthCm: parseFloat(length) || 0,
         widthCm: parseFloat(width) || 0,
         heightCm: parseFloat(height) || 0,
-        actualWeightKg: parseFloat(actualWeight) || 0,
+        actualWeightKg: (parseFloat(actualWeight.replace(",", ".")) || 0) * (parseInt(boxes) || 1),
         boxes: parseInt(boxes) || 1,
         state,
         city,
@@ -107,8 +107,8 @@ export default function ShippingCalculator() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="aw">Actual Weight (kg, optional)</Label>
-                <Input id="aw" type="number" min="0" step="0.01" value={actualWeight} onChange={(e) => setActualWeight(e.target.value)} placeholder="0.5" />
+                <Label htmlFor="aw">Actual Weight per box (kg)</Label>
+                <Input id="aw" type="text" inputMode="decimal" value={actualWeight} onChange={(e) => setActualWeight(e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="0.5" />
               </div>
               <div>
                 <Label htmlFor="bx">Number of Boxes</Label>
