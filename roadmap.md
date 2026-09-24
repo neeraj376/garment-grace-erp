@@ -7,3 +7,4 @@
 - [x] Publish cleaned replacements and backfill around unfinished or missing photos so every displayed card has clean media.
 - [x] Verify the 500-product scroll and image loading in the storefront.
 - [x] Clean and publish all Ann Taylor trouser product photos for ecommerce.
+- [x] Club Charles Tyrwhitt shirts into one product with size and colour choices.

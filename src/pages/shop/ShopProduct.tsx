@@ -205,29 +205,38 @@ export default function ShopProduct() {
   // color (all sizes of a given color look the same), with the currently
   // selected variant's own media first, then the rest deduped. If no color is
   // chosen, pool across all siblings.
+  const [deadMedia, setDeadMedia] = useState<Set<string>>(() => new Set());
+  const markMediaDead = (url: string) =>
+    setDeadMedia((prev) => (prev.has(url) ? prev : new Set(prev).add(url)));
+
   const mediaItems: { type: "image" | "video"; url: string }[] = useMemo(() => {
     if (!product) return [];
     const pool = siblings.length ? siblings : [product];
+    const isPlaceholder = (u: string) => /example\.com|placeholder|via\.placeholder/i.test(u);
+    const isUsable = (u: string) => !!u && !isPlaceholder(u) && !deadMedia.has(u);
+    const collect = (list: any[]) => {
+      const ordered = [product, ...list.filter((s) => s.id !== product.id)];
+      const seen = new Set<string>();
+      const items: { type: "image" | "video"; url: string }[] = [];
+      for (const v of ordered) {
+        for (const url of parsePhotoUrls(v?.photo_url ?? null)) {
+          if (isUsable(url) && !seen.has(url)) { seen.add(url); items.push({ type: "image", url }); }
+        }
+        if (isUsable(v?.video_url ?? "") && !seen.has(v.video_url)) {
+          seen.add(v.video_url);
+          items.push({ type: "video", url: v.video_url });
+        }
+      }
+      return items;
+    };
     const colorFiltered = selectedColor
       ? pool.filter((s) => s.color === selectedColor)
       : pool;
-    const ordered = [
-      product,
-      ...colorFiltered.filter((s) => s.id !== product.id),
-    ];
-    const seen = new Set<string>();
-    const items: { type: "image" | "video"; url: string }[] = [];
-    for (const v of ordered) {
-      for (const url of parsePhotoUrls(v?.photo_url ?? null)) {
-        if (url && !seen.has(url)) { seen.add(url); items.push({ type: "image", url }); }
-      }
-      if (v?.video_url && !seen.has(v.video_url)) {
-        seen.add(v.video_url);
-        items.push({ type: "video", url: v.video_url });
-      }
-    }
-    return items;
-  }, [product, siblings, selectedColor]);
+    // Some colours have no photo of their own (e.g. "White"). Fall back to the
+    // rest of the family's photos so the gallery is never left blank.
+    const items = collect(colorFiltered);
+    return items.length ? items : collect(pool);
+  }, [product, siblings, selectedColor, deadMedia]);
 
   if (loading) {
     return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Loading...</div>;
@@ -241,7 +250,7 @@ export default function ShopProduct() {
     ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100)
     : 0;
 
-  const current = mediaItems[activeMedia];
+  const current = mediaItems[activeMedia] ?? mediaItems[0];
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -289,6 +298,7 @@ export default function ShopProduct() {
                     src={current.url}
                     alt={product.name}
                     className="w-full h-full object-cover cursor-zoom-in"
+                    onError={() => markMediaDead(current.url)}
                     onClick={() => setZoomOpen(true)}
                   />
                   <button
@@ -318,7 +328,7 @@ export default function ShopProduct() {
                   }`}
                 >
                   {m.type === "image" ? (
-                    <img src={m.url} alt="" className="w-full h-full object-cover" />
+                    <img src={m.url} alt="" className="w-full h-full object-cover" onError={() => markMediaDead(m.url)} />
                   ) : (
                     <video src={m.url} muted className="w-full h-full object-cover" />
                   )}
