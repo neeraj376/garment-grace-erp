@@ -151,6 +151,9 @@ const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: stri
 ];
 
 const MAX_FEED = 500;
+const CLUBBED_KEYS = new Set([
+  variantGroupKey({ name: "Ann Taylor Ladies Pants", brand: "Ann Taylor" }),
+]);
 const FEED_STEP = 40;
 const MISSING_CLEAN_PHOTO_IDS = new Set([
   "c522856e-5488-413c-9008-31a8a1ed5e81", "544fee12-c9b0-492f-8b2c-6a913c4838b4",
@@ -229,7 +232,16 @@ export default function ShopHome() {
       const all = [...visible, ...extraTiles].sort((a, b) => b.count - a.count);
       setSortedCategories(all);
 
-      setFeed(withMediaAll.slice(0, MAX_FEED));
+      // Club selected product families (e.g. Ann Taylor Ladies Pants) into one card.
+      const seenClub = new Set<string>();
+      const clubbed = withMediaAll.filter((p: any) => {
+        const k = variantGroupKey(p);
+        if (!CLUBBED_KEYS.has(k)) return true;
+        if (seenClub.has(k)) return false;
+        seenClub.add(k);
+        return true;
+      });
+      setFeed(clubbed.slice(0, MAX_FEED));
     };
     fetchProducts();
   }, []);
