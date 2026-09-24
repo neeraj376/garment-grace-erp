@@ -212,27 +212,30 @@ export default function ShopProduct() {
   const mediaItems: { type: "image" | "video"; url: string }[] = useMemo(() => {
     if (!product) return [];
     const pool = siblings.length ? siblings : [product];
+    const isPlaceholder = (u: string) => /example\.com|placeholder|via\.placeholder/i.test(u);
+    const isUsable = (u: string) => !!u && !isPlaceholder(u) && !deadMedia.has(u);
+    const collect = (list: any[]) => {
+      const ordered = [product, ...list.filter((s) => s.id !== product.id)];
+      const seen = new Set<string>();
+      const items: { type: "image" | "video"; url: string }[] = [];
+      for (const v of ordered) {
+        for (const url of parsePhotoUrls(v?.photo_url ?? null)) {
+          if (isUsable(url) && !seen.has(url)) { seen.add(url); items.push({ type: "image", url }); }
+        }
+        if (isUsable(v?.video_url ?? "") && !seen.has(v.video_url)) {
+          seen.add(v.video_url);
+          items.push({ type: "video", url: v.video_url });
+        }
+      }
+      return items;
+    };
     const colorFiltered = selectedColor
       ? pool.filter((s) => s.color === selectedColor)
       : pool;
-    const ordered = [
-      product,
-      ...colorFiltered.filter((s) => s.id !== product.id),
-    ];
-    const seen = new Set<string>();
-    const items: { type: "image" | "video"; url: string }[] = [];
-    const isPlaceholder = (u: string) => /example\.com|placeholder|via\.placeholder/i.test(u);
-    const isUsable = (u: string) => !!u && !isPlaceholder(u) && !deadMedia.has(u);
-    for (const v of ordered) {
-      for (const url of parsePhotoUrls(v?.photo_url ?? null)) {
-        if (isUsable(url) && !seen.has(url)) { seen.add(url); items.push({ type: "image", url }); }
-      }
-      if (isUsable(v?.video_url ?? "") && !seen.has(v.video_url)) {
-        seen.add(v.video_url);
-        items.push({ type: "video", url: v.video_url });
-      }
-    }
-    return items;
+    // Some colours have no photo of their own (e.g. "White"). Fall back to the
+    // rest of the family's photos so the gallery is never left blank.
+    const items = collect(colorFiltered);
+    return items.length ? items : collect(pool);
   }, [product, siblings, selectedColor, deadMedia]);
 
   if (loading) {
