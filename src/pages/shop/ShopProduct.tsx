@@ -205,6 +205,10 @@ export default function ShopProduct() {
   // color (all sizes of a given color look the same), with the currently
   // selected variant's own media first, then the rest deduped. If no color is
   // chosen, pool across all siblings.
+  const [deadMedia, setDeadMedia] = useState<Set<string>>(() => new Set());
+  const markMediaDead = (url: string) =>
+    setDeadMedia((prev) => (prev.has(url) ? prev : new Set(prev).add(url)));
+
   const mediaItems: { type: "image" | "video"; url: string }[] = useMemo(() => {
     if (!product) return [];
     const pool = siblings.length ? siblings : [product];
@@ -218,17 +222,18 @@ export default function ShopProduct() {
     const seen = new Set<string>();
     const items: { type: "image" | "video"; url: string }[] = [];
     const isPlaceholder = (u: string) => /example\.com|placeholder|via\.placeholder/i.test(u);
+    const isUsable = (u: string) => !!u && !isPlaceholder(u) && !deadMedia.has(u);
     for (const v of ordered) {
       for (const url of parsePhotoUrls(v?.photo_url ?? null)) {
-        if (url && !seen.has(url) && !isPlaceholder(url)) { seen.add(url); items.push({ type: "image", url }); }
+        if (isUsable(url) && !seen.has(url)) { seen.add(url); items.push({ type: "image", url }); }
       }
-      if (v?.video_url && !seen.has(v.video_url) && !isPlaceholder(v.video_url)) {
+      if (isUsable(v?.video_url ?? "") && !seen.has(v.video_url)) {
         seen.add(v.video_url);
         items.push({ type: "video", url: v.video_url });
       }
     }
     return items;
-  }, [product, siblings, selectedColor]);
+  }, [product, siblings, selectedColor, deadMedia]);
 
   if (loading) {
     return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Loading...</div>;
