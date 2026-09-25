@@ -161,6 +161,7 @@ const CLUBBED_KEYS = new Set([
   variantGroupKey({ name: "CK Polo T-Shirt", brand: "CK" }),
   variantGroupKey({ name: "Dickies Jeans", brand: "Dickies" }),
   variantGroupKey({ name: "Blend Denim Jeans", brand: "Blend" }),
+  variantGroupKey({ name: "Armani Polo T-Shirts", brand: "ARMAANI EXCHANGE" }),
 ]);
 const FEED_STEP = 40;
 const MISSING_CLEAN_PHOTO_IDS = new Set([
