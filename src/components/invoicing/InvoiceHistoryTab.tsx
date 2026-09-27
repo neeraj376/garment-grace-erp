@@ -29,6 +29,7 @@ interface Invoice {
   id: string;
   invoice_number: string;
   total_amount: number;
+  delivery_cost: number;
   discount_amount: number;
   tax_amount: number;
   subtotal: number;
@@ -861,6 +862,11 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-medium">₹{Number(inv.total_amount).toLocaleString("en-IN")}</TableCell>
+                  <TableCell className="text-right text-sm">
+                    {Number(inv.delivery_cost || 0) > 0
+                      ? <span className="text-muted-foreground">₹{Number(inv.delivery_cost).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
                   <TableCell className="capitalize">{inv.payment_method}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">{inv.source === "whatsapp" ? "WhatsApp" : inv.source}</Badge>
@@ -1138,6 +1144,7 @@ export default function InvoiceHistoryTab({ storeId, userId }: Props) {
                 <TableHead>Customer</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Delivery</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Courier / AWB</TableHead>
