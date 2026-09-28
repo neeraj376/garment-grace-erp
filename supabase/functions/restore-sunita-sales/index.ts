@@ -49,16 +49,22 @@ Deno.serve(async (req) => {
       pageToken = data.nextPageToken
     } while (pageToken)
 
-    // 2. Fetch each message and extract invoice numbers
+    // 2. Fetch each message and extract invoice numbers (parallel batches)
     const invoiceNumbers = new Set<string>()
     let emailsRead = 0
-    for (const id of messageIds) {
-      const msg = await gmailFetch(`/users/me/messages/${id}?format=full`, lovableKey, connKey)
-      const html = extractHtml(msg.payload)
-      const text = html.replace(/<[^>]+>/g, ' ')
-      const matches = text.match(/INV-[A-Z0-9]{5,}/g) ?? []
-      for (const m of matches) invoiceNumbers.add(m)
-      emailsRead++
+    const BATCH = 15
+    for (let i = 0; i < messageIds.length; i += BATCH) {
+      const chunk = messageIds.slice(i, i + BATCH)
+      const msgs = await Promise.all(
+        chunk.map((id) => gmailFetch(`/users/me/messages/${id}?format=full`, lovableKey, connKey)),
+      )
+      for (const msg of msgs) {
+        const html = extractHtml(msg.payload)
+        const text = html.replace(/<[^>]+>/g, ' ')
+        const matches = text.match(/INV-[A-Z0-9]{5,}/g) ?? []
+        for (const m of matches) invoiceNumbers.add(m)
+        emailsRead++
+      }
     }
 
     // 3. Reassign matching invoices to Sunita
