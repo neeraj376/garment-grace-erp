@@ -354,7 +354,7 @@ export default function Reports() {
       .map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
     const { data: employees } = await supabase
-      .from("employees").select("id, name, role").eq("store_id", storeId!);
+      .from("employees").select("id, name, role, is_active").eq("store_id", storeId!);
 
     // Trend grouped by day-offset (numeric) so it can be aligned for comparison
     const startMs = new Date(start).getTime();
@@ -416,8 +416,9 @@ export default function Reports() {
         });
       }
     });
+    const activeIds = new Set((employees ?? []).filter((e: any) => e.is_active).map((e: any) => e.id));
     const employeeSales = Object.values(empMap)
-      .filter(e => e.invoiceCount > 0).sort((a, b) => b.totalSales - a.totalSales);
+      .filter(e => e.invoiceCount > 0 || activeIds.has(e.id)).sort((a, b) => b.totalSales - a.totalSales);
 
     return { summary, trend, trendDetail, paymentSplit, sourceSplit, employeeSales, rangeStart: start, rangeEnd: end };
   };
