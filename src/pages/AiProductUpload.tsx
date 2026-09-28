@@ -148,16 +148,16 @@ export default function AiProductUpload() {
     <div className="p-4 md:p-6 space-y-4 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Sparkles className="h-6 w-6 text-primary" /> AI Product Upload</h1>
-        <p className="text-sm text-muted-foreground">Upload product photos (with size visible). AI fills in name, brand, category, size and colour.</p>
+        <p className="text-sm text-muted-foreground">Upload a video showing your products (with size tags visible). AI finds each product and fills in name, brand, category, size, colour and quantity.</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Step 1 — Prices & quantity for this batch</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Step 1 — Prices for this batch</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {(["selling_price", "mrp", "buying_price", "quantity"] as const).map(k => (
               <div key={k}>
-                <Label>{{ selling_price: "Selling Price ₹ *", mrp: "MRP ₹", buying_price: "Buying Price ₹ *", quantity: "Quantity *" }[k]}</Label>
+                <Label>{{ selling_price: "Selling Price ₹ *", mrp: "MRP ₹", buying_price: "Buying Price ₹ *", quantity: "Quantity (blank = AI count)" }[k]}</Label>
                 <Input type="number" value={pricing[k]} onChange={e => setPricing({ ...pricing, [k]: e.target.value })} />
               </div>
             ))}
@@ -165,31 +165,34 @@ export default function AiProductUpload() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Switch checked={applyAll} onCheckedChange={setApplyAll} id="applyall" />
-              <Label htmlFor="applyall">Apply to all uploaded photos in this batch</Label>
+              <Label htmlFor="applyall">Apply to all products found in this video</Label>
             </div>
             {items.length > 0 && (
-              <Button variant="outline" size="sm" onClick={applyPricingToAll}>Apply to all photos now</Button>
+              <Button variant="outline" size="sm" onClick={applyPricingToAll}>Apply to all products now</Button>
             )}
           </div>
-          {!applyAll && <p className="text-xs text-muted-foreground">You'll enter prices and quantity for each photo below.</p>}
+          <p className="text-xs text-muted-foreground">Leave quantity blank to use the number of pieces AI counts in the video.</p>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Step 2 — Upload photos</CardTitle></CardHeader>
-        <CardContent>
-          <Button onClick={() => fileRef.current?.click()} disabled={!storeId}>
-            <Upload className="h-4 w-4 mr-2" /> Choose photos
+        <CardHeader><CardTitle className="text-base">Step 2 — Upload video</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <Button onClick={() => fileRef.current?.click()} disabled={!storeId || !!videoStatus}>
+            {videoStatus ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+            {videoStatus || "Choose video"}
           </Button>
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
-            onChange={e => { onFiles(e.target.files); e.target.value = ""; }} />
+          <input ref={fileRef} type="file" accept="video/*" className="hidden"
+            onChange={e => { onVideo(e.target.files?.[0] || null); e.target.value = ""; }} />
+          <p className="text-xs text-muted-foreground">Tip: show each product slowly for 2–3 seconds with its size tag facing the camera.</p>
+          {videoError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" /> {videoError}</p>}
         </CardContent>
       </Card>
 
       {items.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Step 3 — Review ({items.length} photos)</h2>
+            <h2 className="font-semibold">Step 3 — Review ({items.length} products)</h2>
             <Button onClick={saveAll} disabled={saving || busy || readyCount === 0}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Add {readyCount} to inventory
