@@ -103,7 +103,9 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), {
+    const msg = e instanceof Error ? `${e.message} ${e.stack ?? ''}` : JSON.stringify(e)
+    console.error('restore-sunita-sales failed:', msg)
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
