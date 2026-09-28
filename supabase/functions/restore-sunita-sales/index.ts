@@ -73,21 +73,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
     const invList = [...invoiceNumbers]
-    const { data: matched, error: matchErr } = await supabase
-      .from('invoices')
-      .select('id, invoice_number, employee_id')
-      .in('invoice_number', invList)
-    if (matchErr) throw matchErr
+    const matched: { id: string; invoice_number: string; employee_id: string | null }[] = []
+    for (let i = 0; i < invList.length; i += 100) {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, employee_id')
+        .in('invoice_number', invList.slice(i, i + 100))
+      if (error) throw error
+      matched.push(...(data ?? []))
+    }
 
-    const toUpdate = (matched ?? []).filter((i) => i.employee_id !== SUNITA_ID).map((i) => i.id)
+    const toUpdate = matched.filter((i) => i.employee_id !== SUNITA_ID).map((i) => i.id)
     let updated = 0
-    if (toUpdate.length > 0) {
-      const { error: updErr, count } = await supabase
+    for (let i = 0; i < toUpdate.length; i += 100) {
+      const { error, count } = await supabase
         .from('invoices')
         .update({ employee_id: SUNITA_ID }, { count: 'exact' })
-        .in('id', toUpdate)
-      if (updErr) throw updErr
-      updated = count ?? toUpdate.length
+        .in('id', toUpdate.slice(i, i + 100))
+      if (error) throw error
+      updated += count ?? 0
     }
 
     return new Response(
