@@ -16,6 +16,7 @@ import {
   QrCode,
   Wallet,
   Calculator,
+  Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -49,6 +50,7 @@ export default function AppSidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/administrator", visible: isOwner || can_dashboard },
     { icon: Package, label: "Inventory", path: "/administrator/inventory", visible: isOwner || can_inventory },
+    { icon: Sparkles, label: "AI Product Upload", path: "/administrator/ai-upload", visible: isOwner || can_inventory },
     { icon: FileText, label: "Invoicing", path: "/administrator/invoicing", visible: isOwner || can_invoicing },
     { icon: Boxes, label: "Stock Summary", path: "/administrator/stock", visible: isOwner || can_stock_summary },
     { icon: Users, label: "Customers", path: "/administrator/customers", visible: isOwner || can_customers },
