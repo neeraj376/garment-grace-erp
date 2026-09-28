@@ -71,7 +71,7 @@ export default function Inventory() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     sku: "", name: "", category: "", brand: "", size: "", color: "",
-    selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "",
+    selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "",
     description: "",
   });
   const [newProductPhotos, setNewProductPhotos] = useState<string[]>([]);
@@ -243,7 +243,7 @@ export default function Inventory() {
 
       toast({ title: variants.length > 1 ? `${variants.length} size variants added` : "Product added" });
       setDialogOpen(false);
-      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "5", buying_price: "", quantity: "", description: "" });
+      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "", description: "" });
       setNewProductPhotos([]);
       setMultiSize(false);
       setSizeRows([{ size: "", quantity: "" }]);
@@ -304,7 +304,7 @@ export default function Inventory() {
       const mrpVal = cleanNumber(row.mrp || row.maximum_retail_price);
       const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.purchasprice || row.purchaseprice || row.cost_price || row.cost || row.bp || row.cp);
       const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
-      const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 5;
+      const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 1;
 
       if (!(buyingPrice > 0)) {
         skipped++;
