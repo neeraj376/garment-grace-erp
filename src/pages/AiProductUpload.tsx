@@ -90,7 +90,8 @@ export default function AiProductUpload() {
   };
 
   const applyPricingToAll = () => {
-    setItems(prev => prev.map(it => (it.status === "saved" ? it : { ...it, ...pricing })));
+    const filled = Object.fromEntries(Object.entries(pricing).filter(([, v]) => v !== "")) as Partial<Pricing>;
+    setItems(prev => prev.map(it => (it.status === "saved" ? it : { ...it, ...filled })));
     toast({ title: "Prices & quantity applied to all photos" });
   };
 
