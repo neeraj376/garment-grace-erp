@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Sparkles, Upload, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
-import { optimizeImage } from "@/lib/imageOptimize";
+import { extractVideoFrames } from "@/lib/videoFrames";
 
 type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string };
 type Item = Pricing & {
@@ -38,55 +38,60 @@ export default function AiProductUpload() {
   const pricingValid = (p: Pricing) =>
     Number(p.selling_price) > 0 && Number(p.buying_price) > 0 && Number(p.quantity) > 0;
 
-  const processOne = async (file: File, id: string) => {
-    try {
-      const optimized = await optimizeImage(file, { maxDimension: 1600, quality: 0.85 });
-      const ext = (optimized.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${storeId}/ai-upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error } = await supabase.storage.from("product-media")
-        .upload(path, optimized, { upsert: true, contentType: optimized.type });
-      if (error) throw error;
-      const url = supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl;
-      patch(id, { url, status: "reading" });
+  const [videoStatus, setVideoStatus] = useState<string>("");
+  const [videoError, setVideoError] = useState<string>("");
 
-      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { imageUrl: url } });
+  const onVideo = async (file: File | null) => {
+    if (!file || !storeId) return;
+    if (!Number(pricing.selling_price) || !Number(pricing.buying_price)) {
+      toast({ title: "Fill selling price and buying price first", variant: "destructive" });
+      return;
+    }
+    setVideoError("");
+    try {
+      setVideoStatus("Reading video…");
+      const blobs = await extractVideoFrames(file, { count: 16 });
+      if (!blobs.length) throw new Error("No frames could be read from this video");
+      setVideoStatus(`Uploading ${blobs.length} frames…`);
+      const stamp = Date.now();
+      const urls = await Promise.all(blobs.map(async (b, i) => {
+        const path = `${storeId}/ai-video-${stamp}-${i}.jpg`;
+        const { error } = await supabase.storage.from("product-media").upload(path, b, { upsert: true, contentType: "image/jpeg" });
+        if (error) throw error;
+        return supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl;
+      }));
+      setVideoStatus("AI finding products, sizes and quantities…");
+      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls } });
       if (fnErr || data?.error) {
         let msg = data?.error || fnErr?.message;
         try { const b = await (fnErr as any)?.context?.json?.(); if (b?.error) msg = b.error; } catch { /* */ }
-        throw new Error(msg || "AI could not read this photo");
+        throw new Error(msg || "AI could not read this video");
       }
-      const p = data.product || {};
-      patch(id, {
-        status: "ready",
-        name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
-        size: p.size || "", color: p.color || "", material: p.material || "", description: p.description || "",
+      const products: any[] = data.products || [];
+      if (!products.length) throw new Error("AI didn't find any products in this video");
+      const newItems: Item[] = products.map(p => {
+        const url = urls[Math.min(Math.max(0, Number(p.best_frame) || 0), urls.length - 1)];
+        const aiQty = Math.max(1, Number(p.quantity) || 1);
+        return {
+          id: crypto.randomUUID(), preview: url, url, status: "ready",
+          selling_price: pricing.selling_price, mrp: pricing.mrp, buying_price: pricing.buying_price,
+          quantity: applyAll && Number(pricing.quantity) > 0 ? pricing.quantity : String(aiQty),
+          name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
+          size: p.size || "", color: p.color || "", material: p.material || "", description: p.description || "",
+        };
       });
+      setItems(prev => [...prev, ...newItems]);
+      toast({ title: `AI found ${newItems.length} product${newItems.length === 1 ? "" : "s"}` });
     } catch (e: any) {
-      patch(id, { status: "error", error: e?.message || "Failed" });
-    }
-  };
-
-  const onFiles = async (files: FileList | null) => {
-    if (!files?.length || !storeId) return;
-    if (applyAll && !pricingValid(pricing)) {
-      toast({ title: "Fill selling price, buying price and quantity first", variant: "destructive" });
-      return;
-    }
-    const list = Array.from(files);
-    const newItems: Item[] = list.map(f => ({
-      id: crypto.randomUUID(), preview: URL.createObjectURL(f), status: "uploading",
-      ...(applyAll ? pricing : emptyPricing),
-      name: "", brand: "", category: "", subcategory: "", size: "", color: "", material: "", description: "",
-    }));
-    setItems(prev => [...prev, ...newItems]);
-    // Process 3 at a time to stay within rate limits
-    for (let i = 0; i < list.length; i += 3) {
-      await Promise.all(list.slice(i, i + 3).map((f, j) => processOne(f, newItems[i + j].id)));
+      setVideoError(e?.message || "Failed");
+    } finally {
+      setVideoStatus("");
     }
   };
 
   const applyPricingToAll = () => {
-    setItems(prev => prev.map(it => (it.status === "saved" ? it : { ...it, ...pricing })));
+    const filled = Object.fromEntries(Object.entries(pricing).filter(([, v]) => v !== "")) as Partial<Pricing>;
+    setItems(prev => prev.map(it => (it.status === "saved" ? it : { ...it, ...filled })));
     toast({ title: "Prices & quantity applied to all photos" });
   };
 
@@ -144,16 +149,16 @@ export default function AiProductUpload() {
     <div className="p-4 md:p-6 space-y-4 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Sparkles className="h-6 w-6 text-primary" /> AI Product Upload</h1>
-        <p className="text-sm text-muted-foreground">Upload product photos (with size visible). AI fills in name, brand, category, size and colour.</p>
+        <p className="text-sm text-muted-foreground">Upload a video showing your products (with size tags visible). AI finds each product and fills in name, brand, category, size, colour and quantity.</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Step 1 — Prices & quantity for this batch</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Step 1 — Prices for this batch</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {(["selling_price", "mrp", "buying_price", "quantity"] as const).map(k => (
               <div key={k}>
-                <Label>{{ selling_price: "Selling Price ₹ *", mrp: "MRP ₹", buying_price: "Buying Price ₹ *", quantity: "Quantity *" }[k]}</Label>
+                <Label>{{ selling_price: "Selling Price ₹ *", mrp: "MRP ₹", buying_price: "Buying Price ₹ *", quantity: "Quantity (blank = AI count)" }[k]}</Label>
                 <Input type="number" value={pricing[k]} onChange={e => setPricing({ ...pricing, [k]: e.target.value })} />
               </div>
             ))}
@@ -161,31 +166,34 @@ export default function AiProductUpload() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Switch checked={applyAll} onCheckedChange={setApplyAll} id="applyall" />
-              <Label htmlFor="applyall">Apply to all uploaded photos in this batch</Label>
+              <Label htmlFor="applyall">Apply to all products found in this video</Label>
             </div>
             {items.length > 0 && (
-              <Button variant="outline" size="sm" onClick={applyPricingToAll}>Apply to all photos now</Button>
+              <Button variant="outline" size="sm" onClick={applyPricingToAll}>Apply to all products now</Button>
             )}
           </div>
-          {!applyAll && <p className="text-xs text-muted-foreground">You'll enter prices and quantity for each photo below.</p>}
+          <p className="text-xs text-muted-foreground">Leave quantity blank to use the number of pieces AI counts in the video.</p>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Step 2 — Upload photos</CardTitle></CardHeader>
-        <CardContent>
-          <Button onClick={() => fileRef.current?.click()} disabled={!storeId}>
-            <Upload className="h-4 w-4 mr-2" /> Choose photos
+        <CardHeader><CardTitle className="text-base">Step 2 — Upload video</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <Button onClick={() => fileRef.current?.click()} disabled={!storeId || !!videoStatus}>
+            {videoStatus ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+            {videoStatus || "Choose video"}
           </Button>
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
-            onChange={e => { onFiles(e.target.files); e.target.value = ""; }} />
+          <input ref={fileRef} type="file" accept="video/*" className="hidden"
+            onChange={e => { onVideo(e.target.files?.[0] || null); e.target.value = ""; }} />
+          <p className="text-xs text-muted-foreground">Tip: show each product slowly for 2–3 seconds with its size tag facing the camera.</p>
+          {videoError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" /> {videoError}</p>}
         </CardContent>
       </Card>
 
       {items.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Step 3 — Review ({items.length} photos)</h2>
+            <h2 className="font-semibold">Step 3 — Review ({items.length} products)</h2>
             <Button onClick={saveAll} disabled={saving || busy || readyCount === 0}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Add {readyCount} to inventory

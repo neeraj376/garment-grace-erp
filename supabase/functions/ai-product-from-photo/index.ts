@@ -1,4 +1,4 @@
-// Reads a product photo (with size tag/label visible) and extracts product details via Lovable AI.
+// Reads frames from a product video and extracts every distinct product (with size & quantity) via Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -8,7 +8,7 @@ const corsHeaders = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const SCHEMA = {
+const PRODUCT = {
   type: "object",
   additionalProperties: false,
   properties: {
@@ -20,15 +20,26 @@ const SCHEMA = {
     color: { type: ["string", "null"] },
     material: { type: ["string", "null"] },
     description: { type: ["string", "null"] },
+    quantity: { type: "integer" },
+    best_frame: { type: "integer" },
   },
-  required: ["name", "brand", "category", "subcategory", "size", "color", "material", "description"],
+  required: ["name", "brand", "category", "subcategory", "size", "color", "material", "description", "quantity", "best_frame"],
+};
+const SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: { products: { type: "array", items: PRODUCT } },
+  required: ["products"],
 };
 
-const PROMPT = `You are cataloguing a garment for an Indian clothing store inventory. Look at the photo carefully.
-The size is written on the photo, a tag, or a label (e.g. S, M, L, XL, 32, 34, 40). Read it exactly; null if not visible.
-Return: name (short retail title like "Brand Men's Slim Fit Cotton Shirt"), brand (from logo/tag, null if unknown),
+const PROMPT = (n: number) => `You are cataloguing garments for an Indian clothing store inventory. The ${n} images are frames (numbered 0 to ${n - 1}, in order) taken from ONE video in which products are shown one after another.
+Identify every DISTINCT product (a distinct product = same item, same colour, same size). The same piece seen in several frames counts once.
+If several identical pieces (same design, colour AND size) are shown, count them in quantity. Different sizes of the same design are separate entries.
+Size is written on a tag, label, sticker or paper (e.g. S, M, L, XL, 32, 34, 40). Read it exactly; null if not visible.
+For each product return: name (short retail title like "Brand Men's Slim Fit Cotton Shirt"), brand (from logo/tag, null if unknown),
 category (one of: Shirts, T-Shirts, Polo T-Shirts, Jeans, Trousers, Lowers, Shorts, Jackets, Sweatshirts, Hoodies, Blazers, Kurtas, Dresses, Tops, Sets, Shoes, Accessories),
-subcategory (e.g. Men, Women, Kids), color (main color name), material (if visible on tag), description (1-2 sentences).`;
+subcategory (e.g. Men, Women, Kids), color, material (if visible on tag), description (1-2 sentences), quantity (pieces seen, minimum 1),
+best_frame (index of the frame showing the product most clearly, for its photo).`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -40,8 +51,9 @@ Deno.serve(async (req) => {
     const { data: u } = await userClient.auth.getUser();
     if (!u?.user) return json({ error: "Unauthorized" }, 401);
 
-    const { imageUrl } = await req.json();
-    if (!imageUrl) return json({ error: "imageUrl required" }, 400);
+    const body = await req.json();
+    const frames: string[] = Array.isArray(body.frameUrls) ? body.frameUrls.slice(0, 40) : body.imageUrl ? [body.imageUrl] : [];
+    if (!frames.length) return json({ error: "frameUrls required" }, 400);
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
@@ -55,14 +67,17 @@ Deno.serve(async (req) => {
         model: "openai/gpt-6-astra",
         stream: true,
         store: false,
-        reasoning: { effort: "low", summary: "auto" },
+        reasoning: { effort: "medium", summary: "auto" },
         include: ["reasoning.encrypted_content"],
-        text: { format: { type: "json_schema", name: "product", strict: true, schema: SCHEMA } },
+        text: { format: { type: "json_schema", name: "products", strict: true, schema: SCHEMA } },
         input: [{
           role: "user",
           content: [
-            { type: "input_text", text: PROMPT },
-            { type: "input_image", image_url: imageUrl },
+            { type: "input_text", text: PROMPT(frames.length) },
+            ...frames.flatMap((f, i) => [
+              { type: "input_text", text: `Frame ${i}:` },
+              { type: "input_image", image_url: f },
+            ]),
           ],
         }],
       }),
@@ -77,7 +92,6 @@ Deno.serve(async (req) => {
       return json({ error: msg }, resp.status);
     }
 
-    // Consume SSE stream and collect output text
     const reader = resp.body!.getReader();
     const dec = new TextDecoder();
     let buf = "", text = "", refusal = "";
@@ -101,8 +115,8 @@ Deno.serve(async (req) => {
         } catch (_) { /* partial */ }
       }
     }
-    if (!text) return json({ error: refusal || "AI returned no details for this photo" }, 422);
-    return json({ product: JSON.parse(text) });
+    if (!text) return json({ error: refusal || "AI returned no products for this video" }, 422);
+    return json({ products: JSON.parse(text).products || [] });
   } catch (e) {
     if (req.signal.aborted) return new Response(null, { status: 499 });
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
