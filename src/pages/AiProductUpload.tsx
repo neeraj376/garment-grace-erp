@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Sparkles, Upload, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
-import { optimizeImage } from "@/lib/imageOptimize";
+import { extractVideoFrames } from "@/lib/videoFrames";
 
 type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string };
 type Item = Pricing & {
@@ -38,50 +38,54 @@ export default function AiProductUpload() {
   const pricingValid = (p: Pricing) =>
     Number(p.selling_price) > 0 && Number(p.buying_price) > 0 && Number(p.quantity) > 0;
 
-  const processOne = async (file: File, id: string) => {
-    try {
-      const optimized = await optimizeImage(file, { maxDimension: 1600, quality: 0.85 });
-      const ext = (optimized.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${storeId}/ai-upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error } = await supabase.storage.from("product-media")
-        .upload(path, optimized, { upsert: true, contentType: optimized.type });
-      if (error) throw error;
-      const url = supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl;
-      patch(id, { url, status: "reading" });
+  const [videoStatus, setVideoStatus] = useState<string>("");
+  const [videoError, setVideoError] = useState<string>("");
 
-      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { imageUrl: url } });
+  const onVideo = async (file: File | null) => {
+    if (!file || !storeId) return;
+    if (!Number(pricing.selling_price) || !Number(pricing.buying_price)) {
+      toast({ title: "Fill selling price and buying price first", variant: "destructive" });
+      return;
+    }
+    setVideoError("");
+    try {
+      setVideoStatus("Reading video…");
+      const blobs = await extractVideoFrames(file, { count: 16 });
+      if (!blobs.length) throw new Error("No frames could be read from this video");
+      setVideoStatus(`Uploading ${blobs.length} frames…`);
+      const stamp = Date.now();
+      const urls = await Promise.all(blobs.map(async (b, i) => {
+        const path = `${storeId}/ai-video-${stamp}-${i}.jpg`;
+        const { error } = await supabase.storage.from("product-media").upload(path, b, { upsert: true, contentType: "image/jpeg" });
+        if (error) throw error;
+        return supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl;
+      }));
+      setVideoStatus("AI finding products, sizes and quantities…");
+      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls } });
       if (fnErr || data?.error) {
         let msg = data?.error || fnErr?.message;
         try { const b = await (fnErr as any)?.context?.json?.(); if (b?.error) msg = b.error; } catch { /* */ }
-        throw new Error(msg || "AI could not read this photo");
+        throw new Error(msg || "AI could not read this video");
       }
-      const p = data.product || {};
-      patch(id, {
-        status: "ready",
-        name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
-        size: p.size || "", color: p.color || "", material: p.material || "", description: p.description || "",
+      const products: any[] = data.products || [];
+      if (!products.length) throw new Error("AI didn't find any products in this video");
+      const newItems: Item[] = products.map(p => {
+        const url = urls[Math.min(Math.max(0, Number(p.best_frame) || 0), urls.length - 1)];
+        const aiQty = Math.max(1, Number(p.quantity) || 1);
+        return {
+          id: crypto.randomUUID(), preview: url, url, status: "ready",
+          selling_price: pricing.selling_price, mrp: pricing.mrp, buying_price: pricing.buying_price,
+          quantity: applyAll && Number(pricing.quantity) > 0 ? pricing.quantity : String(aiQty),
+          name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
+          size: p.size || "", color: p.color || "", material: p.material || "", description: p.description || "",
+        };
       });
+      setItems(prev => [...prev, ...newItems]);
+      toast({ title: `AI found ${newItems.length} product${newItems.length === 1 ? "" : "s"}` });
     } catch (e: any) {
-      patch(id, { status: "error", error: e?.message || "Failed" });
-    }
-  };
-
-  const onFiles = async (files: FileList | null) => {
-    if (!files?.length || !storeId) return;
-    if (applyAll && !pricingValid(pricing)) {
-      toast({ title: "Fill selling price, buying price and quantity first", variant: "destructive" });
-      return;
-    }
-    const list = Array.from(files);
-    const newItems: Item[] = list.map(f => ({
-      id: crypto.randomUUID(), preview: URL.createObjectURL(f), status: "uploading",
-      ...(applyAll ? pricing : emptyPricing),
-      name: "", brand: "", category: "", subcategory: "", size: "", color: "", material: "", description: "",
-    }));
-    setItems(prev => [...prev, ...newItems]);
-    // Process 3 at a time to stay within rate limits
-    for (let i = 0; i < list.length; i += 3) {
-      await Promise.all(list.slice(i, i + 3).map((f, j) => processOne(f, newItems[i + j].id)));
+      setVideoError(e?.message || "Failed");
+    } finally {
+      setVideoStatus("");
     }
   };
 
