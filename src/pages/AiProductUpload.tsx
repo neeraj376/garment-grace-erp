@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Sparkles, Upload, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
-import { extractVideoFrames } from "@/lib/videoFrames";
+import { extractTimedVideoFrames } from "@/lib/videoFrames";
+import { extractSpeechChunks } from "@/lib/videoAudio";
 
 type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string };
 type Item = Pricing & {
@@ -52,7 +53,8 @@ export default function AiProductUpload() {
     let temporaryFramePaths: string[] = [];
     try {
       setVideoStatus("Reading video…");
-      const blobs = await extractVideoFrames(file, { count: 16 });
+      const timed = await extractTimedVideoFrames(file, { count: 16 });
+      const blobs = timed.map(f => f.blob);
       if (!blobs.length) throw new Error("No frames could be read from this video");
       setVideoStatus(`Uploading ${blobs.length} frames…`);
       const stamp = Date.now();
@@ -66,8 +68,25 @@ export default function AiProductUpload() {
         uploaded.push({ path, url: supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl });
       }
       const urls = uploaded.map(frame => frame.url);
+      // Listen for spoken quantities; audio is transcribed in small chunks and never stored.
+      const transcript: { start: number; end: number; text: string }[] = [];
+      const chunks = await extractSpeechChunks(file).catch(() => []);
+      for (let i = 0; i < chunks.length; i += 1) {
+        setVideoStatus(`Listening to the video (${i + 1} of ${chunks.length})…`);
+        const fd = new FormData();
+        fd.append("file", new File([chunks[i].blob], "speech.wav", { type: "audio/wav" }));
+        const { data: tr, error: trErr } = await supabase.functions.invoke("transcribe-audio", { body: fd });
+        if (trErr || tr?.error) {
+          let msg = tr?.error || trErr?.message;
+          try { const b = await (trErr as any)?.context?.json?.(); if (b?.error) msg = b.error; } catch { /* */ }
+          const status = (trErr as any)?.context?.status;
+          if (status === 402 || status === 403) throw new Error(msg || "AI is unavailable");
+          break; // keep going with visual counting
+        }
+        if (tr?.text) transcript.push({ start: chunks[i].start, end: chunks[i].end, text: tr.text });
+      }
       setVideoStatus("AI finding products, sizes and quantities…");
-      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls } });
+      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls, frameTimes: timed.map(f => f.time), transcript } });
       if (fnErr || data?.error) {
         let msg = data?.error || fnErr?.message;
         try { const b = await (fnErr as any)?.context?.json?.(); if (b?.error) msg = b.error; } catch { /* */ }
