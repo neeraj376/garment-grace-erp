@@ -49,6 +49,7 @@ export default function AiProductUpload() {
       return;
     }
     setVideoError("");
+    let temporaryFramePaths: string[] = [];
     try {
       setVideoStatus("Reading video…");
       const blobs = await extractVideoFrames(file, { count: 16 });
@@ -61,6 +62,7 @@ export default function AiProductUpload() {
         if (error) throw error;
         return { path, url: supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl };
       }));
+      temporaryFramePaths = uploaded.map(frame => frame.path);
       const urls = uploaded.map(frame => frame.url);
       setVideoStatus("AI finding products, sizes and quantities…");
       const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls } });
@@ -121,6 +123,16 @@ export default function AiProductUpload() {
     } catch (e: any) {
       setVideoError(e?.message || "Failed");
     } finally {
+      if (temporaryFramePaths.length > 0) {
+        const { error: cleanupError } = await supabase.storage.from("product-media").remove(temporaryFramePaths);
+        if (cleanupError) {
+          toast({
+            title: "Temporary video frames could not be deleted",
+            description: cleanupError.message,
+            variant: "destructive",
+          });
+        }
+      }
       setVideoStatus("");
     }
   };
