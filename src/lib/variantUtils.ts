@@ -61,12 +61,19 @@ const stripVariantTokens = (
   return n.replace(/\s+/g, " ").trim();
 };
 
+// Brands whose whole range is shown as one listing on the storefront.
+export const BRAND_CLUBBED = new Set(["old school"]);
+
 export const variantGroupKey = (p: {
   name: string;
   brand: string | null;
   size?: string | null;
   color?: string | null;
-}) => `${normalize(p.brand)}|${stripVariantTokens(p.name, p.size, p.color)}`;
+}) => {
+  const b = normalize(p.brand);
+  if (BRAND_CLUBBED.has(b)) return `${b}|__brand__`;
+  return `${b}|${stripVariantTokens(p.name, p.size, p.color)}`;
+};
 
 const groupKey = variantGroupKey;
 
