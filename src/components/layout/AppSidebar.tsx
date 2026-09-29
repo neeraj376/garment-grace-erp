@@ -42,7 +42,7 @@ export default function AppSidebar() {
   const {
     role, can_invoicing, can_inventory, can_photos, can_customers,
     can_dashboard, can_reports, can_loyalty, can_employees, can_stock_summary, can_settings,
-    can_print_stickers, can_shipping_calculator,
+    can_print_stickers, can_shipping_calculator, can_ai_upload,
   } = usePermissions();
 
   const isOwner = role === "owner";
@@ -50,7 +50,7 @@ export default function AppSidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/administrator", visible: isOwner || can_dashboard },
     { icon: Package, label: "Inventory", path: "/administrator/inventory", visible: isOwner || can_inventory },
-    { icon: Sparkles, label: "AI Product Upload", path: "/administrator/ai-upload", visible: isOwner || can_inventory },
+    { icon: Sparkles, label: "AI Product Upload", path: "/administrator/ai-upload", visible: isOwner || can_ai_upload },
     { icon: FileText, label: "Invoicing", path: "/administrator/invoicing", visible: isOwner || can_invoicing },
     { icon: Boxes, label: "Stock Summary", path: "/administrator/stock", visible: isOwner || can_stock_summary },
     { icon: Users, label: "Customers", path: "/administrator/customers", visible: isOwner || can_customers },

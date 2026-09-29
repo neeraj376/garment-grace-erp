@@ -182,7 +182,7 @@ function AppRoutes() {
         <Route path="employees" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_employees)} fallbackPath={defaultAdminPath}><Employees /></ProtectedAdminRoute>} />
         <Route path="settings" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_settings)} fallbackPath={defaultAdminPath}><SettingsPage /></ProtectedAdminRoute>} />
         <Route path="photos" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_photos)} fallbackPath={defaultAdminPath}><PhotoManager /></ProtectedAdminRoute>} />
-        <Route path="ai-upload" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_inventory)} fallbackPath={defaultAdminPath}><AiProductUpload /></ProtectedAdminRoute>} />
+        <Route path="ai-upload" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_ai_upload)} fallbackPath={defaultAdminPath}><AiProductUpload /></ProtectedAdminRoute>} />
         <Route path="marketing" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_customers)} fallbackPath={defaultAdminPath}><Marketing /></ProtectedAdminRoute>} />
         <Route path="whatsapp-rotation" element={<ProtectedAdminRoute allowed={permissions.role === "owner"} fallbackPath={defaultAdminPath}><WhatsAppRotation /></ProtectedAdminRoute>} />
         <Route path="stickers" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_print_stickers)} fallbackPath={defaultAdminPath}><StickerPrinter /></ProtectedAdminRoute>} />
