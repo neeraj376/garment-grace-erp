@@ -50,13 +50,30 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+  const auth = req.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: jsonHeaders });
+  const { data: userData } = await supabase.auth.getUser(auth.slice(7));
+  if (!userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: jsonHeaders });
+  const { data: profile } = await supabase.from("profiles").select("store_id, role").eq("user_id", userData.user.id).maybeSingle();
+  if (!profile?.store_id) return new Response(JSON.stringify({ error: "Store access denied" }), { status: 403, headers: jsonHeaders });
+  if (profile.role !== "owner") {
+    // Same rule as the admin app: no permissions row = full admin; otherwise needs photo access
+    const { data: perms } = await supabase.from("user_permissions").select("can_photos").eq("user_id", userData.user.id).eq("store_id", profile.store_id).maybeSingle();
+    if (perms && !perms.can_photos) {
+      return new Response(JSON.stringify({ error: "You don't have photo access" }), { status: 403, headers: jsonHeaders });
+    }
+  }
+  const ownStoreId: string = profile.store_id;
+
   const body = await req.json().catch(() => ({}));
-  const productIds: string[] | undefined = body.product_ids;
+  body.store_id = ownStoreId;
+  const productIds: string[] | undefined = Array.isArray(body.product_ids) ? body.product_ids.slice(0, 100) : undefined;
   const dryRun: boolean = !!body.dry_run;
 
   let products: any[] = [];
   if (productIds && productIds.length > 0) {
-    const { data } = await supabase.from("products").select("id, store_id, photo_url, sku").in("id", productIds);
+    const { data } = await supabase.from("products").select("id, store_id, photo_url, sku").in("id", productIds).eq("store_id", ownStoreId);
     products = data || [];
   } else {
     // Default: all active products with a photo and stock > 0
