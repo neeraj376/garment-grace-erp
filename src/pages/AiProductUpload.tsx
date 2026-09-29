@@ -264,7 +264,7 @@ export default function AiProductUpload() {
           </Button>
           <input ref={fileRef} type="file" accept="video/*" className="hidden"
             onChange={e => { onVideo(e.target.files?.[0] || null); e.target.value = ""; }} />
-          <p className="text-xs text-muted-foreground">Tip: show each product slowly for 2–3 seconds with its size tag facing the camera.</p>
+          <p className="text-xs text-muted-foreground">Tip: show each product slowly for 2–3 seconds with its size tag facing the camera, and say the quantity out loud (e.g. "blue shirt, size L, 5 pieces").</p>
           {videoError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" /> {videoError}</p>}
         </CardContent>
       </Card>
