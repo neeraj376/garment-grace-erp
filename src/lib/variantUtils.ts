@@ -61,8 +61,13 @@ const stripVariantTokens = (
   return n.replace(/\s+/g, " ").trim();
 };
 
-// Brands whose whole range is shown as one listing on the storefront.
+// Brands whose range is clubbed by garment type (sweatshirts vs polos/tees).
 export const BRAND_CLUBBED = new Set(["old school"]);
+
+export const brandClubType = (name: string | null | undefined) => {
+  const n = normalize(name);
+  return /\b(sweatshirt|hoodie|sweater)\b/.test(n) ? "sweatshirt" : "tshirt";
+};
 
 export const variantGroupKey = (p: {
   name: string;
@@ -71,7 +76,7 @@ export const variantGroupKey = (p: {
   color?: string | null;
 }) => {
   const b = normalize(p.brand);
-  if (BRAND_CLUBBED.has(b)) return `${b}|__brand__`;
+  if (BRAND_CLUBBED.has(b)) return `${b}|__${brandClubType(p.name)}__`;
   return `${b}|${stripVariantTokens(p.name, p.size, p.color)}`;
 };
 

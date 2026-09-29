@@ -164,7 +164,8 @@ const CLUBBED_KEYS = new Set([
   variantGroupKey({ name: "Armani Polo T-Shirts", brand: "ARMAANI EXCHANGE" }),
   variantGroupKey({ name: "Essentials Full-sleeve Shirts", brand: "Essentials" }),
   variantGroupKey({ name: "RC Full Sleeve T-Shirts", brand: "Roots CND" }),
-  variantGroupKey({ name: "Old School", brand: "Old School" }),
+  variantGroupKey({ name: "Old School Sweatshirt", brand: "Old School" }),
+  variantGroupKey({ name: "Old School Polo T-Shirt", brand: "Old School" }),
 ]);
 const FEED_STEP = 40;
 const MISSING_CLEAN_PHOTO_IDS = new Set([
