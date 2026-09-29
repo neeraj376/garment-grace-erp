@@ -1498,6 +1498,7 @@ export type Database = {
       }
       user_permissions: {
         Row: {
+          can_ai_upload: boolean
           can_customers: boolean
           can_dashboard: boolean
           can_edit_invoices: boolean
@@ -1520,6 +1521,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          can_ai_upload?: boolean
           can_customers?: boolean
           can_dashboard?: boolean
           can_edit_invoices?: boolean
@@ -1542,6 +1544,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          can_ai_upload?: boolean
           can_customers?: boolean
           can_dashboard?: boolean
           can_edit_invoices?: boolean

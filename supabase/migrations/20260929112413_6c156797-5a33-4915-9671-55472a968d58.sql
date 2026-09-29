@@ -1,0 +1,1 @@
+ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS can_ai_upload boolean NOT NULL DEFAULT false;
