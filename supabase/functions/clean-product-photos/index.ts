@@ -83,72 +83,51 @@ Deno.serve(async (req) => {
     });
   }
 
-  const results: any[] = [];
-  for (const p of products) {
+  const cleanOne = async (p: any) => {
     try {
       const sourceUrl = firstPhotoUrl(p.photo_url);
-      const inputDataUrl = await fetchAsDataUrl(sourceUrl);
+      const src = await fetch(sourceUrl);
+      if (!src.ok) return { id: p.id, sku: p.sku, ok: false, error: `fetch ${src.status}` };
+      const blob = await src.blob();
 
-      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const form = new FormData();
+      form.append("model", "openai/gpt-image-2.5-sunburst");
+      form.append("prompt", PROMPT);
+      form.append("image", new File([blob], "source.jpg", { type: blob.type || "image/jpeg" }));
+      form.append("size", "1024x1536");
+      form.append("quality", "medium");
+      form.append("output_format", "jpeg");
+
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/images/edits", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: PROMPT },
-                { type: "image_url", image_url: { url: inputDataUrl } },
-              ],
-            },
-          ],
-          modalities: ["image", "text"],
-        }),
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+        body: form,
       });
-
       if (!aiResp.ok) {
         const t = await aiResp.text();
-        results.push({ id: p.id, sku: p.sku, ok: false, error: `AI ${aiResp.status}: ${t.slice(0, 200)}` });
-        continue;
+        return { id: p.id, sku: p.sku, ok: false, status: aiResp.status, error: `AI ${aiResp.status}: ${t.slice(0, 200)}` };
       }
-
       const j = await aiResp.json();
-      const outUrl = j.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      if (!outUrl) {
-        results.push({ id: p.id, sku: p.sku, ok: false, error: "no image in response" });
-        continue;
-      }
-
-      const { bytes, contentType } = dataUrlToBytes(outUrl);
-      const ext = contentType.includes("png") ? "png" : "jpg";
-      const path = `${p.store_id}/cleaned/${p.id}-${Date.now()}.${ext}`;
-
-      const { error: upErr } = await supabase.storage.from("product-media").upload(path, bytes, {
-        contentType,
-        upsert: true,
-      });
-      if (upErr) {
-        results.push({ id: p.id, sku: p.sku, ok: false, error: `upload: ${upErr.message}` });
-        continue;
-      }
-
-      const { data: pub } = supabase.storage.from("product-media").getPublicUrl(path);
-      const newUrl = pub.publicUrl;
-
+      const encoded = j.data?.[0]?.b64_json;
+      if (!encoded) return { id: p.id, sku: p.sku, ok: false, error: "no image in response" };
+      const { bytes, contentType } = dataUrlToBytes(`data:image/jpeg;base64,${encoded}`);
+      const path = `${p.store_id}/cleaned/${p.id}-${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage.from("product-media").upload(path, bytes, { contentType, upsert: true });
+      if (upErr) return { id: p.id, sku: p.sku, ok: false, error: `upload: ${upErr.message}` };
+      const newUrl = supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl;
       const { error: updErr } = await supabase.from("products").update({ photo_url: newUrl }).eq("id", p.id);
-      if (updErr) {
-        results.push({ id: p.id, sku: p.sku, ok: false, error: `update: ${updErr.message}` });
-        continue;
-      }
-
-      results.push({ id: p.id, sku: p.sku, ok: true, url: newUrl });
+      if (updErr) return { id: p.id, sku: p.sku, ok: false, error: `update: ${updErr.message}` };
+      return { id: p.id, sku: p.sku, ok: true, url: newUrl };
     } catch (e) {
-      results.push({ id: p.id, sku: p.sku, ok: false, error: (e as Error).message });
+      return { id: p.id, sku: p.sku, ok: false, error: (e as Error).message };
     }
+  };
+
+  const results: any[] = [];
+  for (let i = 0; i < products.length; i += 3) {
+    const chunk = await Promise.all(products.slice(i, i + 3).map(cleanOne));
+    results.push(...chunk);
+    if (chunk.some((r) => r.status === 402 || r.status === 403)) break;
   }
 
   const okCount = results.filter((r) => r.ok).length;
