@@ -56,13 +56,15 @@ export default function AiProductUpload() {
       if (!blobs.length) throw new Error("No frames could be read from this video");
       setVideoStatus(`Uploading ${blobs.length} frames…`);
       const stamp = Date.now();
-      const uploaded = await Promise.all(blobs.map(async (b, i) => {
+      const uploaded: { path: string; url: string }[] = [];
+      for (let i = 0; i < blobs.length; i += 1) {
+        const b = blobs[i];
         const path = `${storeId}/ai-video-${stamp}-${i}.jpg`;
         const { error } = await supabase.storage.from("product-media").upload(path, b, { upsert: true, contentType: "image/jpeg" });
         if (error) throw error;
-        return { path, url: supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl };
-      }));
-      temporaryFramePaths = uploaded.map(frame => frame.path);
+        temporaryFramePaths.push(path);
+        uploaded.push({ path, url: supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl });
+      }
       const urls = uploaded.map(frame => frame.url);
       setVideoStatus("AI finding products, sizes and quantities…");
       const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls } });
@@ -111,7 +113,17 @@ export default function AiProductUpload() {
             const details = await (cleanError as any)?.context?.json?.();
             if (details?.error) message = details.error;
           } catch { /* response body unavailable */ }
-          patch(item.id, { status: "ready", photoWarning: `${message} Original video frame kept.` });
+          const { error: fallbackError } = await supabase.storage.from("product-media").upload(
+            outputPath,
+            blobs[frameIndex],
+            { contentType: "image/jpeg", upsert: true },
+          );
+          if (fallbackError) {
+            patch(item.id, { status: "error", error: fallbackError.message, url: undefined, photoWarning: `${message} Temporary frames will still be deleted.` });
+          } else {
+            const fallbackUrl = supabase.storage.from("product-media").getPublicUrl(outputPath).data.publicUrl;
+            patch(item.id, { status: "ready", url: fallbackUrl, photoWarning: `${message} Original frame saved as this product's final photo.` });
+          }
         } else {
           patch(item.id, { status: "ready", url: cleaned.url, photoWarning: undefined });
         }
