@@ -9,3 +9,4 @@
 - [x] Clean and publish all Ann Taylor trouser product photos for ecommerce.
 - [x] Club Charles Tyrwhitt shirts into one product with size and colour choices.
 - [x] Turn each detected product frame from an uploaded video into a clean e-commerce inventory photo, with original-frame fallback.
+- [x] Delete temporary video frames after processing while retaining only final product photos.
