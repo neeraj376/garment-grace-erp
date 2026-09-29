@@ -15,8 +15,9 @@ type Item = Pricing & {
   id: string;
   preview: string;
   url?: string;
-  status: "uploading" | "reading" | "ready" | "error" | "saved";
+  status: "uploading" | "reading" | "cleaning" | "ready" | "error" | "saved";
   error?: string;
+  photoWarning?: string;
   name: string; brand: string; category: string; subcategory: string;
   size: string; color: string; material: string; description: string;
 };
@@ -54,12 +55,13 @@ export default function AiProductUpload() {
       if (!blobs.length) throw new Error("No frames could be read from this video");
       setVideoStatus(`Uploading ${blobs.length} frames…`);
       const stamp = Date.now();
-      const urls = await Promise.all(blobs.map(async (b, i) => {
+      const uploaded = await Promise.all(blobs.map(async (b, i) => {
         const path = `${storeId}/ai-video-${stamp}-${i}.jpg`;
         const { error } = await supabase.storage.from("product-media").upload(path, b, { upsert: true, contentType: "image/jpeg" });
         if (error) throw error;
-        return supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl;
+        return { path, url: supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl };
       }));
+      const urls = uploaded.map(frame => frame.url);
       setVideoStatus("AI finding products, sizes and quantities…");
       const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls } });
       if (fnErr || data?.error) {
@@ -70,10 +72,11 @@ export default function AiProductUpload() {
       const products: any[] = data.products || [];
       if (!products.length) throw new Error("AI didn't find any products in this video");
       const newItems: Item[] = products.map(p => {
-        const url = urls[Math.min(Math.max(0, Number(p.best_frame) || 0), urls.length - 1)];
+        const frameIndex = Math.min(Math.max(0, Number(p.best_frame) || 0), urls.length - 1);
+        const url = urls[frameIndex];
         const aiQty = Math.max(1, Number(p.quantity) || 1);
         return {
-          id: crypto.randomUUID(), preview: url, url, status: "ready",
+          id: crypto.randomUUID(), preview: url, url, status: "cleaning",
           selling_price: pricing.selling_price, mrp: pricing.mrp, buying_price: pricing.buying_price,
           quantity: applyAll && Number(pricing.quantity) > 0 ? pricing.quantity : String(aiQty),
           name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
@@ -81,7 +84,40 @@ export default function AiProductUpload() {
         };
       });
       setItems(prev => [...prev, ...newItems]);
-      toast({ title: `AI found ${newItems.length} product${newItems.length === 1 ? "" : "s"}` });
+      setVideoStatus(`Cleaning ${newItems.length} product photo${newItems.length === 1 ? "" : "s"}…`);
+
+      let fallbackCount = 0;
+      for (let index = 0; index < newItems.length; index += 1) {
+        const item = newItems[index];
+        const product = products[index];
+        const frameIndex = Math.min(Math.max(0, Number(product.best_frame) || 0), uploaded.length - 1);
+        setVideoStatus(`Cleaning product photo ${index + 1} of ${newItems.length}…`);
+        const outputPath = `${storeId}/ai-products/${stamp}-${index}-${item.id}.jpg`;
+        const { data: cleaned, error: cleanError } = await supabase.functions.invoke("make-thumb-from-frame", {
+          body: {
+            framePath: uploaded[frameIndex].path,
+            outputPath,
+            productName: item.name,
+            storeId,
+          },
+        });
+
+        if (cleanError || cleaned?.error || !cleaned?.url) {
+          fallbackCount += 1;
+          let message = cleaned?.error || cleanError?.message || "Photo cleanup failed";
+          try {
+            const details = await (cleanError as any)?.context?.json?.();
+            if (details?.error) message = details.error;
+          } catch { /* response body unavailable */ }
+          patch(item.id, { status: "ready", photoWarning: `${message} Original video frame kept.` });
+        } else {
+          patch(item.id, { status: "ready", url: cleaned.url, photoWarning: undefined });
+        }
+      }
+      toast({
+        title: `AI found ${newItems.length} product${newItems.length === 1 ? "" : "s"}`,
+        description: fallbackCount > 0 ? `${fallbackCount} original video frame${fallbackCount === 1 ? " was" : "s were"} kept because cleanup was unavailable.` : "Product photos are cleaned and ready for review.",
+      });
     } catch (e: any) {
       setVideoError(e?.message || "Failed");
     } finally {
@@ -135,7 +171,7 @@ export default function AiProductUpload() {
   };
 
   const readyCount = items.filter(i => i.status === "ready").length;
-  const busy = items.some(i => i.status === "uploading" || i.status === "reading");
+  const busy = items.some(i => i.status === "uploading" || i.status === "reading" || i.status === "cleaning");
 
   const field = (it: Item, key: keyof Item, label: string, type = "text") => (
     <div>
@@ -149,7 +185,7 @@ export default function AiProductUpload() {
     <div className="p-4 md:p-6 space-y-4 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Sparkles className="h-6 w-6 text-primary" /> AI Product Upload</h1>
-        <p className="text-sm text-muted-foreground">Upload a video showing your products (with size tags visible). AI finds each product and fills in name, brand, category, size, colour and quantity.</p>
+        <p className="text-sm text-muted-foreground">Upload a video showing your products (with size tags visible). AI fills the details and turns the clearest frame into a clean e-commerce photo.</p>
       </div>
 
       <Card>
@@ -203,7 +239,7 @@ export default function AiProductUpload() {
             <Card key={it.id}>
               <CardContent className="p-3 flex flex-col md:flex-row gap-3">
                 <div className="relative w-full md:w-32 shrink-0">
-                  <img src={it.url || it.preview} alt="" className="w-full md:w-32 h-40 object-cover rounded border" />
+                   <img src={it.url || it.preview} alt={it.name || "Product preview"} className="w-full md:w-32 aspect-[3/4] object-contain bg-muted rounded border" />
                   {it.status !== "saved" && (
                     <button onClick={() => setItems(p => p.filter(x => x.id !== it.id))}
                       className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
@@ -213,11 +249,12 @@ export default function AiProductUpload() {
                 </div>
                 <div className="flex-1 space-y-2">
                   <div className="text-xs flex items-center gap-1">
-                    {(it.status === "uploading" || it.status === "reading") && <><Loader2 className="h-3 w-3 animate-spin" /> {it.status === "uploading" ? "Uploading…" : "AI reading photo…"}</>}
+                     {(it.status === "uploading" || it.status === "reading" || it.status === "cleaning") && <><Loader2 className="h-3 w-3 animate-spin" /> {it.status === "uploading" ? "Uploading…" : it.status === "cleaning" ? "Creating clean e-commerce photo…" : "AI reading product…"}</>}
                     {it.status === "ready" && <span className="text-primary">Ready — check details</span>}
                     {it.status === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Added to inventory</span>}
                     {it.status === "error" && <span className="flex items-center gap-1 text-destructive"><AlertCircle className="h-3 w-3" /> {it.error}</span>}
                   </div>
+                   {it.photoWarning && <p className="text-xs text-muted-foreground flex items-start gap-1"><AlertCircle className="h-3 w-3 mt-0.5 shrink-0" /> {it.photoWarning}</p>}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <div className="col-span-2">{field(it, "name", "Name *")}</div>
                     {field(it, "brand", "Brand")}
