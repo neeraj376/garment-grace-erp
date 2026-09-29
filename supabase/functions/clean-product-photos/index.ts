@@ -56,8 +56,13 @@ Deno.serve(async (req) => {
   const { data: userData } = await supabase.auth.getUser(auth.slice(7));
   if (!userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: jsonHeaders });
   const { data: profile } = await supabase.from("profiles").select("store_id, role").eq("user_id", userData.user.id).maybeSingle();
-  if (!profile?.store_id || profile.role !== "owner") {
-    return new Response(JSON.stringify({ error: "Only the store owner can clean photos" }), { status: 403, headers: jsonHeaders });
+  if (!profile?.store_id) return new Response(JSON.stringify({ error: "Store access denied" }), { status: 403, headers: jsonHeaders });
+  if (profile.role !== "owner") {
+    // Same rule as the admin app: no permissions row = full admin; otherwise needs photo access
+    const { data: perms } = await supabase.from("user_permissions").select("can_photos").eq("user_id", userData.user.id).eq("store_id", profile.store_id).maybeSingle();
+    if (perms && !perms.can_photos) {
+      return new Response(JSON.stringify({ error: "You don't have photo access" }), { status: 403, headers: jsonHeaders });
+    }
   }
   const ownStoreId: string = profile.store_id;
 
