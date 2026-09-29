@@ -61,12 +61,16 @@ const stripVariantTokens = (
   return n.replace(/\s+/g, " ").trim();
 };
 
-// Brands whose range is clubbed by garment type (sweatshirts vs polos/tees).
-export const BRAND_CLUBBED = new Set(["old school"]);
+// Brands whose range is clubbed by garment type (sweatshirts vs polos/tees,
+// jeans vs cargo).
+export const BRAND_CLUBBED = new Set(["old school", "jules"]);
 
 export const brandClubType = (name: string | null | undefined) => {
   const n = normalize(name);
-  return /\b(sweatshirt|hoodie|sweater)\b/.test(n) ? "sweatshirt" : "tshirt";
+  if (/\b(sweatshirt|hoodie|sweater)\b/.test(n)) return "sweatshirt";
+  if (/\bcargo\b/.test(n)) return "cargo";
+  if (/\b(jeans|denim)\b/.test(n)) return "jeans";
+  return "tshirt";
 };
 
 export const variantGroupKey = (p: {
