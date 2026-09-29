@@ -50,6 +50,8 @@ export default function AiProductUpload() {
       return;
     }
     setVideoError("");
+    // A new video starts a fresh batch — drop everything shown so far.
+    setItems([]);
     let temporaryFramePaths: string[] = [];
     try {
       setVideoStatus("Reading video…");
@@ -106,7 +108,7 @@ export default function AiProductUpload() {
           size: p.size || "", color: p.color || "", material: p.material || "", description: p.description || "",
         };
       });
-      setItems(prev => [...prev, ...newItems]);
+      setItems(newItems);
       setVideoStatus(`Cleaning ${newItems.length} product photo${newItems.length === 1 ? "" : "s"}…`);
 
       let fallbackCount = 0;
