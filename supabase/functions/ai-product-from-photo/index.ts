@@ -39,7 +39,14 @@ Size is written on a tag, label, sticker or paper (e.g. S, M, L, XL, 32, 34, 40)
 For each product return: name (short retail title like "Brand Men's Slim Fit Cotton Shirt"), brand (from logo/tag, null if unknown),
 category (one of: Shirts, T-Shirts, Polo T-Shirts, Jeans, Trousers, Lowers, Shorts, Jackets, Sweatshirts, Hoodies, Blazers, Kurtas, Dresses, Tops, Sets, Shoes, Accessories),
 subcategory (e.g. Men, Women, Kids), color, material (if visible on tag), description (1-2 sentences), quantity (pieces seen, minimum 1),
-best_frame (index of the frame showing the product most clearly, for its photo).`;
+best_frame (index of the frame showing the product most clearly, sharp, unobstructed and fully visible, for its photo).`;
+
+const SPEECH = (segs: { start: number; end: number; text: string }[]) => `
+The person in the video also speaks. Here is what they said, with the time (in seconds) it was said:
+${segs.map(s => `[${s.start.toFixed(0)}s-${s.end.toFixed(0)}s] ${s.text}`).join("\n")}
+Each frame label shows its time. When the speaker says a quantity (in English or Hindi, e.g. "5 pieces", "is ke 10 hai", "paanch", "dozen") for a product,
+match it to the product shown at or just before that time (or the product they name/describe) and USE THE SPOKEN QUANTITY instead of your visual count.
+Also use spoken sizes, brands or colours if the tag isn't readable. Otherwise count visually.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -54,6 +61,11 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const frames: string[] = Array.isArray(body.frameUrls) ? body.frameUrls.slice(0, 40) : body.imageUrl ? [body.imageUrl] : [];
     if (!frames.length) return json({ error: "frameUrls required" }, 400);
+    const times: number[] = Array.isArray(body.frameTimes) ? body.frameTimes.map(Number) : [];
+    const segs = (Array.isArray(body.transcript) ? body.transcript : [])
+      .filter((t: any) => t && typeof t.text === "string" && t.text.trim())
+      .slice(0, 60)
+      .map((t: any) => ({ start: Number(t.start) || 0, end: Number(t.end) || 0, text: String(t.text).slice(0, 2000) }));
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
@@ -73,9 +85,9 @@ Deno.serve(async (req) => {
         input: [{
           role: "user",
           content: [
-            { type: "input_text", text: PROMPT(frames.length) },
+            { type: "input_text", text: PROMPT(frames.length) + (segs.length ? SPEECH(segs) : "") },
             ...frames.flatMap((f, i) => [
-              { type: "input_text", text: `Frame ${i}:` },
+              { type: "input_text", text: Number.isFinite(times[i]) ? `Frame ${i} (at ${times[i].toFixed(1)}s):` : `Frame ${i}:` },
               { type: "input_image", image_url: f },
             ]),
           ],

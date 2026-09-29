@@ -92,3 +92,6 @@ verify_jwt = true
 
 [functions.ai-product-from-photo]
 verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
