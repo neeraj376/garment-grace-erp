@@ -106,7 +106,7 @@ export default function AiProductUpload() {
           size: applyAll && pricing.size.trim() ? pricing.size.trim() : (p.size || ""),
           quantity: applyAll && Number(pricing.quantity) > 0 ? pricing.quantity : String(aiQty),
           name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
-          size: p.size || "", color: p.color || "", material: p.material || "", description: p.description || "",
+          color: p.color || "", material: p.material || "", description: p.description || "",
         };
       });
       setItems(newItems);
