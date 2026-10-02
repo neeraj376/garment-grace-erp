@@ -49,10 +49,11 @@ const FALLBACK_MAP: Record<string, string> = {
   handkerchiefs: "Handkerchief", hanky: "Handkerchief",
   muffler: "Muffler", mufflers: "Muffler", wallet: "Wallet", wallets: "Wallet",
   bag: "Bag", bags: "Bag",
-  shoe: "Shoe", shoes: "Shoe", sandal: "Sandal", sandals: "Sandal",
-  slipper: "Slipper", slippers: "Slipper", sneaker: "Sneaker", sneakers: "Sneaker",
-  boot: "Boot", boots: "Boot", loafer: "Loafer", loafers: "Loafer",
-  heel: "Heel", heels: "Heel", flat: "Flat", flats: "Flat",
+  shoe: "Footwear", shoes: "Footwear", footwear: "Footwear",
+  sandal: "Footwear", sandals: "Footwear",
+  slipper: "Footwear", slippers: "Footwear", sneaker: "Footwear", sneakers: "Footwear",
+  boot: "Footwear", boots: "Footwear", loafer: "Footwear", loafers: "Footwear",
+  heel: "Footwear", heels: "Footwear", flat: "Footwear", flats: "Footwear",
 };
 
 function titleCase(str: string): string {
