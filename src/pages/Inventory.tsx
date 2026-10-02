@@ -70,7 +70,7 @@ export default function Inventory() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    sku: "", name: "", category: "", brand: "", size: "", color: "",
+    sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "",
     description: "",
   });
@@ -526,6 +526,7 @@ export default function Inventory() {
   };
 
   const categories = useMemo(() => [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[], [products]);
+  const subcategories = useMemo(() => [...new Set(products.map(p => p.subcategory).filter(Boolean))].sort() as string[], [products]);
   const brands = useMemo(() => [...new Set(products.map(p => p.brand).filter(Boolean))].sort() as string[], [products]);
   const sizes = useMemo(() => [...new Set(products.map(p => p.size).filter(Boolean))].sort() as string[], [products]);
   const colors = useMemo(() => [...new Set(products.map(p => p.color).filter(Boolean))].sort() as string[], [products]);
