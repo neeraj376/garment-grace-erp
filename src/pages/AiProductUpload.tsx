@@ -11,7 +11,7 @@ import { Loader2, Sparkles, Upload, Trash2, CheckCircle2, AlertCircle } from "lu
 import { extractTimedVideoFrames } from "@/lib/videoFrames";
 import { extractSpeechChunks } from "@/lib/videoAudio";
 
-type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string };
+type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string; size: string };
 type Item = Pricing & {
   id: string;
   preview: string;
@@ -23,7 +23,7 @@ type Item = Pricing & {
   size: string; color: string; material: string; description: string;
 };
 
-const emptyPricing: Pricing = { selling_price: "", mrp: "", buying_price: "", quantity: "1" };
+const emptyPricing: Pricing = { selling_price: "", mrp: "", buying_price: "", quantity: "1", size: "" };
 
 export default function AiProductUpload() {
   const { storeId } = useStore();
@@ -103,6 +103,7 @@ export default function AiProductUpload() {
         return {
           id: crypto.randomUUID(), preview: url, url, status: "cleaning",
           selling_price: pricing.selling_price, mrp: pricing.mrp, buying_price: pricing.buying_price,
+          size: applyAll && pricing.size.trim() ? pricing.size.trim() : (p.size || ""),
           quantity: applyAll && Number(pricing.quantity) > 0 ? pricing.quantity : String(aiQty),
           name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
           size: p.size || "", color: p.color || "", material: p.material || "", description: p.description || "",
@@ -173,7 +174,7 @@ export default function AiProductUpload() {
   const applyPricingToAll = () => {
     const filled = Object.fromEntries(Object.entries(pricing).filter(([, v]) => v !== "")) as Partial<Pricing>;
     setItems(prev => prev.map(it => (it.status === "saved" ? it : { ...it, ...filled })));
-    toast({ title: "Prices & quantity applied to all photos" });
+    toast({ title: "Prices, size & quantity applied to all photos" });
   };
 
   const saveAll = async () => {
@@ -236,11 +237,11 @@ export default function AiProductUpload() {
       <Card>
         <CardHeader><CardTitle className="text-base">Step 1 — Prices for this batch</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {(["selling_price", "mrp", "buying_price", "quantity"] as const).map(k => (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {(["selling_price", "mrp", "buying_price", "quantity", "size"] as const).map(k => (
               <div key={k}>
-                <Label>{{ selling_price: "Selling Price ₹ *", mrp: "MRP ₹", buying_price: "Buying Price ₹ *", quantity: "Quantity (blank = AI count)" }[k]}</Label>
-                <Input type="number" value={pricing[k]} onChange={e => setPricing({ ...pricing, [k]: e.target.value })} />
+                <Label>{{ selling_price: "Selling Price ₹ *", mrp: "MRP ₹", buying_price: "Buying Price ₹ *", quantity: "Quantity (blank = AI count)", size: "Size (blank = AI reads tags)" }[k]}</Label>
+                <Input type={k === "size" ? "text" : "number"} value={pricing[k]} onChange={e => setPricing({ ...pricing, [k]: e.target.value })} />
               </div>
             ))}
           </div>
@@ -253,7 +254,7 @@ export default function AiProductUpload() {
               <Button variant="outline" size="sm" onClick={applyPricingToAll}>Apply to all products now</Button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">Leave quantity blank to use the number of pieces AI counts in the video.</p>
+          <p className="text-xs text-muted-foreground">Leave quantity blank to use the number of pieces AI counts in the video. Leave size blank to use the size AI reads from each tag.</p>
         </CardContent>
       </Card>
 
