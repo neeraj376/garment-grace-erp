@@ -19,7 +19,7 @@ import BrandWiseJeansReport from "@/components/reports/BrandWiseJeansReport";
 
 
 
-type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
+type Period = "daily" | "yesterday" | "weekly" | "monthly" | "last_month" | "quarterly" | "yearly" | "custom";
 type CompareMode = "none" | "prev_period" | "prev_week" | "prev_month" | "custom";
 
 const PAYMENT_COLORS: Record<string, string> = {
@@ -106,6 +106,16 @@ export default function Reports() {
     const now = new Date();
     let start: Date;
     switch (period) {
+      case "yesterday": {
+        const s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const e = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return { start: s.toISOString(), end: new Date(e.getTime() - 1).toISOString() };
+      }
+      case "last_month": {
+        const s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const e = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { start: s.toISOString(), end: new Date(e.getTime() - 1).toISOString() };
+      }
       case "daily": start = new Date(now.getFullYear(), now.getMonth(), now.getDate()); break;
       case "weekly": start = new Date(now.getTime() - 7 * 86400000); break;
       case "monthly": start = new Date(now.getFullYear(), now.getMonth(), 1); break;
@@ -583,8 +593,10 @@ export default function Reports() {
                 <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="daily">Today</SelectItem>
+                  <SelectItem value="yesterday">Yesterday</SelectItem>
                   <SelectItem value="weekly">This Week</SelectItem>
                   <SelectItem value="monthly">This Month</SelectItem>
+                  <SelectItem value="last_month">Last Month</SelectItem>
                   <SelectItem value="quarterly">This Quarter</SelectItem>
                   <SelectItem value="yearly">This Year</SelectItem>
                   <SelectItem value="custom">Custom Range</SelectItem>
