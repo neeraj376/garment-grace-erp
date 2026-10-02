@@ -215,6 +215,7 @@ export default function Inventory() {
             sku: skuFor(v.size, i),
             name: form.name,
             category: normalizeCategoryWithMappings(form.category, "category"),
+            subcategory: normalizeCategoryWithMappings(form.subcategory, "subcategory"),
             brand: form.brand || null,
             size: normalizeCategoryWithMappings(v.size, "size"),
             color: normalizeCategoryWithMappings(form.color, "color"),
@@ -243,7 +244,7 @@ export default function Inventory() {
 
       toast({ title: variants.length > 1 ? `${variants.length} size variants added` : "Product added" });
       setDialogOpen(false);
-      setForm({ sku: "", name: "", category: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "", description: "" });
+      setForm({ sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "", description: "" });
       setNewProductPhotos([]);
       setMultiSize(false);
       setSizeRows([{ size: "", quantity: "" }]);
@@ -648,7 +649,14 @@ export default function Inventory() {
                         </datalist>
                       </div>
                       <div>
-                        <Label>Brand</Label>
+                        <Label>Subcategory</Label>
+                        <Input list="inv-subcategories" value={form.subcategory} onChange={e => setForm({...form, subcategory: e.target.value})} placeholder="Select or type new" />
+                        <datalist id="inv-subcategories">
+                          {subcategories.map(c => <option key={c} value={c} />)}
+                        </datalist>
+                      </div>
+                      <div>
+                         <Label>Brand</Label>
                         <Input list="inv-brands" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} placeholder="Select or type new" />
                         <datalist id="inv-brands">
                           {brands.map(b => <option key={b} value={b} />)}
