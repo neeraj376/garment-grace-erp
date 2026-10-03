@@ -135,11 +135,17 @@ export default function AiProductUpload() {
             const details = await (cleanError as any)?.context?.json?.();
             if (details?.error) message = details.error;
           } catch { /* response body unavailable */ }
-          const { error: fallbackError } = await supabase.storage.from("product-media").upload(
-            outputPath,
-            blobs[frameIndex],
-            { contentType: "image/jpeg", upsert: true },
-          );
+          let fallbackError: any = null;
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            const res = await supabase.storage.from("product-media").upload(
+              outputPath,
+              blobs[frameIndex],
+              { contentType: "image/jpeg", upsert: true },
+            );
+            fallbackError = res.error;
+            if (!fallbackError) break;
+            await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+          }
           if (fallbackError) {
             patch(item.id, { status: "error", error: fallbackError.message, url: undefined, photoWarning: `${message} Temporary frames will still be deleted.` });
           } else {
@@ -180,6 +186,10 @@ export default function AiProductUpload() {
   const saveAll = async () => {
     if (!storeId) return;
     const toSave = items.filter(it => it.status === "ready");
+    if (toSave.some(it => !it.url)) {
+      toast({ title: "Some products have no photo yet — remove them or upload the video again", variant: "destructive" });
+      return;
+    }
     const bad = toSave.find(it => !it.name.trim() || !pricingValid(it));
     if (bad) {
       toast({ title: "Some products are missing name, selling price, buying price or quantity", variant: "destructive" });
