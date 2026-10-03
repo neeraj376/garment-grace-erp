@@ -200,7 +200,8 @@ export default function AiProductUpload() {
     for (const it of toSave) {
       try {
         const sizeCode = it.size.toUpperCase().replace(/[^A-Z0-9]+/g, "");
-        const sku = `AI-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}${sizeCode ? "-" + sizeCode : ""}`;
+        const rand = Array.from({ length: 3 }, () => Math.random().toString(36).slice(2, 5).toUpperCase()).join("");
+        const sku = `AI-${Date.now().toString(36).toUpperCase()}${rand}${sizeCode ? "-" + sizeCode : ""}`;
         const buying = parseFloat(it.buying_price);
         const { data: product, error } = await supabase.from("products").insert({
           store_id: storeId, sku, name: it.name.trim(),
