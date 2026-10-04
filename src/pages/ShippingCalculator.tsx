@@ -81,7 +81,7 @@ export default function ShippingCalculator() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Pickup from {ORIGIN.city}, {ORIGIN.state} – {ORIGIN.pincode}. Volumetric weight = (Length × Width × Height) ÷ {VOLUMETRIC_DIVISOR}.
-          Rates depend on the destination zone, plus {FUEL_SURCHARGE_PCT}% fuel surcharge.
+          Rates depend on the destination zone, plus {FUEL_SURCHARGE_PCT}% fuel surcharge and 18% GST.
         </p>
       </div>
 
@@ -176,9 +176,13 @@ export default function ShippingCalculator() {
                 <span className="text-muted-foreground">Fuel surcharge ({FUEL_SURCHARGE_PCT}%)</span>
                 <span className="font-medium">₹{quote.fuelSurcharge.toLocaleString("en-IN")}</span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">GST (18%)</span>
+                <span className="font-medium">₹{Math.round(quote.cost * 0.18).toLocaleString("en-IN")}</span>
+              </div>
               <div className="flex justify-between items-baseline pt-1">
-                <span className="font-semibold">Shipping Cost</span>
-                <span className="text-2xl font-bold text-primary">₹{quote.cost.toLocaleString("en-IN")}</span>
+                <span className="font-semibold">Shipping Cost (incl. GST)</span>
+                <span className="text-2xl font-bold text-primary">₹{(quote.cost + Math.round(quote.cost * 0.18)).toLocaleString("en-IN")}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{quote.breakdown}</p>
             </div>
@@ -187,7 +191,7 @@ export default function ShippingCalculator() {
               className="w-full"
               disabled={quote.cost === 0}
               onClick={() => {
-                navigator.clipboard.writeText(String(quote.cost));
+                navigator.clipboard.writeText(String(quote.cost + Math.round(quote.cost * 0.18)));
                 toast.success("Shipping cost copied");
               }}
             >
