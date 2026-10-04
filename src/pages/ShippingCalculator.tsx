@@ -176,9 +176,13 @@ export default function ShippingCalculator() {
                 <span className="text-muted-foreground">Fuel surcharge ({FUEL_SURCHARGE_PCT}%)</span>
                 <span className="font-medium">₹{quote.fuelSurcharge.toLocaleString("en-IN")}</span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">GST (18%)</span>
+                <span className="font-medium">₹{Math.round(quote.cost * 0.18).toLocaleString("en-IN")}</span>
+              </div>
               <div className="flex justify-between items-baseline pt-1">
-                <span className="font-semibold">Shipping Cost</span>
-                <span className="text-2xl font-bold text-primary">₹{quote.cost.toLocaleString("en-IN")}</span>
+                <span className="font-semibold">Shipping Cost (incl. GST)</span>
+                <span className="text-2xl font-bold text-primary">₹{(quote.cost + Math.round(quote.cost * 0.18)).toLocaleString("en-IN")}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{quote.breakdown}</p>
             </div>
