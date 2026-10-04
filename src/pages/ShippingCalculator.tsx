@@ -81,7 +81,7 @@ export default function ShippingCalculator() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Pickup from {ORIGIN.city}, {ORIGIN.state} – {ORIGIN.pincode}. Volumetric weight = (Length × Width × Height) ÷ {VOLUMETRIC_DIVISOR}.
-          Rates depend on the destination zone, plus {FUEL_SURCHARGE_PCT}% fuel surcharge.
+          Rates depend on the destination zone, plus {FUEL_SURCHARGE_PCT}% fuel surcharge and 18% GST.
         </p>
       </div>
 
@@ -191,7 +191,7 @@ export default function ShippingCalculator() {
               className="w-full"
               disabled={quote.cost === 0}
               onClick={() => {
-                navigator.clipboard.writeText(String(quote.cost));
+                navigator.clipboard.writeText(String(quote.cost + Math.round(quote.cost * 0.18)));
                 toast.success("Shipping cost copied");
               }}
             >
