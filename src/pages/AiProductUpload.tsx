@@ -302,6 +302,11 @@ export default function AiProductUpload() {
               <CardContent className="p-3 flex flex-col md:flex-row gap-3">
                 <div className="relative w-full md:w-32 shrink-0">
                    <img src={it.url || it.preview} alt={it.name || "Product preview"} className="w-full md:w-32 aspect-[3/4] object-contain bg-muted rounded border" />
+                  {it.urls && it.urls.length > 1 && (
+                    <div className="flex gap-1 mt-1">
+                      {it.urls.map((u, n) => <img key={u} src={u} alt={`${it.name} view ${n + 1}`} className="w-9 aspect-[3/4] object-contain bg-muted rounded border" />)}
+                    </div>
+                  )}
                   {it.status !== "saved" && (
                     <button onClick={() => setItems(p => p.filter(x => x.id !== it.id))}
                       className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
