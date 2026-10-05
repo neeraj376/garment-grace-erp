@@ -2,15 +2,29 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { variantGroupKey } from "@/lib/variantUtils";
-import { ArrowRight, Shirt, Package, type LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  Backpack,
+  BriefcaseBusiness,
+  Footprints,
+  Gem,
+  Glasses,
+  RectangleHorizontal,
+  Ribbon,
+  Shirt,
+  ShoppingBag,
+  Umbrella,
+  Watch,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MasonryProductCard from "@/components/shop/MasonryProductCard";
 import { fetchInStockShopProducts, SHOP_STORE_ID } from "@/lib/shopProducts";
 import { parsePhotoUrls } from "@/lib/photoUtils";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
-// Refined garment category icons — clean, recognizable, consistent stroke
-const ICON_CLASS = "w-9 h-9 mx-auto";
+// Category icons share one visual weight and footprint across the storefront.
+const ICON_CLASS = "h-8 w-8";
 const SVG_PROPS = {
   viewBox: "0 0 64 64",
   fill: "none",
@@ -20,64 +34,6 @@ const SVG_PROPS = {
   strokeLinejoin: "round" as const,
   className: ICON_CLASS,
 };
-
-const ShirtIcon2 = () => (
-  <svg {...SVG_PROPS}>
-    {/* collar */}
-    <path d="M26 8l6 6 6-6" />
-    {/* body with shoulders & sleeves */}
-    <path d="M26 8l-14 6 4 10 6-2v28h24V22l6 2 4-10-14-6" />
-    {/* button placket */}
-    <path d="M32 16v30" />
-  </svg>
-);
-
-const BlazerIcon = () => (
-  <svg {...SVG_PROPS}>
-    {/* lapels meeting at V */}
-    <path d="M22 8l10 12 10-12" />
-    {/* jacket body & sleeves */}
-    <path d="M22 8l-12 8 4 12 6-2v28h24V26l6 2 4-12-12-8" />
-    {/* center seam */}
-    <path d="M32 20v36" />
-    {/* pocket */}
-    <path d="M40 40h6" />
-  </svg>
-);
-
-const TshirtIcon = () => (
-  <svg {...SVG_PROPS}>
-    <path d="M24 8h16l12 6-4 10-8-2v34H24V22l-8 2-4-10z" />
-    {/* neckline */}
-    <path d="M24 8c2 4 14 4 16 0" />
-  </svg>
-);
-
-const HoodieIcon = () => (
-  <svg {...SVG_PROPS}>
-    {/* hood */}
-    <path d="M22 12c0 6 4 10 10 10s10-4 10-10" />
-    {/* body & sleeves */}
-    <path d="M22 12l-10 6 4 12 6-2v28h20V28l6 2 4-12-10-6" />
-    {/* kangaroo pocket */}
-    <path d="M22 38l10 6 10-6" />
-    {/* drawstring */}
-    <path d="M30 22v6M34 22v6" />
-  </svg>
-);
-
-const JacketIcon = () => (
-  <svg {...SVG_PROPS}>
-    {/* collar */}
-    <path d="M24 10l8 6 8-6" />
-    {/* body & sleeves */}
-    <path d="M24 10l-12 6 4 12 6-2v30h20V26l6 2 4-12-12-6" />
-    {/* zipper */}
-    <path d="M32 16v40" />
-    {/* zipper teeth */}
-    <path d="M30 24h4M30 32h4M30 40h4M30 48h4" />
-  </svg>
-);
 
 const JeansIcon = () => (
   <svg {...SVG_PROPS}>
@@ -136,15 +92,35 @@ const UnderwearIcon = () => (
   </svg>
 );
 
+type CategoryIcon = LucideIcon | (() => JSX.Element);
+
+const CATEGORY_ICON_RULES: Array<{ words: string[]; Icon: LucideIcon }> = [
+  { words: ["footwear", "shoe", "sandal", "slipper", "sneaker", "loafer", "boot"], Icon: Footprints },
+  { words: ["bag", "backpack"], Icon: Backpack },
+  { words: ["watch"], Icon: Watch },
+  { words: ["glass", "sunglass"], Icon: Glasses },
+  { words: ["jewellery", "jewelry", "accessory", "accessories"], Icon: Gem },
+  { words: ["belt"], Icon: RectangleHorizontal },
+  { words: ["scarf", "towel", "tie"], Icon: Ribbon },
+  { words: ["umbrella"], Icon: Umbrella },
+  { words: ["blazer", "blazzer", "suit", "formal"], Icon: BriefcaseBusiness },
+  { words: ["shirt", "t-shirt", "tshirt", "hoodie", "jacket", "sweater", "sweatshirt", "top"], Icon: Shirt },
+];
+
+const getCategoryIcon = (name: string): CategoryIcon => {
+  const normalized = name.trim().toLowerCase();
+  return CATEGORY_ICON_RULES.find(({ words }) => words.some((word) => normalized.includes(word)))?.Icon ?? ShoppingBag;
+};
+
 // Each hero category maps to an explicit list of DB `category` values (case-insensitive, exact).
 // Subcategory and product name are NOT used — we strictly follow the tag from product add.
-const HERO_CATEGORIES: { name: string; Icon: () => JSX.Element; categories: string[] }[] = [
-  { name: "Shirt", Icon: ShirtIcon2, categories: ["shirt", "shirts", "full sleeve shirt", "linen shirts", "linen shirt"] },
-  { name: "Blazzer", Icon: BlazerIcon, categories: ["blazzer", "blazer"] },
+const HERO_CATEGORIES: { name: string; Icon: CategoryIcon; categories: string[] }[] = [
+  { name: "Shirt", Icon: Shirt, categories: ["shirt", "shirts", "full sleeve shirt", "linen shirts", "linen shirt"] },
+  { name: "Blazzer", Icon: BriefcaseBusiness, categories: ["blazzer", "blazer"] },
   { name: "Jeans", Icon: JeansIcon, categories: ["jean", "jeans"] },
-  { name: "T-shirt", Icon: TshirtIcon, categories: ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"] },
-  { name: "Jacket", Icon: JacketIcon, categories: ["jacket", "windcheater"] },
-  { name: "Hoodie", Icon: HoodieIcon, categories: ["hoodie", "sweatshirt", "sweater", "zipper"] },
+  { name: "T-shirt", Icon: Shirt, categories: ["t-shirt", "t-shirts", "tshirt", "polo", "polo t-shirt", "polo t- shirt", "roundneck"] },
+  { name: "Jacket", Icon: Shirt, categories: ["jacket", "windcheater"] },
+  { name: "Hoodie", Icon: Shirt, categories: ["hoodie", "sweatshirt", "sweater", "zipper"] },
   { name: "Pants", Icon: TrousersIcon, categories: ["pant", "trouser", "cargo pants", "jogger", "lower", "cotton", "dry fit"] },
   { name: "Linen Pants", Icon: LinenPantsIcon, categories: ["linen pants"] },
   { name: "Shorts", Icon: ShortsIcon, categories: ["short", "shorts", "denim shorts", "cotton shorts"] },
@@ -240,7 +216,7 @@ export default function ShopHome() {
       });
       const extraTiles = Object.entries(extras).map(([name, count]) => ({
         name,
-        Icon: (() => <Package className="w-9 h-9 mx-auto" strokeWidth={2.2} />) as () => JSX.Element,
+         Icon: getCategoryIcon(name),
         categories: [name.toLowerCase()],
         count,
       }));
@@ -359,9 +335,9 @@ export default function ShopHome() {
             <Link
               key={name}
               to={`/category/${encodeURIComponent(name)}`}
-              className="bg-card rounded-xl border border-border p-4 text-center hover:shadow-md transition-shadow group"
+              className="group rounded-lg border border-border bg-card p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md"
             >
-              <div className="mb-2 text-foreground/80 group-hover:text-primary transition-colors">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground [&>svg]:h-8 [&>svg]:w-8 [&>svg]:stroke-[1.8]">
                 <Icon />
               </div>
               <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
