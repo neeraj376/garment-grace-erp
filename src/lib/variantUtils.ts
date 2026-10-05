@@ -65,6 +65,15 @@ const stripVariantTokens = (
 // jeans vs cargo).
 export const BRAND_CLUBBED = new Set(["old school", "jules"]);
 
+export const isNeemansFootwear = (p: {
+  name: string;
+  brand: string | null;
+}) => {
+  const brand = normalize(p.brand);
+  const name = normalize(p.name);
+  return brand.includes("neeman") || name.includes("neeman");
+};
+
 export const brandClubType = (name: string | null | undefined) => {
   const n = normalize(name);
   if (/\b(sweatshirt|hoodie|sweater)\b/.test(n)) return "sweatshirt";
@@ -80,6 +89,7 @@ export const variantGroupKey = (p: {
   color?: string | null;
 }) => {
   const b = normalize(p.brand);
+  if (isNeemansFootwear(p)) return "neemans|__footwear__";
   if (BRAND_CLUBBED.has(b)) return `${b}|__${brandClubType(p.name)}__`;
   return `${b}|${stripVariantTokens(p.name, p.size, p.color)}`;
 };
