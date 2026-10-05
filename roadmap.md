@@ -11,4 +11,5 @@
 - [x] Turn each detected product frame from an uploaded video into a clean e-commerce inventory photo, with original-frame fallback.
 - [x] Delete temporary video frames after processing while retaining only final product photos.
 - [x] Add Yesterday and Last Month presets to Reports date options.
+- [x] Club all Neeman's footwear into one storefront listing with size and colour choices.
 - [ ] Confirm which September day Raunak was absent (waiting on user).

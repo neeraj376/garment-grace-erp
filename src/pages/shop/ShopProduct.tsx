@@ -7,7 +7,7 @@ import { ShoppingBag, ArrowLeft, Minus, Plus, MessageCircle, ZoomIn } from "luci
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { parsePhotoUrls } from "@/lib/photoUtils";
-import { colorToHex, sortSizes, variantGroupKey } from "@/lib/variantUtils";
+import { colorToHex, isNeemansFootwear, sortSizes, variantGroupKey } from "@/lib/variantUtils";
 import ImageZoomDialog from "@/components/shop/ImageZoomDialog";
 
 export default function ShopProduct() {
@@ -58,7 +58,16 @@ export default function ShopProduct() {
       // default 1000-row cap otherwise). Fall back to a paginated full scan.
       let allActive: any[] = [];
       const brandTrimmed = (base.brand ?? "").trim();
-      if (brandTrimmed) {
+      if (isNeemansFootwear(base)) {
+        const { data } = await supabase
+          .from("products")
+          .select("*")
+          .eq("store_id", base.store_id)
+          .eq("is_active", true)
+          .or("brand.ilike.%neeman%,name.ilike.%neeman%")
+          .limit(2000);
+        allActive = data ?? [];
+      } else if (brandTrimmed) {
         const { data } = await supabase
           .from("products")
           .select("*")
