@@ -22,8 +22,9 @@ const PRODUCT = {
     description: { type: ["string", "null"] },
     quantity: { type: "integer" },
     best_frame: { type: "integer" },
+    angle_frames: { type: "array", items: { type: "integer" } },
   },
-  required: ["name", "brand", "category", "subcategory", "size", "color", "material", "description", "quantity", "best_frame"],
+  required: ["angle_frames", "name", "brand", "category", "subcategory", "size", "color", "material", "description", "quantity", "best_frame"],
 };
 const SCHEMA = {
   type: "object",
@@ -39,7 +40,8 @@ Size is written on a tag, label, sticker or paper (e.g. S, M, L, XL, 32, 34, 40)
 For each product return: name (short retail title like "Brand Men's Slim Fit Cotton Shirt"), brand (from logo/tag, null if unknown),
 category (one of: Shirts, T-Shirts, Polo T-Shirts, Jeans, Trousers, Lowers, Shorts, Jackets, Sweatshirts, Hoodies, Blazers, Kurtas, Dresses, Tops, Sets, Shoes, Accessories),
 subcategory (e.g. Men, Women, Kids), color, material (if visible on tag), description (1-2 sentences), quantity (pieces seen, minimum 1),
-best_frame (index of the frame showing the product most clearly, sharp, unobstructed and fully visible, for its photo).`;
+best_frame (index of the frame showing the product most clearly, sharp, unobstructed and fully visible, for its photo),
+angle_frames (up to 2 OTHER frame indexes showing the SAME product clearly from a clearly DIFFERENT angle or side, e.g. back, side, close-up of detail; empty array if no such distinct angle exists — never repeat near-identical shots or frames of other products).`;
 
 const SPEECH = (segs: { start: number; end: number; text: string }[]) => `
 The person in the video also speaks. Here is what they said, with the time (in seconds) it was said:

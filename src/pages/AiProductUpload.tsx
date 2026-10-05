@@ -10,12 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Sparkles, Upload, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
 import { extractTimedVideoFrames } from "@/lib/videoFrames";
 import { extractSpeechChunks } from "@/lib/videoAudio";
+import { serializePhotoUrls } from "@/lib/photoUtils";
 
 type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string; size: string };
 type Item = Pricing & {
   id: string;
   preview: string;
   url?: string;
+  urls?: string[];
   status: "uploading" | "reading" | "cleaning" | "ready" | "error" | "saved";
   error?: string;
   photoWarning?: string;
@@ -113,23 +115,27 @@ export default function AiProductUpload() {
       setVideoStatus(`Cleaning ${newItems.length} product photo${newItems.length === 1 ? "" : "s"}…`);
 
       let fallbackCount = 0;
+      const clampFrame = (v: any) => Math.min(Math.max(0, Number(v) || 0), uploaded.length - 1);
       for (let index = 0; index < newItems.length; index += 1) {
         const item = newItems[index];
         const product = products[index];
-        const frameIndex = Math.min(Math.max(0, Number(product.best_frame) || 0), uploaded.length - 1);
-        setVideoStatus(`Cleaning product photo ${index + 1} of ${newItems.length}…`);
-        const outputPath = `${storeId}/ai-products/${stamp}-${index}-${item.id}.jpg`;
-        const { data: cleaned, error: cleanError } = await supabase.functions.invoke("make-thumb-from-frame", {
-          body: {
-            framePath: uploaded[frameIndex].path,
-            outputPath,
-            productName: item.name,
-            storeId,
-          },
-        });
-
-        if (cleanError || cleaned?.error || !cleaned?.url) {
-          fallbackCount += 1;
+        const best = clampFrame(product.best_frame);
+        const frames = [best];
+        for (const f of Array.isArray(product.angle_frames) ? product.angle_frames : []) {
+          const fi = clampFrame(f);
+          if (!frames.includes(fi) && frames.length < 3) frames.push(fi);
+        }
+        const finalUrls: string[] = [];
+        let warning: string | undefined;
+        let lastError: string | undefined;
+        for (let v = 0; v < frames.length; v += 1) {
+          const frameIndex = frames[v];
+          setVideoStatus(`Cleaning product ${index + 1} of ${newItems.length} — photo ${v + 1} of ${frames.length}…`);
+          const outputPath = `${storeId}/ai-products/${stamp}-${index}-${v}-${item.id}.jpg`;
+          const { data: cleaned, error: cleanError } = await supabase.functions.invoke("make-thumb-from-frame", {
+            body: { framePath: uploaded[frameIndex].path, outputPath, productName: item.name, storeId },
+          });
+          if (!cleanError && !cleaned?.error && cleaned?.url) { finalUrls.push(cleaned.url); continue; }
           let message = cleaned?.error || cleanError?.message || "Photo cleanup failed";
           try {
             const details = await (cleanError as any)?.context?.json?.();
@@ -138,22 +144,21 @@ export default function AiProductUpload() {
           let fallbackError: any = null;
           for (let attempt = 0; attempt < 3; attempt += 1) {
             const res = await supabase.storage.from("product-media").upload(
-              outputPath,
-              blobs[frameIndex],
-              { contentType: "image/jpeg", upsert: true },
+              outputPath, blobs[frameIndex], { contentType: "image/jpeg", upsert: true },
             );
             fallbackError = res.error;
             if (!fallbackError) break;
             await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
           }
-          if (fallbackError) {
-            patch(item.id, { status: "error", error: fallbackError.message, url: undefined, photoWarning: `${message} Temporary frames will still be deleted.` });
-          } else {
-            const fallbackUrl = supabase.storage.from("product-media").getPublicUrl(outputPath).data.publicUrl;
-            patch(item.id, { status: "ready", url: fallbackUrl, photoWarning: `${message} Original frame saved as this product's final photo.` });
-          }
+          if (fallbackError) { lastError = fallbackError.message; continue; }
+          fallbackCount += 1;
+          warning = `${message} Original frame kept for some photos.`;
+          finalUrls.push(supabase.storage.from("product-media").getPublicUrl(outputPath).data.publicUrl);
+        }
+        if (!finalUrls.length) {
+          patch(item.id, { status: "error", error: lastError || "Photo upload failed", url: undefined, urls: undefined, photoWarning: "Temporary frames will still be deleted." });
         } else {
-          patch(item.id, { status: "ready", url: cleaned.url, photoWarning: undefined });
+          patch(item.id, { status: "ready", url: finalUrls[0], urls: finalUrls, photoWarning: warning });
         }
       }
       toast({
@@ -210,7 +215,7 @@ export default function AiProductUpload() {
           description: it.description || null,
           selling_price: parseFloat(it.selling_price),
           mrp: it.mrp ? parseFloat(it.mrp) : null,
-          buying_price: buying, tax_rate: 1, photo_url: it.url || null,
+          buying_price: buying, tax_rate: 1, photo_url: serializePhotoUrls(it.urls?.length ? it.urls : it.url ? [it.url] : []),
         }).select("id").single();
         if (error) throw error;
         const { error: bErr } = await supabase.from("inventory_batches").insert({
@@ -297,6 +302,11 @@ export default function AiProductUpload() {
               <CardContent className="p-3 flex flex-col md:flex-row gap-3">
                 <div className="relative w-full md:w-32 shrink-0">
                    <img src={it.url || it.preview} alt={it.name || "Product preview"} className="w-full md:w-32 aspect-[3/4] object-contain bg-muted rounded border" />
+                  {it.urls && it.urls.length > 1 && (
+                    <div className="flex gap-1 mt-1">
+                      {it.urls.map((u, n) => <img key={u} src={u} alt={`${it.name} view ${n + 1}`} className="w-9 aspect-[3/4] object-contain bg-muted rounded border" />)}
+                    </div>
+                  )}
                   {it.status !== "saved" && (
                     <button onClick={() => setItems(p => p.filter(x => x.id !== it.id))}
                       className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
