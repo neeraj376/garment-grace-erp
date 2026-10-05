@@ -9,10 +9,8 @@ import {
   Footprints,
   Gem,
   Glasses,
-  Package,
   Shirt,
   ShoppingBag,
-  Tags,
   Umbrella,
   Watch,
   type LucideIcon,
@@ -335,8 +333,8 @@ export default function ShopHome() {
               to={`/category/${encodeURIComponent(name)}`}
               className="group rounded-lg border border-border bg-card p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md"
             >
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                <Icon className={ICON_CLASS} strokeWidth={1.8} />
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground [&>svg]:h-8 [&>svg]:w-8 [&>svg]:stroke-[1.8]">
+                <Icon />
               </div>
               <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                 {name}
