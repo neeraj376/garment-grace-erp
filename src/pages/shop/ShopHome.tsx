@@ -146,6 +146,7 @@ const CLUBBED_KEYS = new Set([
   variantGroupKey({ name: "Jules Cargo", brand: "Jules" }),
   variantGroupKey({ name: "PediConfort Sandles", brand: "PediConfort" }),
   variantGroupKey({ name: "Neeman's Shoes", brand: "Neeman's" }),
+  variantGroupKey({ name: "Under Armour Shoes", brand: "Under Armour" }),
 ]);
 const FEED_STEP = 40;
 const MISSING_CLEAN_PHOTO_IDS = new Set([
