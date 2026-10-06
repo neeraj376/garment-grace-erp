@@ -74,6 +74,20 @@ export const isNeemansFootwear = (p: {
   return brand.includes("neeman") || name.includes("neeman");
 };
 
+export const isUnderArmourFootwear = (p: {
+  name: string;
+  brand: string | null;
+}) => {
+  const brand = normalize(p.brand);
+  const name = normalize(p.name);
+  return (
+    brand.includes("under armour") ||
+    brand.includes("underarmour") ||
+    name.includes("under armour") ||
+    name.includes("underarmour")
+  );
+};
+
 export const brandClubType = (name: string | null | undefined) => {
   const n = normalize(name);
   if (/\b(sweatshirt|hoodie|sweater)\b/.test(n)) return "sweatshirt";
@@ -90,6 +104,7 @@ export const variantGroupKey = (p: {
 }) => {
   const b = normalize(p.brand);
   if (isNeemansFootwear(p)) return "neemans|__footwear__";
+  if (isUnderArmourFootwear(p)) return "underarmour|__footwear__";
   if (BRAND_CLUBBED.has(b)) return `${b}|__${brandClubType(p.name)}__`;
   return `${b}|${stripVariantTokens(p.name, p.size, p.color)}`;
 };
