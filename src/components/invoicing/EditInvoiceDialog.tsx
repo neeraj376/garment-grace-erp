@@ -463,10 +463,23 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
         }
       }
 
+      // Delete items that were removed in the dialog
+      const keptIds = new Set(items.filter(i => !i.isNew).map(i => i.id));
+      const { data: existingRows, error: exErr } = await supabase
+        .from("invoice_items")
+        .select("id")
+        .eq("invoice_id", invoice.id);
+      if (exErr) throw exErr;
+      const removedIds = (existingRows || []).map(r => r.id).filter(id => !keptIds.has(id));
+      if (removedIds.length > 0) {
+        const { error: delErr } = await supabase.from("invoice_items").delete().in("id", removedIds);
+        if (delErr) throw new Error(`Could not remove items: ${delErr.message}`);
+      }
+
       // Update existing items and insert new ones
       for (const item of items) {
         if (item.isNew) {
-          await supabase
+          const { error: insErr } = await supabase
             .from("invoice_items")
             .insert({
               invoice_id: invoice.id,
@@ -477,8 +490,9 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
               tax_amount: item.tax_amount,
               total: item.total,
             });
+          if (insErr) throw new Error(`Could not add item: ${insErr.message}`);
         } else {
-          await supabase
+          const { error: updErr } = await supabase
             .from("invoice_items")
             .update({
               quantity: item.quantity,
@@ -488,6 +502,7 @@ export default function EditInvoiceDialog({ invoice, open, onClose, onSuccess }:
               total: item.total,
             })
             .eq("id", item.id);
+          if (updErr) throw new Error(`Could not update item: ${updErr.message}`);
         }
       }
 
