@@ -57,7 +57,7 @@ export default function AiProductUpload() {
     let temporaryFramePaths: string[] = [];
     try {
       setVideoStatus("Reading video…");
-      const timed = await extractTimedVideoFrames(file, { count: 16 });
+      const timed = await extractTimedVideoFrames(file, { count: 40 });
       const blobs = timed.map(f => f.blob);
       if (!blobs.length) throw new Error("No frames could be read from this video");
       setVideoStatus(`Uploading ${blobs.length} frames…`);
@@ -152,7 +152,9 @@ export default function AiProductUpload() {
           }
           if (fallbackError) { lastError = fallbackError.message; continue; }
           fallbackCount += 1;
-          warning = `${message} Original frame kept for some photos.`;
+          warning = /safety|rejected|moderation/i.test(message)
+            ? "The AI couldn't clean this photo (printed cartoons or characters are sometimes blocked), so the original video photo is used. You can still add this product."
+            : `${message} Original video photo used — you can still add this product.`;
           finalUrls.push(supabase.storage.from("product-media").getPublicUrl(outputPath).data.publicUrl);
         }
         if (!finalUrls.length) {
