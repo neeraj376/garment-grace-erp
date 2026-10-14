@@ -13,3 +13,6 @@
 - [x] Add Yesterday and Last Month presets to Reports date options.
 - [x] Club all Neeman's footwear into one storefront listing with size and colour choices.
 - [ ] Confirm which September day Raunak was absent (waiting on user).
+
+- [x] AI Upload: friendly message when photo cleanup is blocked; read 40 frames so more products per video
+- [ ] Platform admin dashboard (shops, plans, payments, suspend) — awaiting user answers
