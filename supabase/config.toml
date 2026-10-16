@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.transcribe-audio]
 verify_jwt = false
+
+[functions.whatsapp-catalog-feed]
+verify_jwt = false

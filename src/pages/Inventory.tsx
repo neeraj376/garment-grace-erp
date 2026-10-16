@@ -175,6 +175,21 @@ export default function Inventory() {
 
   useEffect(() => { fetchProducts(); }, [storeId]);
 
+  // Live stock: refetch when any stock batch for this store changes (sales, restocks).
+  useEffect(() => {
+    if (!storeId) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const channel = supabase
+      .channel(`inv-batches-${storeId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "inventory_batches", filter: `store_id=eq.${storeId}` }, () => {
+        clearTimeout(t);
+        t = setTimeout(() => fetchProducts(), 2000);
+      })
+      .subscribe();
+    return () => { clearTimeout(t); supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId]);
+
   // Load DB mappings on mount
   useEffect(() => { if (storeId) loadCategoryMappings(storeId); }, [storeId]);
 
