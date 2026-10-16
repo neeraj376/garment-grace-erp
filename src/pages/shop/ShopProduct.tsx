@@ -120,6 +120,23 @@ export default function ShopProduct() {
     fetchAll();
   }, [id]);
 
+  // Keep stock fresh while the shopper stays on the page.
+  useEffect(() => {
+    if (!siblings.length) return;
+    const iv = setInterval(async () => {
+      if (document.hidden) return;
+      const next: Record<string, number> = {};
+      await Promise.all(
+        siblings.map(async (s) => {
+          const { data: st } = await supabase.rpc("get_product_stock", { p_product_id: s.id });
+          next[s.id] = st ?? 0;
+        })
+      );
+      setStockMap(next);
+    }, 30000);
+    return () => clearInterval(iv);
+  }, [siblings]);
+
   // Available colors and sizes across the variant group.
   const allColors = useMemo(
     () => Array.from(new Set(siblings.map((s) => s.color).filter(Boolean))) as string[],
