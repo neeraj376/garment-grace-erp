@@ -16,3 +16,5 @@
 
 - [x] AI Upload: friendly message when photo cleanup is blocked; read 40 frames so more products per video
 - [ ] Platform admin dashboard (shops, plans, payments, suspend) — awaiting user answers
+- [ ] Restore ORD-MUPRUCO0 — awaiting clarification: return current items to stock or recover removed order items.
+- [ ] Resolve AI Product Upload workspace credit-limit error — check current spending limit and obtain approval for any increase.
