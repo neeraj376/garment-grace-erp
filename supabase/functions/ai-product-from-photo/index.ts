@@ -1,5 +1,6 @@
 // Reads frames from a product video and extracts every distinct product (with size & quantity) via Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { inlineFrame, resolveFramePath } from "./frameMedia.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,14 +56,36 @@ Deno.serve(async (req) => {
   try {
     const auth = req.headers.get("Authorization") || "";
     if (!auth.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
-    const url = Deno.env.get("SUPABASE_URL")!;
-    const userClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
+    const url = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!url || !anonKey || !apiKey) return json({ error: "Product recognition is not configured" }, 500);
+    const userClient = createClient(url, anonKey, { global: { headers: { Authorization: auth } } });
     const { data: u } = await userClient.auth.getUser();
     if (!u?.user) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
     const frames: string[] = Array.isArray(body.frameUrls) ? body.frameUrls.slice(0, 40) : body.imageUrl ? [body.imageUrl] : [];
     if (!frames.length) return json({ error: "frameUrls required" }, 400);
+    const { data: profile } = await userClient.from("profiles").select("store_id").eq("user_id", u.user.id).maybeSingle();
+    if (!profile?.store_id) return json({ error: "Store access denied" }, 403);
+    let paths: string[];
+    try {
+      paths = frames.map(frame => resolveFramePath(frame, url, profile.store_id));
+    } catch {
+      return json({ error: "Video frame does not belong to this store" }, 403);
+    }
+    // Supply bytes directly: remote image downloads can time out at the AI provider.
+    // Use the caller's storage permissions, not privileged or arbitrary URL fetches.
+    const inlineFrames: string[] = [];
+    let totalBytes = 0;
+    for (const path of paths) {
+      const { data: source, error: downloadError } = await userClient.storage.from("product-media").download(path);
+      if (downloadError || !source) return json({ error: "Could not read a video frame. Please choose the video again." }, 422);
+      totalBytes += source.size;
+      if (totalBytes > 40 * 1024 * 1024) return json({ error: "Video frames are too large. Please split this video into shorter clips." }, 413);
+      inlineFrames.push(await inlineFrame(source));
+    }
     const times: number[] = Array.isArray(body.frameTimes) ? body.frameTimes.map(Number) : [];
     const segs = (Array.isArray(body.transcript) ? body.transcript : [])
       .filter((t: any) => t && typeof t.text === "string" && t.text.trim())
@@ -74,7 +97,7 @@ Deno.serve(async (req) => {
       signal: req.signal,
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": Deno.env.get("LOVABLE_API_KEY")!,
+        "Lovable-API-Key": apiKey,
         "X-Lovable-AIG-SDK": "fetch",
       },
       body: JSON.stringify({
@@ -88,7 +111,7 @@ Deno.serve(async (req) => {
           role: "user",
           content: [
             { type: "input_text", text: PROMPT(frames.length) + (segs.length ? SPEECH(segs) : "") },
-            ...frames.flatMap((f, i) => [
+            ...inlineFrames.flatMap((f, i) => [
               { type: "input_text", text: Number.isFinite(times[i]) ? `Frame ${i} (at ${times[i].toFixed(1)}s):` : `Frame ${i}:` },
               { type: "input_image", image_url: f },
             ]),
@@ -106,7 +129,8 @@ Deno.serve(async (req) => {
       return json({ error: msg }, resp.status);
     }
 
-    const reader = resp.body!.getReader();
+    if (!resp.body) return json({ error: "AI returned no response" }, 502);
+    const reader = resp.body.getReader();
     const dec = new TextDecoder();
     let buf = "", text = "", refusal = "";
     while (true) {
