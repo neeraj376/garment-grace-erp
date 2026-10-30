@@ -895,7 +895,7 @@ export default function Inventory() {
               <TableHead className="text-right">Stock</TableHead>
               <TableHead className="text-right">Sold</TableHead>
               <TableHead className="whitespace-nowrap">Stock Added</TableHead>
-              {canUpload && <TableHead className="w-12"></TableHead>}
+              {canUpload && <TableHead className="sticky right-0 z-20 min-w-24 bg-card">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -955,12 +955,13 @@ export default function Inventory() {
                       : "—"}
                   </TableCell>
                   {canUpload && (
-                    <TableCell>
+                    <TableCell className="sticky right-0 z-10 min-w-24 bg-card">
                       <div className="flex gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-10 w-10 shrink-0"
+                          aria-label={`Edit ${p.name}`}
                           onClick={() => { setEditProduct(p); setEditOpen(true); }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -968,7 +969,8 @@ export default function Inventory() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          className="h-10 w-10 shrink-0 text-destructive hover:text-destructive"
+                          aria-label={`Delete ${p.name}`}
                           onClick={() => handleDeleteProduct(p.id)}
                         >
                           <Trash2 className="h-4 w-4" />

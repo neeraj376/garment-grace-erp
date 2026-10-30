@@ -19,3 +19,4 @@
 - [ ] Restore ORD-MUPRUCO0 — awaiting clarification: return current items to stock or recover removed order items.
 - [ ] Resolve AI Product Upload workspace credit-limit error — check current spending limit and obtain approval for any increase.
 - [x] Fix and verify AI Product Upload frame-download timeout without retaining videos or temporary frames (live recognition returned a product successfully).
+- [x] Verify Pooja can open the inventory edit form on iPad with unobstructed touch controls (tested her real account and inventory).
