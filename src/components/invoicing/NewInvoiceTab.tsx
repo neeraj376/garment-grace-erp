@@ -223,6 +223,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
+  const [invoiceRemark, setInvoiceRemark] = useState(() => loadDraft()?.invoiceRemark ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
   const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
@@ -381,8 +382,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing,
+      invoiceRemark,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing, invoiceRemark]);
 
   const handleToggleStorefrontPricing = (checked: boolean) => {
     setStorefrontPricing(checked);
@@ -937,7 +939,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           shipping_state: needsShipping ? (shipState.trim() || null) : null,
           shipping_pincode: needsShipping ? (shipPincode.trim() || null) : null,
           payment_method: paymentMethods.join("+"),
-          notes: breakdownNote || null,
+          notes: [breakdownNote, invoiceRemark.trim()].filter(Boolean).join(" | ") || null,
           subtotal,
           tax_amount: taxAmount,
           discount_amount: discount,
@@ -1204,7 +1206,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           shipping_state: null,
           shipping_pincode: null,
           payment_method: paymentMethods.join("+"),
-          notes: breakdownNote || null,
+          notes: [breakdownNote, invoiceRemark.trim()].filter(Boolean).join(" | ") || null,
           subtotal,
           tax_amount: taxAmount,
           discount_amount: discount,
