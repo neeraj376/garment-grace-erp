@@ -1040,6 +1040,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
+      setInvoiceRemark("");
       setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode(""); setAltPhone("");
       setServiceable(null);
       clearDraft();
@@ -1256,6 +1257,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
+      setInvoiceRemark("");
       setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode(""); setAltPhone("");
       setServiceable(null);
       clearDraft();
@@ -1463,6 +1465,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      invoiceRemark: invoiceRemark.trim() || undefined,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
@@ -1504,6 +1507,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation, customerEmail,
         courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+        invoiceRemark: invoiceRemark.trim() || undefined,
       };
 
       let { error } = await supabase.from("held_invoices").insert({
