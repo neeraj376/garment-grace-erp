@@ -1492,6 +1492,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setCustomerEmail(""); setCourierName(""); setAwbNo(""); setDeliveryCost(""); setSelectedEmployee("");
     setSource(""); setPaymentMethods([]);
+    setInvoiceRemark("");
     clearDraft();
     fetchHeldInvoices();
     toast({ title: "Invoice held", description: `${customerName || "Invoice"} parked — ${cart.length} item(s)` });
@@ -1560,6 +1561,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setSelectedEmployee(held.selectedEmployee);
     setDiscount(held.discount);
     setPendingAmount((held as any).pendingAmount ?? 0);
+    setInvoiceRemark((held as any).invoiceRemark || "");
     toast({ title: "Invoice resumed", description: `${held.customerName || "Invoice"} restored` });
   };
 
@@ -2018,6 +2020,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Remark</Label>
+              <Input
+                value={invoiceRemark}
+                onChange={e => setInvoiceRemark(e.target.value)}
+                placeholder="Optional note for this bill (e.g. gift wrap, delivery instructions)"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Saved on the invoice — not shown to the customer on the bill.</p>
             </div>
           </CardContent>
         </Card>
