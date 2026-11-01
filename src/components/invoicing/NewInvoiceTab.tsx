@@ -223,6 +223,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({});
   const [selectedEmployee, setSelectedEmployee] = useState(() => loadDraft()?.selectedEmployee ?? "");
+  const [invoiceRemark, setInvoiceRemark] = useState(() => loadDraft()?.invoiceRemark ?? "");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [discount, setDiscount] = useState(() => loadDraft()?.discount ?? 0);
   const [pendingAmount, setPendingAmount] = useState(() => loadDraft()?.pendingAmount ?? 0);
@@ -381,8 +382,9 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       cart, customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount,
       addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing,
+      invoiceRemark,
     });
-  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing]);
+  }, [cart, customerMobile, customerName, customerGender, customerLocation, customerEmail, courierName, awbNo, deliveryCost, source, paymentMethods, selectedEmployee, discount, pendingAmount, addressLine1, addressLine2, shipCity, shipState, shipPincode, storefrontPricing, invoiceRemark]);
 
   const handleToggleStorefrontPricing = (checked: boolean) => {
     setStorefrontPricing(checked);
@@ -937,7 +939,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           shipping_state: needsShipping ? (shipState.trim() || null) : null,
           shipping_pincode: needsShipping ? (shipPincode.trim() || null) : null,
           payment_method: paymentMethods.join("+"),
-          notes: breakdownNote || null,
+          notes: [breakdownNote, invoiceRemark.trim()].filter(Boolean).join(" | ") || null,
           subtotal,
           tax_amount: taxAmount,
           discount_amount: discount,
@@ -1038,6 +1040,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
+      setInvoiceRemark("");
       setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode(""); setAltPhone("");
       setServiceable(null);
       clearDraft();
@@ -1204,7 +1207,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
           shipping_state: null,
           shipping_pincode: null,
           payment_method: paymentMethods.join("+"),
-          notes: breakdownNote || null,
+          notes: [breakdownNote, invoiceRemark.trim()].filter(Boolean).join(" | ") || null,
           subtotal,
           tax_amount: taxAmount,
           discount_amount: discount,
@@ -1254,6 +1257,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       setSource("");
       setPaymentMethods([]);
       setPaymentBreakdown({});
+      setInvoiceRemark("");
       setAddressLine1(""); setAddressLine2(""); setShipCity(""); setShipState(""); setShipPincode(""); setAltPhone("");
       setServiceable(null);
       clearDraft();
@@ -1461,6 +1465,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     const heldData = {
       customerMobile, customerName, customerGender, customerLocation, customerEmail,
       courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+      invoiceRemark: invoiceRemark.trim() || undefined,
     };
 
     let { error } = await supabase.from("held_invoices").insert({
@@ -1487,6 +1492,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setCart([]); setDiscount(0); setPendingAmount(0); setCustomerMobile(""); setCustomerName("");
     setCustomerGender(""); setCustomerLocation(""); setCustomerEmail(""); setCourierName(""); setAwbNo(""); setDeliveryCost(""); setSelectedEmployee("");
     setSource(""); setPaymentMethods([]);
+    setInvoiceRemark("");
     clearDraft();
     fetchHeldInvoices();
     toast({ title: "Invoice held", description: `${customerName || "Invoice"} parked — ${cart.length} item(s)` });
@@ -1502,6 +1508,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       const currentData = {
         customerMobile, customerName, customerGender, customerLocation, customerEmail,
         courierName, awbNo, cart, source, paymentMethods, selectedEmployee, discount, pendingAmount,
+        invoiceRemark: invoiceRemark.trim() || undefined,
       };
 
       let { error } = await supabase.from("held_invoices").insert({
@@ -1554,6 +1561,7 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
     setSelectedEmployee(held.selectedEmployee);
     setDiscount(held.discount);
     setPendingAmount((held as any).pendingAmount ?? 0);
+    setInvoiceRemark((held as any).invoiceRemark || "");
     toast({ title: "Invoice resumed", description: `${held.customerName || "Invoice"} restored` });
   };
 
@@ -2012,6 +2020,15 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Remark</Label>
+              <Input
+                value={invoiceRemark}
+                onChange={e => setInvoiceRemark(e.target.value)}
+                placeholder="Optional note for this bill (e.g. gift wrap, delivery instructions)"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Saved on the invoice — not shown to the customer on the bill.</p>
             </div>
           </CardContent>
         </Card>
