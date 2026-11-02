@@ -649,7 +649,8 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
       }
 
       if (inOtherField) {
-        restoreEditableValue(editableAtStart!, editableValueAtStart);
+        if (!editableAtStart) return;
+        restoreEditableValue(editableAtStart, editableValueAtStart);
       }
 
       setLastScan(code);
@@ -658,6 +659,18 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      // Free-text remarks are never scanner input, regardless of typing speed.
+      // Reset the pending burst too, so its idle callback cannot erase the note.
+      if (e.target instanceof HTMLElement && e.target.closest('[data-scanner-ignore]')) {
+        buffer = "";
+        fastBurst = false;
+        fastKeys = 0;
+        lastTime = 0;
+        editableAtStart = null;
+        if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+        return;
+      }
 
       const now = performance.now();
       const gap = now - lastTime;
@@ -2022,8 +2035,10 @@ export default function NewInvoiceTab({ storeId, userId }: Props) {
               </Select>
             </div>
             <div>
-              <Label>Remark</Label>
+              <Label htmlFor="invoice-remark">Remark</Label>
               <Input
+                id="invoice-remark"
+                data-scanner-ignore
                 value={invoiceRemark}
                 onChange={e => setInvoiceRemark(e.target.value)}
                 placeholder="Optional note for this bill (e.g. gift wrap, delivery instructions)"
