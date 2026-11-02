@@ -20,4 +20,4 @@
 - [ ] Resolve AI Product Upload workspace credit-limit error — check current spending limit and obtain approval for any increase.
 - [x] Fix and verify AI Product Upload frame-download timeout without retaining videos or temporary frames (live recognition returned a product successfully).
 - [x] Verify Pooja can open the inventory edit form on iPad with unobstructed touch controls (tested her real account and inventory).
-- [ ] Fix invoice remarks being cleared by barcode detection and verify saved notes.
+- [x] Fix invoice remarks being cleared by barcode detection; regression test passes and a held invoice's remark was verified in saved records (test draft removed).
