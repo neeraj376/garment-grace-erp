@@ -69,6 +69,8 @@ export default function Inventory() {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [priceByPct, setPriceByPct] = useState(false);
+  const [discountPct, setDiscountPct] = useState("");
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "",
@@ -697,8 +699,24 @@ export default function Inventory() {
                           {colors.map(c => <option key={c} value={c} />)}
                         </datalist>
                       </div>
-                      <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} onChange={e => setForm({...form, selling_price: e.target.value})} required /></div>
-                      <div><Label>MRP</Label><Input type="number" step="0.01" value={form.mrp} onChange={e => setForm({...form, mrp: e.target.value})} /></div>
+                      <div className="col-span-full flex items-center gap-2">
+                        <Checkbox id="price-by-pct" checked={priceByPct} onCheckedChange={v => setPriceByPct(!!v)} />
+                        <Label htmlFor="price-by-pct" className="cursor-pointer">Set selling price by discount % on MRP</Label>
+                      </div>
+                      <div><Label>MRP{priceByPct ? " *" : ""}</Label><Input type="number" step="0.01" value={form.mrp} required={priceByPct} onChange={e => {
+                        const mrp = e.target.value;
+                        const next = { ...form, mrp };
+                        if (priceByPct && mrp && discountPct !== "") next.selling_price = (Math.round(parseFloat(mrp) * (1 - parseFloat(discountPct) / 100) * 100) / 100).toString();
+                        setForm(next);
+                      }} /></div>
+                      {priceByPct && (
+                        <div><Label>Discount % *</Label><Input type="number" step="0.01" min="0" max="100" value={discountPct} required onChange={e => {
+                          const pct = e.target.value;
+                          setDiscountPct(pct);
+                          if (form.mrp && pct !== "") setForm({ ...form, selling_price: (Math.round(parseFloat(form.mrp) * (1 - parseFloat(pct) / 100) * 100) / 100).toString() });
+                        }} /></div>
+                      )}
+                      <div><Label>Selling Price *</Label><Input type="number" step="0.01" value={form.selling_price} readOnly={priceByPct} className={priceByPct ? "bg-muted" : ""} onChange={e => setForm({...form, selling_price: e.target.value})} required /></div>
                       <div><Label>Tax Rate %</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={e => setForm({...form, tax_rate: e.target.value})} /></div>
                     </div>
                     <div>
