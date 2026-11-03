@@ -69,6 +69,8 @@ export default function Inventory() {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [priceByPct, setPriceByPct] = useState(false);
+  const [discountPct, setDiscountPct] = useState("");
   const [form, setForm] = useState({
     sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "",
     selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "",
