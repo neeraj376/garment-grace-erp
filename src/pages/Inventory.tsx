@@ -318,8 +318,13 @@ export default function Inventory() {
       const row: any = {};
       headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
 
-      const sellingPrice = cleanNumber(row.selling_price || row.price || row.sp || row.rate);
       const mrpVal = cleanNumber(row.mrp || row.maximum_retail_price);
+      const discountPctVal = cleanNumber(row.discount_pct || row.discount_percent || row.mrp_discount || row.discount || row.disc_pct);
+      let sellingPrice = cleanNumber(row.selling_price || row.price || row.sp || row.rate);
+      // When a discount % on MRP is given (and no explicit selling price), derive the selling price from MRP.
+      if (!(sellingPrice > 0) && mrpVal > 0 && discountPctVal > 0 && discountPctVal < 100) {
+        sellingPrice = Math.round(mrpVal * (1 - discountPctVal / 100) * 100) / 100;
+      }
       const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.purchasprice || row.purchaseprice || row.cost_price || row.cost || row.bp || row.cp);
       const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
       const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 1;
@@ -635,8 +640,8 @@ export default function Inventory() {
                 <Upload className="h-4 w-4 mr-2" /> Import CSV
               </Button>
               <Button variant="link" size="sm" className="text-xs px-1" onClick={() => {
-                const sampleHeaders = ["sku","name","category","subcategory","brand","size","color","selling_price","mrp","tax_rate","buying_price","quantity","photo_url"];
-                const sampleRow = ["SKU001","Sample Product","Shirts","Casual","BrandX","M","Blue","999","1199","5","500","10","https://example.com/image.jpg"];
+                const sampleHeaders = ["sku","name","category","subcategory","brand","size","color","selling_price","mrp","discount_pct","tax_rate","buying_price","quantity","photo_url"];
+                const sampleRow = ["SKU001","Sample Product","Shirts","Casual","BrandX","M","Blue","","1199","30","5","500","10","https://example.com/image.jpg"];
                 const csv = [sampleHeaders.join(","), sampleRow.join(",")].join("\n");
                 const blob = new Blob([csv], { type: "text/csv" });
                 const url = URL.createObjectURL(blob);
