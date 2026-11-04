@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { deriveSellingPrice } from "@/lib/csvPricing";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Upload, Search, Package, Download, Pencil, Trash2, Filter, X, Loader2, ExternalLink, Film } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -320,11 +321,12 @@ export default function Inventory() {
 
       const mrpVal = cleanNumber(row.mrp || row.maximum_retail_price);
       const discountPctVal = cleanNumber(row.discount_pct || row.discount_percent || row.mrp_discount || row.discount || row.disc_pct);
-      let sellingPrice = cleanNumber(row.selling_price || row.price || row.sp || row.rate);
-      // When a discount % on MRP is given (and no explicit selling price), derive the selling price from MRP.
-      if (!(sellingPrice > 0) && mrpVal > 0 && discountPctVal > 0 && discountPctVal < 100) {
-        sellingPrice = Math.round(mrpVal * (1 - discountPctVal / 100) * 100) / 100;
-      }
+      // Explicit selling price wins; otherwise derive it from MRP minus the discount %.
+      const sellingPrice = deriveSellingPrice(
+        cleanNumber(row.selling_price || row.price || row.sp || row.rate),
+        mrpVal,
+        discountPctVal,
+      );
       const buyingPrice = cleanNumber(row.buying_price || row.purchase_price || row.purchasprice || row.purchaseprice || row.cost_price || row.cost || row.bp || row.cp);
       const quantity = parseInt(row.quantity || row.qty || row.stock || row.opening_stock || "0") || 0;
       const taxRate = cleanNumber(row.tax_rate || row.gst || row.tax) || 1;
