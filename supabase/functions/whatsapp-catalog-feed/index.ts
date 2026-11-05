@@ -26,7 +26,7 @@ Deno.serve(async () => {
     rows.push(...data);
     if (data.length < 1000) break;
   }
-  const header = ["id","title","description","availability","condition","price","sale_price","link","image_link","brand","google_product_category","size","color","item_group_id"];
+  const header = ["id","title","description","availability","condition","price","sale_price","link","image_link","brand","google_product_category","size","color","item_group_id","product_type","custom_label_0","custom_label_1"];
   const lines = [header.join(",")];
   for (const p of rows) {
     const img = firstPhoto(p.photo_url);
@@ -44,6 +44,7 @@ Deno.serve(async () => {
       showMrp ? `${price.toFixed(2)} INR` : "",
       `${SITE}/product/${p.id}`, img, p.brand || "Originee", "Apparel & Accessories",
       p.size || "", p.color || "", [p.brand, p.name].filter(Boolean).join("|").toLowerCase(),
+      [p.category, p.subcategory].filter(Boolean).join(" > "), p.category || "", p.subcategory || "",
     ].map(esc).join(","));
   }
   return new Response(lines.join("\n"), {
