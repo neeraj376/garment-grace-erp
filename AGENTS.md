@@ -1,5 +1,7 @@
 # Project architecture rules
 
+- Generate WhatsApp template review examples only for actual body variables; static invites must not require customer-name placeholders.
+
 - Product-video imports process the original video locally, clean selected frames server-side, retain only final inventory photos, and always delete temporary frames; this preserves credentials, tenant isolation, and storage hygiene.
 - Product recognition resolves only the caller's store-scoped media URLs and sends downloaded image bytes inline to AI; this avoids provider URL-fetch timeouts without broadening storage access.
 - Keep the admin main flex column shrinkable and inventory row actions pinned above horizontally scrolling cells; this keeps authorized touch controls reachable on tablets.

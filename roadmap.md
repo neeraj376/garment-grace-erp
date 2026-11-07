@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Submit the user-supplied customer community WhatsApp invite as originee_customer_community_v2.
+- [ ] Activate originee_customer_community_v2 in Marketing — waiting on Meta approval; keep current approved invite active meanwhile.
+
 - [x] Secure every administrator page against direct URL access for sub users without permission.
 - [x] Verify unauthorized links redirect to the user's first permitted page.
 - [x] Expand the home-page recent-product feed from 200 to 500 products.
