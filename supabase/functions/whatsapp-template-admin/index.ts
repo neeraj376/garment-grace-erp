@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { templateBodyExamples } from "../_shared/whatsappTemplateBody.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,8 +28,10 @@ serve(async (req) => {
   try {
     const API_KEY = Deno.env.get("WHATSAPP_API_KEY");
     const API_URL = Deno.env.get("WHATSAPP_API_URL");
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: "Server configuration missing" }, 500);
 
     if (!API_KEY || !API_URL) return json({ error: "WhatsApp API not configured" }, 500);
 
@@ -104,9 +107,6 @@ serve(async (req) => {
       }
       if (!message) return json({ error: "Message body is required" }, 400);
       if (message.length > 700) return json({ error: "Message body is too long (max 700 chars)" }, 400);
-      if (!/\{\{1\}\}/.test(message)) {
-        return json({ error: "Message body must contain {{1}} where the customer's name goes" }, 400);
-      }
       if (withButton) {
         if (!buttonLabel) return json({ error: "Button label is required" }, 400);
         if (buttonLabel.length > 20) return json({ error: "Button label must be 20 chars or fewer" }, 400);
@@ -123,7 +123,7 @@ serve(async (req) => {
         category,
         header_format: null,
         body: message,
-        body_text: [nameExample],
+        body_text: templateBodyExamples(message, nameExample),
         ...(footer ? { footer } : {}),
         ...(withButton
           ? {
