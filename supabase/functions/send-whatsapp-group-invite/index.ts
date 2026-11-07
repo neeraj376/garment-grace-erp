@@ -36,8 +36,12 @@ async function sendOne(opts: {
     template: {
       name: opts.template,
       languageCode: "en",
-      bodyValues: [opts.customerName || "Customer"],
-      buttonValues: { "0": [opts.groupLink] },
+      ...(opts.template === "originee_customer_community_v2"
+        ? {}
+        : {
+            bodyValues: [opts.customerName || "Customer"],
+            buttonValues: { "0": [opts.groupLink] },
+          }),
     },
   };
 
