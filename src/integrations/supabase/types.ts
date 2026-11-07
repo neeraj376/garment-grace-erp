@@ -1395,6 +1395,7 @@ export type Database = {
           store_id: string
           updated_at: string
           whatsapp_enabled: boolean
+          whatsapp_group_template: string | null
         }
         Insert: {
           created_at?: string
@@ -1407,6 +1408,7 @@ export type Database = {
           store_id: string
           updated_at?: string
           whatsapp_enabled?: boolean
+          whatsapp_group_template?: string | null
         }
         Update: {
           created_at?: string
@@ -1419,6 +1421,7 @@ export type Database = {
           store_id?: string
           updated_at?: string
           whatsapp_enabled?: boolean
+          whatsapp_group_template?: string | null
         }
         Relationships: [
           {

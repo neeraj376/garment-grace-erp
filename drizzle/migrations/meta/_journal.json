@@ -8,6 +8,13 @@
       "when": 1792168629851,
       "tag": "0000_realtime_inventory_batches",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794065004295,
+      "tag": "0001_add_whatsapp_group_template_setting",
+      "breakpoints": true
     }
   ]
 }
