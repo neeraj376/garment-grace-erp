@@ -97,6 +97,7 @@ serve(async (req) => {
       const urlPattern = String(body.urlPattern || "").trim();
       const urlExample = String(body.urlExample || "").trim();
       const nameExample = String(body.bodyExample || "Customer").trim() || "Customer";
+      const withButton = Boolean(buttonLabel || urlPattern);
 
       if (!NAME_RE.test(name)) {
         return json({ error: "Template name must be 2-40 chars, lowercase letters, numbers or underscores" }, 400);
@@ -106,12 +107,14 @@ serve(async (req) => {
       if (!/\{\{1\}\}/.test(message)) {
         return json({ error: "Message body must contain {{1}} where the customer's name goes" }, 400);
       }
-      if (!buttonLabel) return json({ error: "Button label is required" }, 400);
-      if (buttonLabel.length > 20) return json({ error: "Button label must be 20 chars or fewer" }, 400);
-      if (!urlPattern.startsWith("https://") || !urlPattern.includes("{{1}}")) {
-        return json({ error: "Link must start with https:// and contain {{1}} for the group link" }, 400);
+      if (withButton) {
+        if (!buttonLabel) return json({ error: "Button label is required" }, 400);
+        if (buttonLabel.length > 20) return json({ error: "Button label must be 20 chars or fewer" }, 400);
+        if (!urlPattern.startsWith("https://") || !urlPattern.includes("{{1}}")) {
+          return json({ error: "Link must start with https:// and contain {{1}} for the group link" }, 400);
+        }
+        if (!urlExample) return json({ error: "A sample link value is required for review" }, 400);
       }
-      if (!urlExample) return json({ error: "A sample link value is required for review" }, 400);
       if (footer.length > 60) return json({ error: "Footer must be 60 chars or fewer" }, 400);
 
       const payload = {
@@ -122,9 +125,13 @@ serve(async (req) => {
         body: message,
         body_text: [nameExample],
         ...(footer ? { footer } : {}),
-        button_type: "Call To Action",
-        buttons: [{ type: "URL", text: buttonLabel, url: urlPattern }],
-        button_text: urlExample,
+        ...(withButton
+          ? {
+              button_type: "Call To Action",
+              buttons: [{ type: "URL", text: buttonLabel, url: urlPattern }],
+              button_text: urlExample,
+            }
+          : {}),
       };
 
       const res = await fetch(`${base}/track/templates/`, {
