@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Fix and verify the dashboard's incomplete first Sunday sales total against 1 November records.
+
 - [x] Submit the user-supplied customer community WhatsApp invite as originee_customer_community_v2.
 - [x] Update the backend Marketing template selection through the secure settings form.
 - [ ] Verify originee_customer_community_v2 approval and delivery — last known status pending; approval check currently requires a signed-in session.
