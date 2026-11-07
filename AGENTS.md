@@ -1,5 +1,7 @@
 # Project architecture rules
 
+- Dashboard weekly sales use complete Asia/Kolkata calendar days with paged queries and the same paid-order cancellation filter as headline totals; the first day must not start at the current clock time.
+
 - Generate WhatsApp template review examples only for actual body variables; static invites must not require customer-name placeholders.
 
 - Product-video imports process the original video locally, clean selected frames server-side, retain only final inventory photos, and always delete temporary frames; this preserves credentials, tenant isolation, and storage hygiene.

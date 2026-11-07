@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/hooks/useStore";
+import { dashboardDays } from "@/lib/dashboardDays";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 
@@ -224,32 +225,34 @@ export default function Dashboard() {
       );
 
       // Weekly sales (last 7 days)
-      const days = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        days.push(d);
-      }
-
-      const weekStart = days[0].toISOString();
-      const { data: weekInvoices } = await supabase
+      const days = dashboardDays(today);
+      const weekStart = days[0].start.toISOString();
+      const weekEnd = days[6].end.toISOString();
+      const weekInvoices = await fetchAllRows(() => supabase
         .from("invoices")
         .select("total_amount, pending_amount, status, created_at, invoice_number")
         .eq("store_id", storeId)
-        .gte("created_at", weekStart);
+        .gte("created_at", weekStart)
+        .lt("created_at", weekEnd)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true }));
 
-      const { data: weekOrdersRaw } = await supabase
+      const weekOrdersRaw = await fetchAllRows(() => supabase
         .from("orders")
         .select("order_number, total_amount, created_at")
         .eq("store_id", storeId)
         .eq("payment_status", "paid")
-        .gte("created_at", weekStart);
+        .neq("status", "cancelled")
+        .gte("created_at", weekStart)
+        .lt("created_at", weekEnd)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true }));
       const weekOrders = (weekOrdersRaw ?? []).filter(o => !hasMatchingInvoice(weekInvoices ?? [], o.order_number));
 
       const weeklyData = days.map((d) => {
-        const dayStr = d.toLocaleDateString("en-US", { weekday: "short" });
-        const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        const dayEnd = new Date(dayStart.getTime() + 86400000);
+        const dayStr = d.day;
+        const dayStart = d.start;
+        const dayEnd = d.end;
         const invSales = weekInvoices
           ?.filter((inv) => {
             const t = new Date(inv.created_at);
