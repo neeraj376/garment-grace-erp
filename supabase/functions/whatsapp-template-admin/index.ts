@@ -55,7 +55,9 @@ serve(async (req) => {
 
     // ---- Read a template's current wording + approval status ----
     if (action === "get") {
-      const name = String(body.name || "").trim();
+      const name =
+        String(body.name || "").trim() ||
+        (Deno.env.get("WHATSAPP_GROUP_TEMPLATE_NAME") || "group_invite");
       if (!name) return json({ error: "name required" }, 400);
       const res = await fetch(
         `${base}/track/organization/templates?offset=0&template_name=${encodeURIComponent(name)}`,
