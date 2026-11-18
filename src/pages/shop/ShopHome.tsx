@@ -1,3 +1,4 @@
+import { productPath, categoryPath, productIdFromParam, slugify, prettifySlug } from "@/lib/seoUrls";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -336,7 +337,7 @@ export default function ShopHome() {
           {sortedCategories.map(({ name, Icon }) => (
             <Link
               key={name}
-              to={`/category/${encodeURIComponent(name)}`}
+              to={categoryPath(name)}
               className="group rounded-lg border border-border bg-card p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md"
             >
               <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground [&>svg]:h-8 [&>svg]:w-8 [&>svg]:stroke-[1.8]">

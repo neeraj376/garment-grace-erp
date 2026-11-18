@@ -55,9 +55,9 @@ export default function ShopLayout() {
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
             <Link to="/category/all" className="hover:text-foreground transition-colors">All Products</Link>
-            <Link to="/category/Jeans" className="hover:text-foreground transition-colors">Jeans</Link>
-            <Link to="/category/T-shirt" className="hover:text-foreground transition-colors">T-Shirts</Link>
-            <Link to="/category/Jacket" className="hover:text-foreground transition-colors">Jackets</Link>
+            <Link to="/category/jeans" className="hover:text-foreground transition-colors">Jeans</Link>
+            <Link to="/category/t-shirt" className="hover:text-foreground transition-colors">T-Shirts</Link>
+            <Link to="/category/jacket" className="hover:text-foreground transition-colors">Jackets</Link>
 
             {/* Brands mega dropdown */}
             <div

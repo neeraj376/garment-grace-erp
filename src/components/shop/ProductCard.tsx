@@ -1,3 +1,4 @@
+import { productPath, categoryPath, productIdFromParam, slugify, prettifySlug } from "@/lib/seoUrls";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { parsePhotoUrls } from "@/lib/photoUtils";
@@ -41,7 +42,7 @@ export default function ProductCard({ product, colors, sizes, minPrice, maxPrice
 
   return (
     <Link
-      to={`/product/${product.id}`}
+      to={productPath(product)}
       className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-200"
     >
       <div className="aspect-[3/4] bg-gradient-to-b from-muted/40 to-muted relative overflow-hidden">

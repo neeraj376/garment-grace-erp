@@ -1,3 +1,4 @@
+import { productPath, categoryPath, productIdFromParam, slugify, prettifySlug } from "@/lib/seoUrls";
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,8 @@ import { colorToHex, isNeemansFootwear, isUnderArmourFootwear, sortSizes, varian
 import ImageZoomDialog from "@/components/shop/ImageZoomDialog";
 
 export default function ShopProduct() {
-  const { id } = useParams<{ id: string }>();
+  const { id: idParam } = useParams<{ id: string }>();
+  const id = productIdFromParam(idParam);
   const navigate = useNavigate();
   const [product, setProduct] = useState<any>(null);
   const [siblings, setSiblings] = useState<any[]>([]);

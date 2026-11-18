@@ -1,3 +1,4 @@
+import { productPath, categoryPath, productIdFromParam, slugify, prettifySlug } from "@/lib/seoUrls";
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -62,10 +63,11 @@ export default function ShopCategory() {
 
       let result = all;
       if (selectedCategory && selectedCategory !== "all") {
-        const allowed = SLUG_CATEGORIES[selectedCategory] ?? [selectedCategory.toLowerCase()];
+        const key = Object.keys(SLUG_CATEGORIES).find((k) => slugify(k) === slugify(selectedCategory));
+        const allowed = key ? SLUG_CATEGORIES[key] : [selectedCategory.toLowerCase()];
         result = all.filter((p: any) => {
           const c = (p.category ?? "").trim().toLowerCase();
-          return allowed.includes(c);
+          return allowed.includes(c) || slugify(c) === slugify(selectedCategory);
         });
       }
       setProducts(result);
@@ -201,7 +203,7 @@ export default function ShopCategory() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="font-display text-2xl md:text-3xl font-bold mb-6">
-        {selectedCategory === "all" ? "All Products" : selectedCategory}
+        {selectedCategory === "all" ? "All Products" : (categories.find((c) => slugify(c) === slugify(selectedCategory)) ?? Object.keys(SLUG_CATEGORIES).find((k) => slugify(k) === slugify(selectedCategory)) ?? prettifySlug(selectedCategory))}
       </h1>
 
       {/* Top bar */}
@@ -215,7 +217,7 @@ export default function ShopCategory() {
             className="pl-9"
           />
         </div>
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+        <Select value={categories.find((c) => slugify(c) === slugify(selectedCategory)) ?? selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full md:w-48">
             <SelectValue placeholder="Category" />
           </SelectTrigger>

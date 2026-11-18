@@ -1,3 +1,4 @@
+import { productPath, categoryPath, productIdFromParam, slugify, prettifySlug } from "@/lib/seoUrls";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { parsePhotoUrls } from "@/lib/photoUtils";
@@ -36,7 +37,7 @@ export default function MasonryProductCard({ product, minPrice, maxPrice }: Prop
 
   return (
     <Link
-      to={`/product/${product.id}`}
+      to={productPath(product)}
       data-product-card
       className="group block mb-3 break-inside-avoid bg-card rounded-lg overflow-hidden border border-border hover:shadow-md transition-shadow"
     >

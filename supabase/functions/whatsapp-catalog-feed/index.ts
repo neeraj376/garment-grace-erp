@@ -42,7 +42,7 @@ Deno.serve(async () => {
       "in stock", "new",
       `${(showMrp ? mrp : price).toFixed(2)} INR`,
       showMrp ? `${price.toFixed(2)} INR` : "",
-      `${SITE}/product/${p.id}`, img, p.brand || "Originee", "Apparel & Accessories",
+      `${SITE}/product/${[p.brand && !(p.name||"").toLowerCase().includes(String(p.brand).toLowerCase()) ? p.brand : "", p.name, p.color].filter(Boolean).join(" ").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,80).replace(/-+$/g,"")}-${p.id}`, img, p.brand || "Originee", "Apparel & Accessories",
       p.size || "", p.color || "", [p.brand, p.name].filter(Boolean).join("|").toLowerCase(),
       [p.category, p.subcategory].filter(Boolean).join(" > "), p.category || "", p.subcategory || "",
     ].map(esc).join(","));
