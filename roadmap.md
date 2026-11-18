@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Fix AI video upload connection failures during long recognition requests; real video reached review with a photo, size XXL and quantity 5; no inventory saved and test photo deleted.
+
 - [x] Fix and verify the dashboard's incomplete first Sunday total: 1 November shows ₹1,78,417, matching saved sales less ₹4,500 pending.
 
 - [x] Submit the user-supplied customer community WhatsApp invite as originee_customer_community_v2.

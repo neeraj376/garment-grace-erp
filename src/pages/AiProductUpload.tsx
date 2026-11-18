@@ -56,6 +56,12 @@ export default function AiProductUpload() {
     setItems([]);
     let temporaryFramePaths: string[] = [];
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) throw new Error("Please sign in again before uploading a video.");
+      if ((sessionData.session.expires_at || 0) * 1000 < Date.now() + 120_000) {
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) throw new Error("Your session expired. Please sign in again.");
+      }
       setVideoStatus("Reading video…");
       const timed = await extractTimedVideoFrames(file, { count: 40 });
       const blobs = timed.map(f => f.blob);
@@ -90,7 +96,7 @@ export default function AiProductUpload() {
         if (tr?.text) transcript.push({ start: chunks[i].start, end: chunks[i].end, text: tr.text });
       }
       setVideoStatus("AI finding products, sizes and quantities…");
-      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls, frameTimes: timed.map(f => f.time), transcript } });
+      const { data, error: fnErr } = await supabase.functions.invoke("ai-product-from-photo", { body: { frameUrls: urls, frameTimes: timed.map(f => f.time), transcript, keepAlive: true } });
       if (fnErr || data?.error) {
         let msg = data?.error || fnErr?.message;
         try { const b = await (fnErr as any)?.context?.json?.(); if (b?.error) msg = b.error; } catch { /* */ }
@@ -168,7 +174,9 @@ export default function AiProductUpload() {
         description: fallbackCount > 0 ? `${fallbackCount} original video frame${fallbackCount === 1 ? " was" : "s were"} kept because cleanup was unavailable.` : "Product photos are cleaned and ready for review.",
       });
     } catch (e: any) {
-      setVideoError(e?.message || "Failed");
+      setVideoError(/Failed to send a request|Failed to fetch|NetworkError|Load failed/i.test(e?.message || "")
+        ? "The connection was interrupted while reading the video. Check your internet connection and choose the video again. No products were added."
+        : e?.message || "Video upload failed. Please choose the video again.");
     } finally {
       if (temporaryFramePaths.length > 0) {
         const { error: cleanupError } = await supabase.storage.from("product-media").remove(temporaryFramePaths);

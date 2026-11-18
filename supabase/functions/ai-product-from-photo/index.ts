@@ -1,11 +1,9 @@
 // Reads frames from a product video and extracts every distinct product (with size & quantity) via Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { inlineFrame, resolveFramePath } from "./frameMedia.ts";
+import { keepAliveJson } from "./keepAlive.ts";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -75,6 +73,7 @@ Deno.serve(async (req) => {
     } catch {
       return json({ error: "Video frame does not belong to this store" }, 403);
     }
+    const recognize = async (): Promise<Response> => {
     // Supply bytes directly: remote image downloads can time out at the AI provider.
     // Use the caller's storage permissions, not privileged or arbitrary URL fetches.
     const inlineFrames: string[] = [];
@@ -155,6 +154,10 @@ Deno.serve(async (req) => {
     }
     if (!text) return json({ error: refusal || "AI returned no products for this video" }, 422);
     return json({ products: JSON.parse(text).products || [] });
+    };
+    // Start sending bytes before frame downloads and AI reasoning, not just afterwards.
+    // Older clients retain their normal HTTP error statuses.
+    return body.keepAlive === true ? keepAliveJson(recognize, corsHeaders) : await recognize();
   } catch (e) {
     if (req.signal.aborted) return new Response(null, { status: 499 });
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
