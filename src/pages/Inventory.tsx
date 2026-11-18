@@ -207,9 +207,13 @@ export default function Inventory() {
     }
 
     // Each size becomes its own product with its own SKU.
-    const variants = multiSize
+    const sizeVariants = multiSize
       ? sizeRows.filter(r => r.size.trim()).map(r => ({ size: r.size.trim(), quantity: r.quantity }))
       : [{ size: form.size, quantity: form.quantity }];
+    const colorList = [...new Set(form.color.split(",").map(c => c.trim()).filter(Boolean))];
+    const multiColor = colorList.length > 1;
+    const variants = (colorList.length ? colorList : [form.color]).flatMap(color =>
+      sizeVariants.map(v => ({ ...v, color })));
 
     if (multiSize && variants.length === 0) {
       toast({ title: "Add at least one size", variant: "destructive" });
@@ -217,10 +221,12 @@ export default function Inventory() {
     }
 
     const baseSku = form.sku || `SKU-${Date.now()}`;
-    const skuFor = (size: string, i: number) => {
-      if (!multiSize) return baseSku;
-      const suffix = size.toUpperCase().replace(/[^A-Z0-9]+/g, "") || String(i + 1);
-      return `${baseSku}-${suffix}`;
+    const clean = (t: string) => t.toUpperCase().replace(/[^A-Z0-9]+/g, "");
+    const skuFor = (size: string, color: string, i: number) => {
+      const parts: string[] = [];
+      if (multiColor) parts.push(clean(color) || `C${i + 1}`);
+      if (multiSize) parts.push(clean(size) || String(i + 1));
+      return parts.length ? `${baseSku}-${parts.join("-")}` : baseSku;
     };
 
     try {
@@ -230,13 +236,13 @@ export default function Inventory() {
           .from("products")
           .insert({
             store_id: storeId,
-            sku: skuFor(v.size, i),
+            sku: skuFor(v.size, v.color, i),
             name: form.name,
             category: normalizeCategoryWithMappings(form.category, "category"),
             subcategory: normalizeCategoryWithMappings(form.subcategory, "subcategory"),
             brand: form.brand || null,
             size: normalizeCategoryWithMappings(v.size, "size"),
-            color: normalizeCategoryWithMappings(form.color, "color"),
+            color: normalizeCategoryWithMappings(v.color, "color"),
             selling_price: parseFloat(form.selling_price),
             mrp: form.mrp ? parseFloat(form.mrp) : null,
             tax_rate: parseFloat(form.tax_rate),
@@ -260,7 +266,7 @@ export default function Inventory() {
         }
       }
 
-      toast({ title: variants.length > 1 ? `${variants.length} size variants added` : "Product added" });
+      toast({ title: variants.length > 1 ? `${variants.length} variants added` : "Product added" });
       setDialogOpen(false);
       setForm({ sku: "", name: "", category: "", subcategory: "", brand: "", size: "", color: "", selling_price: "", mrp: "", tax_rate: "1", buying_price: "", quantity: "", description: "" });
       setNewProductPhotos([]);
@@ -701,7 +707,8 @@ export default function Inventory() {
                       </div>
                       <div>
                         <Label>Color</Label>
-                        <Input list="inv-colors" value={form.color} onChange={e => setForm({...form, color: e.target.value})} placeholder="Select or type new" />
+                        <Input list="inv-colors" value={form.color} onChange={e => setForm({...form, color: e.target.value})} placeholder="e.g. Black, Navy, White" />
+                        <p className="text-xs text-muted-foreground mt-1">Separate multiple colours with commas — each colour is saved with its own SKU.</p>
                         <datalist id="inv-colors">
                           {colors.map(c => <option key={c} value={c} />)}
                         </datalist>
