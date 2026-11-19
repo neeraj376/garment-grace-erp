@@ -31,3 +31,4 @@
 - [x] Fix invoice remarks being cleared by barcode detection; regression test passes and a held invoice's remark was verified in saved records (test draft removed).
 - [x] Show the QR code sticker view (50×25 and 50×40 previews captured from the live sticker page).
 - [x] Check whether the Cloud database is still under pressure, find the likely cause, and recommend optimize vs larger instance with the cost trade-off shown before any resize.
+- [x] Show the selling price on inventory stickers (50×25 and 50×40 previews verified; price formatting covered by a test).

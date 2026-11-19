@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Printer, QrCode, RefreshCw, Filter, X } from "lucide-react";
+import { formatStickerPrice } from "@/lib/stickerPrice";
 
 type Product = {
   id: string;
@@ -244,7 +245,12 @@ export default function StickerPrinter() {
   const dims = STICKER_SIZES[size];
   // Keep the QR as large and high-contrast as possible for handheld scanners.
   // Small thermal QR prints fail often, especially on 25mm-height labels.
-  const qrSize = Math.max(20, dims.h - 3);
+  // But never let it crowd out the text: reserve a readable column for name/price/SKU.
+  const MIN_TEXT_COLUMN_MM = 18;
+  const qrSize = Math.max(
+    20,
+    Math.min(dims.h - 3, dims.w - 2 * PRINT_SAFE_INSET_MM - 1 - MIN_TEXT_COLUMN_MM),
+  );
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl">
@@ -505,8 +511,9 @@ export default function StickerPrinter() {
                         {[p.color, p.size].filter(Boolean).join(' · ')}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '6pt' }}>
-                      <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.sku}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2mm' }}>
+                      <span style={{ fontWeight: 700, fontSize: '8pt', lineHeight: 1.05 }}>{formatStickerPrice(p.selling_price)}</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '5.5pt' }}>{p.sku}</span>
                     </div>
                   </div>
                 </div>
