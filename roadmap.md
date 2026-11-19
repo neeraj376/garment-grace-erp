@@ -29,3 +29,5 @@
 - [x] Fix and verify AI Product Upload frame-download timeout without retaining videos or temporary frames (live recognition returned a product successfully).
 - [x] Verify Pooja can open the inventory edit form on iPad with unobstructed touch controls (tested her real account and inventory).
 - [x] Fix invoice remarks being cleared by barcode detection; regression test passes and a held invoice's remark was verified in saved records (test draft removed).
+- [x] Show the QR code sticker view (50×25 and 50×40 previews captured from the live sticker page).
+- [x] Check whether the Cloud database is still under pressure, find the likely cause, and recommend optimize vs larger instance with the cost trade-off shown before any resize.
