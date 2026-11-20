@@ -12,7 +12,7 @@ import { extractTimedVideoFrames } from "@/lib/videoFrames";
 import { extractSpeechChunks } from "@/lib/videoAudio";
 import { serializePhotoUrls } from "@/lib/photoUtils";
 
-type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string; size: string };
+type Pricing = { selling_price: string; mrp: string; buying_price: string; quantity: string; size: string; name: string; color: string };
 type Item = Pricing & {
   id: string;
   preview: string;
@@ -25,7 +25,7 @@ type Item = Pricing & {
   size: string; color: string; material: string; description: string;
 };
 
-const emptyPricing: Pricing = { selling_price: "", mrp: "", buying_price: "", quantity: "1", size: "" };
+const emptyPricing: Pricing = { selling_price: "", mrp: "", buying_price: "", quantity: "1", size: "", name: "", color: "" };
 
 export default function AiProductUpload() {
   const { storeId } = useStore();
@@ -113,8 +113,8 @@ export default function AiProductUpload() {
           selling_price: pricing.selling_price, mrp: pricing.mrp, buying_price: pricing.buying_price,
           size: applyAll && pricing.size.trim() ? pricing.size.trim() : (p.size || ""),
           quantity: applyAll && Number(pricing.quantity) > 0 ? pricing.quantity : String(aiQty),
-          name: p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
-          color: p.color || "", material: p.material || "", description: p.description || "",
+          name: pricing.name.trim() || p.name || "", brand: p.brand || "", category: p.category || "", subcategory: p.subcategory || "",
+          color: pricing.color.trim() || p.color || "", material: p.material || "", description: p.description || "",
         };
       });
       setItems(newItems);
@@ -195,7 +195,7 @@ export default function AiProductUpload() {
   const applyPricingToAll = () => {
     const filled = Object.fromEntries(Object.entries(pricing).filter(([, v]) => v !== "")) as Partial<Pricing>;
     setItems(prev => prev.map(it => (it.status === "saved" ? it : { ...it, ...filled })));
-    toast({ title: "Prices, size & quantity applied to all photos" });
+    toast({ title: "Name, colour, prices, size & quantity applied to all photos" });
   };
 
   const saveAll = async () => {
@@ -263,6 +263,16 @@ export default function AiProductUpload() {
       <Card>
         <CardHeader><CardTitle className="text-base">Step 1 — Prices for this batch</CardTitle></CardHeader>
         <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Product Name (blank = AI suggests)</Label>
+              <Input value={pricing.name} placeholder="e.g. Zara Slim Fit Shirt" onChange={e => setPricing({ ...pricing, name: e.target.value })} />
+            </div>
+            <div>
+              <Label>Colour / Design (blank = AI reads)</Label>
+              <Input value={pricing.color} placeholder="e.g. Navy Checks, Black Printed" onChange={e => setPricing({ ...pricing, color: e.target.value })} />
+            </div>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {(["selling_price", "mrp", "buying_price", "quantity", "size"] as const).map(k => (
               <div key={k}>
@@ -280,7 +290,7 @@ export default function AiProductUpload() {
               <Button variant="outline" size="sm" onClick={applyPricingToAll}>Apply to all products now</Button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">Leave quantity blank to use the number of pieces AI counts in the video. Leave size blank to use the size AI reads from each tag.</p>
+          <p className="text-xs text-muted-foreground">Leave quantity blank to use the number of pieces AI counts in the video. Leave size blank to use the size AI reads from each tag. Name and colour you type are used exactly as written — put design variations (checks, print, stripes) in Colour, not the name.</p>
         </CardContent>
       </Card>
 
