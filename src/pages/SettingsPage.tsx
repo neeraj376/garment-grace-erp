@@ -11,6 +11,7 @@ import { Save } from "lucide-react";
 import SubUserManager from "@/components/settings/SubUserManager";
 import CategoryMappingManager from "@/components/settings/CategoryMappingManager";
 import HomeBannersManager from "@/components/settings/HomeBannersManager";
+import WhatsAppShoppingManager from "@/components/settings/WhatsAppShoppingManager";
 
 export default function SettingsPage() {
   const { storeId } = useStore();
@@ -125,6 +126,8 @@ export default function SettingsPage() {
       </Card>
 
       <HomeBannersManager />
+
+      <WhatsAppShoppingManager />
 
       <CategoryMappingManager />
 

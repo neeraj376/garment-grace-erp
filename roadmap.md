@@ -1,8 +1,8 @@
 # Roadmap
 
 - [x] Verify the existing live WhatsApp catalog feed — 1,400 in-stock products with images across 74 categories; this does not verify a Meta catalog import.
-- [ ] Connect the complete website photo catalog to the customer's WhatsApp catalog — awaiting the destination WhatsApp Business number/account and catalog access; verify scheduled import.
-- [ ] Build customer-requirement replies with catalog photos, size/colour selection, and verified checkout using existing Interakt — awaiting the destination number and verification of incoming-message/API access; preserve customer order approval and payment verification.
+- [ ] Connect the complete website photo catalog to WhatsApp Business +91 9310904557 — verify catalog access and scheduled import.
+- [ ] Build customer-requirement replies with catalog photos, size/colour selection, and verified checkout using existing Interakt on +91 9310904557 — verify incoming-message/API access; preserve customer order approval and payment verification.
 
 - [x] Fix AI video upload connection failures during long recognition requests; real video reached review with a photo, size XXL and quantity 5; no inventory saved and test photo deleted.
 

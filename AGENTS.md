@@ -1,5 +1,8 @@
 # Project architecture rules
 
+- WhatsApp shopping trials authenticate the existing store owner, query live store-scoped stock, and return only public catalog fields; trials never send messages or mutate orders, and are not evidence that a Meta catalog or inbound bot is connected.
+- New shopping AI calls use the request-local Responses SDK and shared run-ID helpers, strict structured output, no automatic retries, and no timer aborts; live inventory, not AI-generated data, supplies pictures, prices and variants.
+
 - Dashboard weekly sales use complete Asia/Kolkata calendar days with paged queries and the same paid-order cancellation filter as headline totals; the first day must not start at the current clock time.
 
 - Generate WhatsApp template review examples only for actual body variables; static invites must not require customer-name placeholders.

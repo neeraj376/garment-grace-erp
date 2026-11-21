@@ -1,5 +1,6 @@
 // Public product feed (CSV) for Meta Commerce Manager / WhatsApp catalog.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { productPhotos } from "../_shared/whatsappShopping.ts";
 
 const STORE_ID = "8995a7bd-2850-4a9f-9a13-7c4b1f41ffe6";
 const SITE = "https://originee-store.com";
@@ -17,7 +18,7 @@ const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""').replace(/[\r
 Deno.serve(async () => {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const rows: any[] = [];
-  for (let off = 0; off < 20000; off += 1000) {
+  for (let off = 0; ; off += 1000) {
     const { data, error } = await sb.rpc("get_in_stock_shop_products_page", {
       p_store_id: STORE_ID, p_category: null, p_limit: 1000, p_offset: off,
     });
@@ -26,7 +27,7 @@ Deno.serve(async () => {
     rows.push(...data);
     if (data.length < 1000) break;
   }
-  const header = ["id","title","description","availability","condition","price","sale_price","link","image_link","brand","google_product_category","size","color","item_group_id","product_type","custom_label_0","custom_label_1"];
+  const header = ["id","title","description","availability","condition","price","sale_price","link","image_link","brand","google_product_category","size","color","item_group_id","product_type","custom_label_0","custom_label_1","additional_image_link"];
   const lines = [header.join(",")];
   for (const p of rows) {
     const img = firstPhoto(p.photo_url);
@@ -45,6 +46,7 @@ Deno.serve(async () => {
       `${SITE}/product/${[p.brand && !(p.name||"").toLowerCase().includes(String(p.brand).toLowerCase()) ? p.brand : "", p.name, p.color].filter(Boolean).join(" ").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,80).replace(/-+$/g,"")}-${p.id}`, img, p.brand || "Originee", "Apparel & Accessories",
       p.size || "", p.color || "", [p.brand, p.name].filter(Boolean).join("|").toLowerCase(),
       [p.category, p.subcategory].filter(Boolean).join(" > "), p.category || "", p.subcategory || "",
+      productPhotos(p.photo_url).slice(1, 10).join(","),
     ].map(esc).join(","));
   }
   return new Response(lines.join("\n"), {
