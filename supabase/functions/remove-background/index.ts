@@ -1,116 +1,81 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Showroom photo cleanup: replaces background with a clean studio backdrop and
+// fixes lighting via the Lovable AI Gateway image-edit endpoint.
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const PROMPT =
+  "Turn this into a professional showroom-quality ecommerce product photo. Remove the existing background completely and place the product on a seamless pure white studio backdrop. Relight it with soft, even, diffused studio lighting: fix dim, yellow or uneven light, correct white balance, remove harsh shadows and glare, keep only a subtle natural ground shadow. Sharpen edges and fabric detail, center the product with comfortable margins. Keep the product exactly as-is: do not change its colour, shape, pattern, logo, text or details, and do not add props or people.";
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const BUCKET_MARK = "/storage/v1/object/public/product-media/";
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { imageUrl, storagePath } = await req.json();
-    if (!imageUrl || !storagePath) {
-      return new Response(JSON.stringify({ error: "imageUrl and storagePath are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const auth = req.headers.get("Authorization") || "";
+    if (!auth.startsWith("Bearer ")) return json({ error: "Please sign in again." }, 401);
+    const { data: u } = await supabase.auth.getUser(auth.slice(7));
+    if (!u?.user) return json({ error: "Please sign in again." }, 401);
+    const { data: profile } = await supabase.from("profiles").select("store_id").eq("user_id", u.user.id).maybeSingle();
+    const storeId = profile?.store_id;
+    if (!storeId) return json({ error: "Store access denied" }, 403);
+
+    const body = await req.json().catch(() => ({}));
+    const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl : "";
+    const storagePath = typeof body.storagePath === "string" ? body.storagePath : "";
+    if (!imageUrl || !storagePath || storagePath.includes("..")) return json({ error: "imageUrl and storagePath are required" }, 400);
+
+    // Only the caller's own store media may be read or written.
+    const idx = imageUrl.indexOf(BUCKET_MARK);
+    const sourcePath = idx >= 0 ? decodeURIComponent(imageUrl.slice(idx + BUCKET_MARK.length).split("?")[0]) : "";
+    if (!sourcePath.startsWith(`${storeId}/`) || !storagePath.startsWith(`${storeId}/`)) {
+      return json({ error: "This photo does not belong to your store." }, 403);
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const { data: src, error: dlErr } = await supabase.storage.from("product-media").download(sourcePath);
+    if (dlErr || !src) return json({ error: "Could not read the uploaded photo." }, 400);
 
-    console.log("Requesting background removal for:", storagePath);
+    const key = Deno.env.get("LOVABLE_API_KEY");
+    if (!key) return json({ error: "AI is not configured" }, 500);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const form = new FormData();
+    form.append("model", "openai/gpt-image-2.5-sunburst");
+    form.append("prompt", PROMPT);
+    form.append("image", new File([src], "source.jpg", { type: src.type || "image/jpeg" }));
+    form.append("size", "1024x1536");
+    form.append("quality", "medium");
+    form.append("output_format", "jpeg");
+
+    const ai = await fetch("https://ai.gateway.lovable.dev/v1/images/edits", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Remove the background from this product image completely. Make the background pure white (#FFFFFF). Keep the product/subject perfectly intact with clean edges. This is for an e-commerce product listing.",
-              },
-              {
-                type: "image_url",
-                image_url: { url: imageUrl },
-              },
-            ],
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
+      headers: { Authorization: `Bearer ${key}`, "X-Lovable-AIG-SDK": "fetch" },
+      body: form,
     });
-
-    if (!aiResponse.ok) {
-      const status = aiResponse.status;
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errText = await aiResponse.text();
-      console.error("AI gateway error:", status, errText);
-      throw new Error(`AI gateway returned ${status}`);
+    if (!ai.ok) {
+      const t = await ai.text();
+      console.error("AI gateway error", ai.status, t.slice(0, 300));
+      let msg = "AI photo cleanup failed.";
+      try { msg = JSON.parse(t)?.error?.message || JSON.parse(t)?.message || msg; } catch (_) { /* ignore */ }
+      if (ai.status === 429) msg = "Too many photos at once — try again in a minute.";
+      if (ai.status === 402) msg = "AI credits are used up. Add credits to continue.";
+      return json({ error: msg }, ai.status);
     }
+    const out = await ai.json();
+    const b64 = out?.data?.[0]?.b64_json;
+    if (!b64) return json({ error: "AI did not return an image." }, 502);
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
-    const aiData = await aiResponse.json();
-    const base64Url = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!base64Url) {
-      throw new Error("No image returned from AI");
-    }
-
-    // Extract base64 data and convert to binary
-    const base64Data = base64Url.split(",")[1];
-    const binaryStr = atob(base64Data);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
-
-    // Upload processed image back to storage
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { error: uploadError } = await supabase.storage
-      .from("product-media")
-      .upload(storagePath, bytes.buffer, {
-        contentType: "image/png",
-        upsert: true,
-      });
-
-    if (uploadError) throw uploadError;
-
-    const { data: urlData } = supabase.storage
-      .from("product-media")
-      .getPublicUrl(storagePath);
-
-    return new Response(
-      JSON.stringify({ url: urlData.publicUrl }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const outPath = storagePath.replace(/\.[^.\/]+$/, "") + ".jpg";
+    const { error: upErr } = await supabase.storage.from("product-media").upload(outPath, bytes, { contentType: "image/jpeg", upsert: true });
+    if (upErr) throw upErr;
+    return json({ url: supabase.storage.from("product-media").getPublicUrl(outPath).data.publicUrl });
   } catch (e) {
     console.error("remove-background error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

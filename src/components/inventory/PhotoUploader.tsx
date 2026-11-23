@@ -54,7 +54,7 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
 
       // 3. Optional: AI background cleanup (replaces the file in-place)
       if (aiCleanup) {
-        setStatusLabel("AI cleaning background…");
+        setStatusLabel("Creating showroom shot…");
         try {
           const cleanPath = path.replace(/\.[^.]+$/, "") + "-clean.png";
           const { data, error: fnErr } = await supabase.functions.invoke("remove-background", {
@@ -114,7 +114,7 @@ export default function PhotoUploader({ photos, onChange, storeId, productId }: 
         </Label>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Sparkles className="h-3 w-3" />
-          <span>AI cleanup auto-applied</span>
+          <span>Showroom cleanup auto-applied</span>
         </div>
       </div>
       <div className="flex flex-wrap gap-2 mt-1">

@@ -140,7 +140,7 @@ export default function PhotoPreviewDialog({
       setCurrentUrl(newUrl);
       setBgRemoved(true);
       onImageUpdated?.(newUrl);
-      toast({ title: "Background removed! Image is now e-commerce ready." });
+      toast({ title: "Showroom shot ready — background and lighting cleaned up." });
     } catch (err: any) {
       toast({ title: "Background removal failed", description: err.message, variant: "destructive" });
     } finally {
