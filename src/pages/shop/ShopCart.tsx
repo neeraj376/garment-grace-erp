@@ -2,6 +2,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import { effectiveUnitPrices } from "@/lib/bulkPricing";
 
 export default function ShopCart() {
   const { items, loading, updateQuantity, removeFromCart } = useCart();
@@ -24,15 +25,17 @@ export default function ShopCart() {
     );
   }
 
+  const unitPrices = effectiveUnitPrices(items.map((i) => ({ product_id: i.product_id, quantity: i.quantity, selling_price: i.product?.selling_price ?? 0 })));
+  const priceOf = (id: string) => unitPrices.get(id) ?? 0;
   const subtotal = items.reduce((sum, item) => {
-    const price = item.product?.selling_price ?? 0;
+    const price = priceOf(item.product_id);
     return sum + price * item.quantity;
   }, 0);
 
   const taxTotal = items.reduce((sum, item) => {
     const p = item.product;
     if (!p) return sum;
-    return sum + (p.selling_price * item.quantity * p.tax_rate) / (100 + p.tax_rate);
+    return sum + (priceOf(item.product_id) * item.quantity * p.tax_rate) / (100 + p.tax_rate);
   }, 0);
 
   return (
@@ -63,7 +66,7 @@ export default function ShopCart() {
                   {(p.size || p.color) && (
                     <p className="text-xs text-muted-foreground mt-0.5">{[p.size, p.color].filter(Boolean).join(" • ")}</p>
                   )}
-                  <p className="text-sm font-bold mt-1">₹{p.selling_price.toLocaleString()}</p>
+                  <p className="text-sm font-bold mt-1">₹{priceOf(item.product_id).toLocaleString()}{priceOf(item.product_id) < p.selling_price && <span className="ml-2 text-xs font-normal text-muted-foreground line-through">₹{p.selling_price.toLocaleString()}</span>}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <div className="flex items-center border border-border rounded-md">
                       <button className="p-1 hover:bg-muted" onClick={() => updateQuantity(item.product_id, item.quantity - 1)}>
@@ -80,7 +83,7 @@ export default function ShopCart() {
                   </div>
                 </div>
                 <div className="text-sm font-bold shrink-0">
-                  ₹{(p.selling_price * item.quantity).toLocaleString()}
+                  ₹{(priceOf(item.product_id) * item.quantity).toLocaleString()}
                 </div>
               </div>
             );

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle, Truck, Store } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCart } from "@/hooks/useCart";
+import { effectiveUnitPrices } from "@/lib/bulkPricing";
 import { useShopVisitor } from "@/hooks/useShopVisitor";
 import { toast } from "sonner";
 import { calculateDtdcShipping } from "@/lib/dtdcRates";
@@ -194,15 +195,17 @@ export default function ShopCheckout() {
     return null;
   }
 
+  const unitPrices = effectiveUnitPrices(items.map((i) => ({ product_id: i.product_id, quantity: i.quantity, selling_price: i.product?.selling_price ?? 0 })));
+  const priceOf = (id: string) => unitPrices.get(id) ?? 0;
   const subtotal = items.reduce((sum, item) => {
-    const price = item.product?.selling_price ?? 0;
+    const price = priceOf(item.product_id);
     return sum + price * item.quantity;
   }, 0);
 
   const taxTotal = items.reduce((sum, item) => {
     const p = item.product;
     if (!p) return sum;
-    return sum + (p.selling_price * item.quantity * p.tax_rate) / (100 + p.tax_rate);
+    return sum + (priceOf(item.product_id) * item.quantity * p.tax_rate) / (100 + p.tax_rate);
   }, 0);
 
   const total = subtotal + shippingCost;
@@ -494,7 +497,7 @@ export default function ShopCheckout() {
                   return (
                     <div key={item.product_id} className="flex justify-between">
                       <span className="text-muted-foreground line-clamp-1 flex-1">{p?.name} × {item.quantity}</span>
-                      <span className="font-medium ml-2">₹{((p?.selling_price ?? 0) * item.quantity).toLocaleString("en-IN")}</span>
+                      <span className="font-medium ml-2">₹{(priceOf(item.product_id) * item.quantity).toLocaleString("en-IN")}</span>
                     </div>
                   );
                 })}

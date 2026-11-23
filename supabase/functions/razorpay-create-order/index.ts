@@ -1,3 +1,4 @@
+import { effectiveUnitPrices } from "../_shared/bulkPricing.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -92,18 +93,20 @@ serve(async (req) => {
     let subtotal = 0;
     let taxTotal = 0;
     const orderItemsData: any[] = [];
+    const unitPrices = effectiveUnitPrices(items.map((i: any) => ({ product_id: i.product_id, quantity: Number(i.quantity) || 0, selling_price: Number((productMap.get(i.product_id) as any)?.selling_price) || 0 })));
 
     for (const item of items) {
       const p: any = productMap.get(item.product_id);
       if (!p) throw new Error(`Product ${item.product_id} not found`);
-      const lineTotal = p.selling_price * item.quantity;
-      const lineTax = (p.selling_price * item.quantity * p.tax_rate) / (100 + p.tax_rate);
+      const unitPrice = unitPrices.get(item.product_id) ?? p.selling_price;
+      const lineTotal = unitPrice * item.quantity;
+      const lineTax = (unitPrice * item.quantity * p.tax_rate) / (100 + p.tax_rate);
       subtotal += lineTotal;
       taxTotal += lineTax;
       orderItemsData.push({
         product_id: item.product_id,
         quantity: item.quantity,
-        unit_price: p.selling_price,
+        unit_price: unitPrice,
         tax_amount: lineTax,
         total: lineTotal,
       });

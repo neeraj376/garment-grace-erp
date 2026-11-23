@@ -36,3 +36,4 @@
 - [x] Show the QR code sticker view (50×25 and 50×40 previews captured from the live sticker page).
 - [x] Check whether the Cloud database is still under pressure, find the likely cause, and recommend optimize vs larger instance with the cost trade-off shown before any resize.
 - [x] Show the selling price on inventory stickers (50×25 and 50×40 previews verified; price formatting covered by a test).
+- [x] CK underwear 20 NOV: 3+ pieces (any sizes) = ₹200 each on website
