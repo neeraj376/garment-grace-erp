@@ -27,6 +27,7 @@ import Marketing from "@/pages/Marketing";
 import WhatsAppRotation from "@/pages/WhatsAppRotation";
 import StickerPrinter from "@/pages/StickerPrinter";
 import Expenses from "@/pages/Expenses";
+import Purchases from "@/pages/Purchases";
 import ShippingCalculator from "@/pages/ShippingCalculator";
 import NotFound from "@/pages/NotFound";
 import InvoicePublic from "@/pages/InvoicePublic";
@@ -187,6 +188,7 @@ function AppRoutes() {
         <Route path="whatsapp-rotation" element={<ProtectedAdminRoute allowed={permissions.role === "owner"} fallbackPath={defaultAdminPath}><WhatsAppRotation /></ProtectedAdminRoute>} />
         <Route path="stickers" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_print_stickers)} fallbackPath={defaultAdminPath}><StickerPrinter /></ProtectedAdminRoute>} />
         <Route path="expenses" element={<ProtectedAdminRoute allowed={permissions.role === "owner"} fallbackPath={defaultAdminPath}><Expenses /></ProtectedAdminRoute>} />
+        <Route path="purchases" element={<ProtectedAdminRoute allowed={permissions.role === "owner"} fallbackPath={defaultAdminPath}><Purchases /></ProtectedAdminRoute>} />
         <Route path="shipping-calculator" element={<ProtectedAdminRoute allowed={canAccess(permissions.can_shipping_calculator)} fallbackPath={defaultAdminPath}><ShippingCalculator /></ProtectedAdminRoute>} />
       </Route>
       {shopRoutes}

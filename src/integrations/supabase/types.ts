@@ -1213,6 +1213,56 @@ export type Database = {
           },
         ]
       }
+      purchases: {
+        Row: {
+          amount: number
+          bill_url: string | null
+          created_at: string
+          created_by: string | null
+          gst_applicable: boolean
+          id: string
+          purchase_date: string
+          quantity: number
+          store_id: string
+          total_cost: number
+          vendor_name: string
+        }
+        Insert: {
+          amount: number
+          bill_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          gst_applicable?: boolean
+          id?: string
+          purchase_date?: string
+          quantity?: number
+          store_id: string
+          total_cost: number
+          vendor_name: string
+        }
+        Update: {
+          amount?: number
+          bill_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          gst_applicable?: boolean
+          id?: string
+          purchase_date?: string
+          quantity?: number
+          store_id?: string
+          total_cost?: number
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_addresses: {
         Row: {
           address_line1: string
