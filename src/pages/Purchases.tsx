@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { Trash2, FileText, ShoppingCart } from "lucide-react";
+import { Trash2, FileText, ShoppingCart, Pencil, X } from "lucide-react";
 import { purchaseTotal } from "@/lib/purchaseCost";
 
 interface Purchase {
@@ -33,6 +33,7 @@ export default function Purchases() {
   const [bill, setBill] = useState<File | null>(null);
   const [fileKey, setFileKey] = useState(0);
   const [scanning, setScanning] = useState(false);
+  const [editing, setEditing] = useState<Purchase | null>(null);
 
   const toJpegDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
     const img = new Image(); const url = URL.createObjectURL(file);
@@ -78,6 +79,23 @@ export default function Purchases() {
 
   const total = purchaseTotal(parseFloat(amount), gst);
 
+  const resetForm = () => {
+    setEditing(null); setVendor(""); setDetails(""); setAmount(""); setGst(false); setQty("1");
+    setBill(null); setFileKey(k => k + 1); setDate(today());
+  };
+
+  const startEdit = (p: Purchase) => {
+    setEditing(p);
+    setDate(String(p.purchase_date).slice(0, 10));
+    setVendor(p.vendor_name);
+    setAmount(String(p.amount));
+    setGst(!!p.gst_applicable);
+    setQty(String(p.quantity));
+    setDetails(p.details ?? "");
+    setBill(null); setFileKey(k => k + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const save = async () => {
     if (!storeId) return;
     const amt = parseFloat(amount); const q = parseInt(qty, 10);
@@ -85,7 +103,8 @@ export default function Purchases() {
     if (!(amt >= 0) || amount === "") return toast({ title: "Enter a valid amount", variant: "destructive" });
     if (!(q > 0)) return toast({ title: "Enter a valid quantity", variant: "destructive" });
     setSaving(true);
-    let bill_url: string | null = null;
+    const oldBill = editing?.bill_url ?? null;
+    let bill_url: string | null = oldBill;
     if (bill) {
       const ext = bill.name.split(".").pop() || "jpg";
       const path = `${storeId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -93,18 +112,26 @@ export default function Purchases() {
       if (error) { setSaving(false); return toast({ title: "Bill upload failed", description: error.message, variant: "destructive" }); }
       bill_url = path;
     }
-    const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase.from("purchases").insert({
-      store_id: storeId, purchase_date: date, vendor_name: vendor.trim(), amount: amt,
-      gst_applicable: gst, total_cost: purchaseTotal(amt, gst), quantity: q, details: details.trim() || null, bill_url, created_by: u.user?.id ?? null,
-    });
+    const payload = {
+      purchase_date: date, vendor_name: vendor.trim(), amount: amt,
+      gst_applicable: gst, total_cost: purchaseTotal(amt, gst), quantity: q,
+      details: details.trim() || null, bill_url,
+    };
+    let error: { message: string } | null = null;
+    if (editing) {
+      ({ error } = await supabase.from("purchases").update(payload).eq("id", editing.id).eq("store_id", storeId));
+    } else {
+      const { data: u } = await supabase.auth.getUser();
+      ({ error } = await supabase.from("purchases").insert({ ...payload, store_id: storeId, created_by: u.user?.id ?? null }));
+    }
     setSaving(false);
     if (error) {
-      if (bill_url) await supabase.storage.from(BUCKET).remove([bill_url]);
-      return toast({ title: "Save failed", description: error.message, variant: "destructive" });
+      if (bill && bill_url) await supabase.storage.from(BUCKET).remove([bill_url]);
+      return toast({ title: editing ? "Update failed" : "Save failed", description: error.message, variant: "destructive" });
     }
-    toast({ title: "Purchase saved" });
-    setVendor(""); setDetails(""); setAmount(""); setGst(false); setQty("1"); setBill(null); setFileKey(k => k + 1); setDate(today());
+    if (bill && oldBill && oldBill !== bill_url) await supabase.storage.from(BUCKET).remove([oldBill]);
+    toast({ title: editing ? "Purchase updated" : "Purchase saved" });
+    resetForm();
     load();
   };
 
@@ -128,7 +155,10 @@ export default function Purchases() {
     <div className="space-y-6 p-4 md:p-6">
       <h1 className="text-2xl font-bold flex items-center gap-2"><ShoppingCart className="h-6 w-6" /> Purchases</h1>
       <Card>
-        <CardHeader><CardTitle>Add purchase</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>{editing ? "Edit purchase" : "Add purchase"}</CardTitle>
+          {editing && <Button size="sm" variant="outline" onClick={resetForm}><X className="h-4 w-4 mr-1" />Cancel edit</Button>}
+        </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
           <div><Label>Vendor name</Label><Input value={vendor} onChange={e => setVendor(e.target.value)} placeholder="e.g. Sharma Traders" /></div>
@@ -138,11 +168,11 @@ export default function Purchases() {
             <Switch id="gst" checked={gst} onCheckedChange={setGst} />
             <Label htmlFor="gst">GST {gst ? "Yes (+5%)" : "No"}</Label>
           </div>
-          <div><Label>Bill picture (optional)</Label><Input key={fileKey} type="file" accept="image/*,application/pdf" onChange={e => onBill(e.target.files?.[0] ?? null)} disabled={scanning} />{scanning && <p className="text-xs text-muted-foreground mt-1">Reading bill…</p>}</div>
+          <div><Label>Bill picture (optional)</Label><Input key={fileKey} type="file" accept="image/*,application/pdf" onChange={e => onBill(e.target.files?.[0] ?? null)} disabled={scanning} />{scanning && <p className="text-xs text-muted-foreground mt-1">Reading bill…</p>}{editing && !bill && editing.bill_url && <p className="text-xs text-muted-foreground mt-1">Current bill kept — pick a file to replace it. <button type="button" className="underline" onClick={() => openBill(editing.bill_url!)}>View</button></p>}</div>
           <div className="sm:col-span-2 lg:col-span-3"><Label>Purchase details (optional)</Label><Textarea value={details} onChange={e => setDetails(e.target.value)} placeholder="e.g. 20 cotton shirts, assorted sizes" /></div>
           <div className="sm:col-span-2 lg:col-span-3 flex items-center justify-between rounded-md bg-muted p-3">
             <span>Total cost{gst ? " (incl. 5% GST)" : ""}: <strong>{inr(total)}</strong></span>
-            <Button onClick={save} disabled={saving || scanning}>{saving ? "Saving…" : "Save purchase"}</Button>
+            <Button onClick={save} disabled={saving || scanning}>{saving ? "Saving…" : editing ? "Update purchase" : "Save purchase"}</Button>
           </div>
         </CardContent>
       </Card>
@@ -167,7 +197,10 @@ export default function Purchases() {
                   <TableCell>{r.gst_applicable ? "Yes" : "No"}</TableCell>
                   <TableCell className="text-right font-medium">{inr(r.total_cost)}</TableCell>
                   <TableCell>{r.bill_url ? <Button size="sm" variant="ghost" onClick={() => openBill(r.bill_url!)}><FileText className="h-4 w-4 mr-1" />View</Button> : "—"}</TableCell>
-                  <TableCell><Button size="icon" variant="ghost" onClick={() => remove(r)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <Button size="icon" variant="ghost" onClick={() => startEdit(r)} aria-label="Edit purchase"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => remove(r)} aria-label="Delete purchase"><Trash2 className="h-4 w-4" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
