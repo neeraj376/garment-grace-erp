@@ -15,3 +15,5 @@
 - Mark invoice free-text remark fields with `data-scanner-ignore` and reset scanner bursts when they receive keys; typing speed must never erase customer notes.
 
 - Storefront URLs are readable slugs via `src/lib/seoUrls.ts`: products `/product/<slug>-<uuid>` (id parsed from the tail so old links work), categories `/category/<slug>` matched by slug; keeps links SEO-friendly without breaking shared URLs.
+
+- Reports show Purchases as an informational line only; profit uses cost of goods sold from batch buying prices, so purchases are never deducted (avoids double counting).

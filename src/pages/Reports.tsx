@@ -336,7 +336,7 @@ export default function Reports() {
     });
 
 
-    // Purchases (incl. 5% GST where applicable) dated within the range
+    // Purchases (incl. 5% GST) shown for information only — profit uses cost of goods sold, so purchases are NOT deducted
     const { data: purData } = await supabase
       .from("purchases")
       .select("total_cost")
@@ -346,7 +346,7 @@ export default function Reports() {
     const purchaseCost = (purData ?? []).reduce((s, p: any) => s + Number(p.total_cost || 0), 0);
 
     const profit = revenue - cost - tax - deliveryCost;
-    const summary = { revenue, cost, tax, deliveryCost, profit, operatingCost, purchaseCost, operatingProfit: profit - operatingCost - purchaseCost };
+    const summary = { revenue, cost, tax, deliveryCost, profit, operatingCost, purchaseCost, operatingProfit: profit - operatingCost };
 
     const paymentMap: Record<string, number> = {};
     invData.forEach(inv => {
