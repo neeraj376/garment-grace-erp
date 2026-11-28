@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
         can_print_stickers: permissions?.can_print_stickers ?? false,
         can_shipping_calculator: permissions?.can_shipping_calculator ?? false,
         can_ai_upload: permissions?.can_ai_upload ?? false,
+        can_purchases: permissions?.can_purchases ?? false,
         can_view_buying_price: permissions?.can_view_buying_price ?? false,
       });
 

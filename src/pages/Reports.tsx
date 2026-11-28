@@ -57,7 +57,7 @@ interface EmployeeSales {
 }
 
 interface ReportBundle {
-  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number; operatingCost: number; operatingProfit: number };
+  summary: { revenue: number; cost: number; tax: number; deliveryCost: number; profit: number; operatingCost: number; purchaseCost: number; operatingProfit: number };
   trend: { date: string; total: number }[];
   trendDetail: { date: string; total: number; byEmp: Record<string, number> }[];
   paymentSplit: PaymentSplit[];
@@ -70,7 +70,7 @@ interface ReportBundle {
 type SourceFilter = "all" | "offline" | "whatsapp" | "online" | "wholesale";
 
 const EMPTY_BUNDLE: ReportBundle = {
-  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0, operatingCost: 0, operatingProfit: 0 },
+  summary: { revenue: 0, cost: 0, tax: 0, deliveryCost: 0, profit: 0, operatingCost: 0, purchaseCost: 0, operatingProfit: 0 },
   trend: [],
   trendDetail: [],
   paymentSplit: [],
@@ -336,8 +336,17 @@ export default function Reports() {
     });
 
 
+    // Purchases (incl. 5% GST where applicable) dated within the range
+    const { data: purData } = await supabase
+      .from("purchases")
+      .select("total_cost")
+      .eq("store_id", storeId!)
+      .gte("purchase_date", start.slice(0, 10))
+      .lte("purchase_date", end.slice(0, 10));
+    const purchaseCost = (purData ?? []).reduce((s, p: any) => s + Number(p.total_cost || 0), 0);
+
     const profit = revenue - cost - tax - deliveryCost;
-    const summary = { revenue, cost, tax, deliveryCost, profit, operatingCost, operatingProfit: profit - operatingCost };
+    const summary = { revenue, cost, tax, deliveryCost, profit, operatingCost, purchaseCost, operatingProfit: profit - operatingCost - purchaseCost };
 
     const paymentMap: Record<string, number> = {};
     invData.forEach(inv => {
@@ -461,6 +470,7 @@ export default function Reports() {
       ["Delivery Cost", current.summary.deliveryCost, previous?.summary.deliveryCost ?? ""],
       ["Gross Profit", current.summary.profit, previous?.summary.profit ?? ""],
       ["Operating Costs", current.summary.operatingCost, previous?.summary.operatingCost ?? ""],
+      ["Purchases", current.summary.purchaseCost, previous?.summary.purchaseCost ?? ""],
       ["Operating Profit", current.summary.operatingProfit, previous?.summary.operatingProfit ?? ""],
     ];
     csv += toCsvString(previous ? ["Metric", "Current", "Previous"] : ["Metric", "Amount"],
@@ -645,6 +655,7 @@ export default function Reports() {
               { label: "Delivery Cost", cur: current.summary.deliveryCost, prev: previous?.summary.deliveryCost ?? 0 },
               { label: "Gross Profit", cur: current.summary.profit, prev: previous?.summary.profit ?? 0, profit: true },
               { label: "Operating Costs", cur: current.summary.operatingCost, prev: previous?.summary.operatingCost ?? 0 },
+              { label: "Purchases", cur: current.summary.purchaseCost, prev: previous?.summary.purchaseCost ?? 0 },
               { label: "Operating Profit", cur: current.summary.operatingProfit, prev: previous?.summary.operatingProfit ?? 0, profit: true },
             ] as const).map(card => (
               <Card key={card.label}>

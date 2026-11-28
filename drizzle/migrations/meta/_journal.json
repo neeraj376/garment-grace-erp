@@ -29,6 +29,13 @@
       "when": 1795878991603,
       "tag": "0003_create_purchases",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795879176528,
+      "tag": "0004_purchases_permission",
+      "breakpoints": true
     }
   ]
 }

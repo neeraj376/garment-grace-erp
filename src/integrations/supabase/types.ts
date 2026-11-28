@@ -1561,6 +1561,7 @@ export type Database = {
           can_loyalty: boolean
           can_photos: boolean
           can_print_stickers: boolean
+          can_purchases: boolean
           can_reports: boolean
           can_settings: boolean
           can_shipping_calculator: boolean
@@ -1584,6 +1585,7 @@ export type Database = {
           can_loyalty?: boolean
           can_photos?: boolean
           can_print_stickers?: boolean
+          can_purchases?: boolean
           can_reports?: boolean
           can_settings?: boolean
           can_shipping_calculator?: boolean
@@ -1607,6 +1609,7 @@ export type Database = {
           can_loyalty?: boolean
           can_photos?: boolean
           can_print_stickers?: boolean
+          can_purchases?: boolean
           can_reports?: boolean
           can_settings?: boolean
           can_shipping_calculator?: boolean
@@ -1748,6 +1751,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_purchases: { Args: never; Returns: boolean }
       cancel_online_order: { Args: { p_order_id: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }

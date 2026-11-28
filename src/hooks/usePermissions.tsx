@@ -21,6 +21,7 @@ interface Permissions {
   can_shipping_calculator: boolean;
   can_view_buying_price: boolean;
   can_ai_upload: boolean;
+  can_purchases: boolean;
 }
 
 const defaultOwner: Permissions = {
@@ -41,6 +42,7 @@ const defaultOwner: Permissions = {
   can_shipping_calculator: true,
   can_view_buying_price: true,
   can_ai_upload: true,
+  can_purchases: true,
 };
 
 const defaultStaff: Permissions = {
@@ -61,6 +63,7 @@ const defaultStaff: Permissions = {
   can_shipping_calculator: false,
   can_view_buying_price: false,
   can_ai_upload: false,
+  can_purchases: false,
 };
 
 const PermissionsContext = createContext<Permissions & { loading: boolean }>({
@@ -119,6 +122,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           can_shipping_calculator: (perms as any).can_shipping_calculator ?? false,
           can_view_buying_price: (perms as any).can_view_buying_price ?? false,
           can_ai_upload: (perms as any).can_ai_upload ?? false,
+          can_purchases: (perms as any).can_purchases ?? false,
         });
       } else {
         setPermissions(defaultStaff);

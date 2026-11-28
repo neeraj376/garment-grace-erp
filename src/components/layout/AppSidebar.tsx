@@ -43,7 +43,7 @@ export default function AppSidebar() {
   const {
     role, can_invoicing, can_inventory, can_photos, can_customers,
     can_dashboard, can_reports, can_loyalty, can_employees, can_stock_summary, can_settings,
-    can_print_stickers, can_shipping_calculator, can_ai_upload,
+    can_print_stickers, can_shipping_calculator, can_ai_upload, can_purchases,
   } = usePermissions();
 
   const isOwner = role === "owner";
@@ -58,7 +58,7 @@ export default function AppSidebar() {
     { icon: Award, label: "Loyalty", path: "/administrator/loyalty", visible: isOwner || can_loyalty },
     { icon: BarChart3, label: "Reports", path: "/administrator/reports", visible: isOwner || can_reports },
     { icon: Wallet, label: "Expenses", path: "/administrator/expenses", visible: isOwner },
-    { icon: ShoppingCart, label: "Purchases", path: "/administrator/purchases", visible: isOwner },
+    { icon: ShoppingCart, label: "Purchases", path: "/administrator/purchases", visible: isOwner || can_purchases },
     { icon: UserCog, label: "Employees", path: "/administrator/employees", visible: isOwner || can_employees },
     { icon: ImagePlus, label: "Photo Manager", path: "/administrator/photos", visible: isOwner || can_photos },
     { icon: QrCode, label: "Print Stickers", path: "/administrator/stickers", visible: isOwner || can_print_stickers },
