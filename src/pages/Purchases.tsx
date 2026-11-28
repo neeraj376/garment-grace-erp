@@ -32,6 +32,40 @@ export default function Purchases() {
   const [details, setDetails] = useState("");
   const [bill, setBill] = useState<File | null>(null);
   const [fileKey, setFileKey] = useState(0);
+  const [scanning, setScanning] = useState(false);
+
+  const toJpegDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = img.width * scale; c.height = img.height * scale;
+      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Unreadable image")); };
+    img.src = url;
+  });
+
+  const onBill = async (file: File | null) => {
+    setBill(file);
+    if (!file || !file.type.startsWith("image/")) return;
+    setScanning(true);
+    try {
+      const image = await toJpegDataUrl(file);
+      const { data, error } = await supabase.functions.invoke("scan-purchase-bill", { body: { image } });
+      if (error || data?.error) throw new Error(data?.error || "Could not read the bill");
+      const f = data.fields || {};
+      if (f.purchase_date && /^\d{4}-\d{2}-\d{2}$/.test(f.purchase_date)) setDate(f.purchase_date);
+      if (f.vendor_name) setVendor(f.vendor_name);
+      if (typeof f.amount === "number") setAmount(String(Math.round(f.amount * 100) / 100));
+      if (typeof f.gst_applicable === "boolean") setGst(f.gst_applicable);
+      if (Number.isInteger(f.quantity) && f.quantity > 0) setQty(String(f.quantity));
+      if (f.details) setDetails(f.details);
+      toast({ title: "Details filled from bill", description: "Please check them before saving." });
+    } catch (e: any) {
+      toast({ title: "Couldn't read the bill", description: e.message + " — fill details manually.", variant: "destructive" });
+    } finally { setScanning(false); }
+  };
 
   const load = async () => {
     if (!storeId) return;
@@ -104,11 +138,11 @@ export default function Purchases() {
             <Switch id="gst" checked={gst} onCheckedChange={setGst} />
             <Label htmlFor="gst">GST {gst ? "Yes (+5%)" : "No"}</Label>
           </div>
-          <div><Label>Bill picture (optional)</Label><Input key={fileKey} type="file" accept="image/*,application/pdf" onChange={e => setBill(e.target.files?.[0] ?? null)} /></div>
+          <div><Label>Bill picture (optional)</Label><Input key={fileKey} type="file" accept="image/*,application/pdf" onChange={e => onBill(e.target.files?.[0] ?? null)} disabled={scanning} />{scanning && <p className="text-xs text-muted-foreground mt-1">Reading bill…</p>}</div>
           <div className="sm:col-span-2 lg:col-span-3"><Label>Purchase details (optional)</Label><Textarea value={details} onChange={e => setDetails(e.target.value)} placeholder="e.g. 20 cotton shirts, assorted sizes" /></div>
           <div className="sm:col-span-2 lg:col-span-3 flex items-center justify-between rounded-md bg-muted p-3">
             <span>Total cost{gst ? " (incl. 5% GST)" : ""}: <strong>{inr(total)}</strong></span>
-            <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save purchase"}</Button>
+            <Button onClick={save} disabled={saving || scanning}>{saving ? "Saving…" : "Save purchase"}</Button>
           </div>
         </CardContent>
       </Card>
