@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
@@ -13,7 +14,7 @@ import { purchaseTotal } from "@/lib/purchaseCost";
 
 interface Purchase {
   id: string; purchase_date: string; vendor_name: string; amount: number;
-  gst_applicable: boolean; total_cost: number; quantity: number; bill_url: string | null;
+  gst_applicable: boolean; total_cost: number; quantity: number; bill_url: string | null; details: string | null;
 }
 const BUCKET = "purchase-bills";
 const inr = (n: number) => `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
@@ -28,6 +29,7 @@ export default function Purchases() {
   const [amount, setAmount] = useState("");
   const [gst, setGst] = useState(false);
   const [qty, setQty] = useState("1");
+  const [details, setDetails] = useState("");
   const [bill, setBill] = useState<File | null>(null);
   const [fileKey, setFileKey] = useState(0);
 
@@ -60,7 +62,7 @@ export default function Purchases() {
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase.from("purchases").insert({
       store_id: storeId, purchase_date: date, vendor_name: vendor.trim(), amount: amt,
-      gst_applicable: gst, total_cost: purchaseTotal(amt, gst), quantity: q, bill_url, created_by: u.user?.id ?? null,
+      gst_applicable: gst, total_cost: purchaseTotal(amt, gst), quantity: q, details: details.trim() || null, bill_url, created_by: u.user?.id ?? null,
     });
     setSaving(false);
     if (error) {
@@ -68,7 +70,7 @@ export default function Purchases() {
       return toast({ title: "Save failed", description: error.message, variant: "destructive" });
     }
     toast({ title: "Purchase saved" });
-    setVendor(""); setAmount(""); setGst(false); setQty("1"); setBill(null); setFileKey(k => k + 1); setDate(today());
+    setVendor(""); setDetails(""); setAmount(""); setGst(false); setQty("1"); setBill(null); setFileKey(k => k + 1); setDate(today());
     load();
   };
 
@@ -103,6 +105,7 @@ export default function Purchases() {
             <Label htmlFor="gst">GST {gst ? "Yes (+5%)" : "No"}</Label>
           </div>
           <div><Label>Bill picture (optional)</Label><Input key={fileKey} type="file" accept="image/*,application/pdf" onChange={e => setBill(e.target.files?.[0] ?? null)} /></div>
+          <div className="sm:col-span-2 lg:col-span-3"><Label>Purchase details (optional)</Label><Textarea value={details} onChange={e => setDetails(e.target.value)} placeholder="e.g. 20 cotton shirts, assorted sizes" /></div>
           <div className="sm:col-span-2 lg:col-span-3 flex items-center justify-between rounded-md bg-muted p-3">
             <span>Total cost{gst ? " (incl. 5% GST)" : ""}: <strong>{inr(total)}</strong></span>
             <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save purchase"}</Button>
@@ -114,16 +117,17 @@ export default function Purchases() {
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Date</TableHead><TableHead>Vendor</TableHead><TableHead className="text-right">Qty</TableHead>
+              <TableHead>Date</TableHead><TableHead>Vendor</TableHead><TableHead>Details</TableHead><TableHead className="text-right">Qty</TableHead>
               <TableHead className="text-right">Amount</TableHead><TableHead>GST</TableHead><TableHead className="text-right">Total cost</TableHead>
               <TableHead>Bill</TableHead><TableHead />
             </TableRow></TableHeader>
             <TableBody>
-              {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>}
+              {rows.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>}
               {rows.map(r => (
                 <TableRow key={r.id}>
                   <TableCell>{new Date(r.purchase_date).toLocaleDateString("en-IN")}</TableCell>
                   <TableCell>{r.vendor_name}</TableCell>
+                  <TableCell className="max-w-xs whitespace-pre-wrap text-sm text-muted-foreground">{r.details || "—"}</TableCell>
                   <TableCell className="text-right">{r.quantity}</TableCell>
                   <TableCell className="text-right">{inr(r.amount)}</TableCell>
                   <TableCell>{r.gst_applicable ? "Yes" : "No"}</TableCell>

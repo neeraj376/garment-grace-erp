@@ -1,0 +1,1 @@
+ALTER TABLE public.purchases ADD COLUMN details text;

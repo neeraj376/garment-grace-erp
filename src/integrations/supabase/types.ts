@@ -1219,6 +1219,7 @@ export type Database = {
           bill_url: string | null
           created_at: string
           created_by: string | null
+          details: string | null
           gst_applicable: boolean
           id: string
           purchase_date: string
@@ -1232,6 +1233,7 @@ export type Database = {
           bill_url?: string | null
           created_at?: string
           created_by?: string | null
+          details?: string | null
           gst_applicable?: boolean
           id?: string
           purchase_date?: string
@@ -1245,6 +1247,7 @@ export type Database = {
           bill_url?: string | null
           created_at?: string
           created_by?: string | null
+          details?: string | null
           gst_applicable?: boolean
           id?: string
           purchase_date?: string
